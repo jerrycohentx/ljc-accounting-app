@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: ljc-accounting-app
+    runtime: node
+    plan: free
+    buildCommand: npm install && cd frontend && npm install && npm run build
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: ADMIN_EMAIL
+        value: jerry@ljcfinancial.com
+      - key: ADMIN_PASSWORD
+        value: ChangeMe123!
+      - key: JWT_SECRET
+        value: your-super-secret-jwt-key-change-this
+      - key: DB_INIT
+        value: "true"
+
+databases:
+  - name: ljc-accounting-db
+    databaseName: ljc_accounting
+    user: ljc_user
+    plan: free
