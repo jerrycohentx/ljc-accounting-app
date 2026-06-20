@@ -1,11 +1,18 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import pg from 'pg';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createPgAdapter } from './pg-adapter.js';
 import { bootstrapPostgres } from './bootstrap-postgres.js';
+import { bootstrapSqlite } from './bootstrap-sqlite.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let db = null;
 let postgresBootstrapped = false;
+let sqliteBootstrapped = false;
 
 const usePostgres = Boolean(
   process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgresql')
@@ -13,6 +20,13 @@ const usePostgres = Boolean(
 
 export function isPostgres() {
   return usePostgres;
+}
+
+function ensureDbDirectory() {
+  const dbDir = path.join(__dirname, '..', 'db');
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
 }
 
 export async function getDatabase() {
@@ -35,11 +49,18 @@ export async function getDatabase() {
 
     console.log('✓ Connected to PostgreSQL (cloud)');
   } else {
+    ensureDbDirectory();
     db = await open({
       filename: './db/accounting.db',
       driver: sqlite3.Database,
     });
     await db.exec('PRAGMA foreign_keys = ON');
+
+    if (!sqliteBootstrapped) {
+      await bootstrapSqlite(db);
+      sqliteBootstrapped = true;
+    }
+
     console.log('✓ Connected to SQLite (local)');
   }
 
@@ -56,4 +77,5 @@ export async function closeDatabase() {
   }
   db = null;
   postgresBootstrapped = false;
+  sqliteBootstrapped = false;
 }
