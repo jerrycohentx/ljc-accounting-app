@@ -7,7 +7,9 @@ databases:
 services:
   - type: web
     name: ljc-accounting-app
-    env: node
+    runtime: node
+    repo: https://github.com/jerrycohentx/ljc-accounting-app
+    branch: master
     plan: free
     buildCommand: npm install && npm run build:frontend
     startCommand: NODE_ENV=production node server.js
