@@ -13,10 +13,17 @@ function normalizePgSql(sql) {
     .replace(/"/g, "'");
 }
 
+function flattenParams(params) {
+  if (params.length === 1 && Array.isArray(params[0])) {
+    return params[0];
+  }
+  return params;
+}
+
 function toPgQuery(sql, params) {
   let index = 0;
   const text = normalizePgSql(sql).replace(/\?/g, () => `$${++index}`);
-  return { text, values: params };
+  return { text, values: flattenParams(params) };
 }
 
 export function createPgAdapter(client) {

@@ -3,8 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getDatabase, closeDatabase } from './config/database.js';
-import { isPostgresUrl } from './config/db-url.js';
+import { getDatabase, closeDatabase, isPostgres } from './config/database.js';
 import authRoutes from './routes/auth.js';
 import accountRoutes from './routes/accounts.js';
 import journalRoutes from './routes/journals.js';
@@ -44,7 +43,7 @@ app.get('/health', async (req, res) => {
   try {
     const db = await getDatabase();
     const row = await db.get('SELECT COUNT(*) as count FROM users');
-    payload.database = isPostgresUrl(process.env.DATABASE_URL) ? 'postgres' : 'sqlite';
+    payload.database = isPostgres() ? 'postgres' : 'sqlite';
     payload.users = Number(row?.count ?? 0);
   } catch (error) {
     payload.databaseError = error.message;
@@ -106,19 +105,19 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// Start server
+// Start server — listen first so Render health checks pass during DB init
 async function start() {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✓ Server running on http://localhost:${PORT}`);
+    console.log(`✓ Database target: ${isPostgres() ? 'PostgreSQL (cloud)' : './db/accounting.db'}`);
+    console.log('✓ API Endpoints ready');
+  });
+
   try {
-    const db = await getDatabase();
+    await getDatabase();
     console.log('✓ Database connected');
-    
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`✓ Server running on http://localhost:${PORT}`);
-      console.log(`✓ Database: ${process.env.DATABASE_URL ? 'PostgreSQL (cloud)' : './db/accounting.db'}`);
-      console.log(`✓ API Endpoints ready`);
-    });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('Database initialization failed:', error);
     process.exit(1);
   }
 }
