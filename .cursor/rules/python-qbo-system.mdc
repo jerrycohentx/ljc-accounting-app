@@ -1,0 +1,26 @@
+---
+description: QBO-replacement accounting rules — math, ledger, audit (all languages in this repo)
+alwaysApply: true
+---
+
+# QBO-Replacement Accounting Rules
+
+Same standards as global `python-qbo-system.mdc`, applied to this repo (Node/SQLite today; Python/PostgreSQL target).
+
+## Critical accounting math
+
+- No float math for stored balances — integer cents or explicit decimal rounding (`ROUND_HALF_UP`).
+- Double-entry: debits = credits before any post/commit.
+- Posted journal lines are immutable — reverse with offsetting entries only.
+
+## Audit
+
+- Track who/when on journal post; avoid silent UPDATE/DELETE of posted ledger rows.
+
+## Multi-entity (this app)
+
+- Filter by entity/organization on reports and journal queries — never return cross-entity data without explicit scope.
+
+## Python migration path
+
+When adding Python services here, use FastAPI + async SQLAlchemy + PostgreSQL + Pydantic v2 and enforce tenant RLS in migrations.

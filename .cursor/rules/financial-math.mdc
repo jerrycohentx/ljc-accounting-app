@@ -7,9 +7,10 @@ alwaysApply: false
 # Financial Math & Time
 
 ## Currency
-- Never use JavaScript `float`/`Number` alone for **stored** balances or journal amounts when precision matters.
-- Prefer **integer cents** in the DB/API, or SQLite patterns that round explicitly at boundaries.
+- **CRITICAL:** Never use JavaScript `float`/`Number` alone for **stored** balances or journal amounts.
+- Store amounts as **integer cents** in SQLite (e.g. $10.00 → `1000`); round with explicit half-up logic at boundaries.
 - Display with `toLocaleString` / formatting helpers; parse user input carefully.
+- Python code in this ecosystem must use `decimal.Decimal` with `ROUND_HALF_UP` — never `/` on floats for money.
 
 ## Timestamps
 - Store financial dates/times in **UTC ISO 8601** (`YYYY-MM-DD` for dates; full ISO when time matters).
