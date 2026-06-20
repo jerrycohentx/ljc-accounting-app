@@ -33,8 +33,17 @@ app.use(express.json({ limit: '50mb' })); // Increase limit for OFX file uploads
 app.use(express.urlencoded({ limit: '50mb' }));
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  const payload = { status: 'ok', timestamp: new Date().toISOString() };
+  try {
+    const db = await getDatabase();
+    const row = await db.get('SELECT COUNT(*) as count FROM users');
+    payload.database = process.env.DATABASE_URL?.startsWith('postgresql') ? 'postgres' : 'sqlite';
+    payload.users = Number(row?.count ?? 0);
+  } catch (error) {
+    payload.databaseError = error.message;
+  }
+  res.json(payload);
 });
 
 // Routes
