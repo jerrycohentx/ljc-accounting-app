@@ -15,7 +15,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        generateValue: true
+        value: ljc-accounting-secret-key-2026
       - key: PORT
         value: 3000
       - key: DATABASE_URL

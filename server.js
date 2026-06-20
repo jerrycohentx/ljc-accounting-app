@@ -16,6 +16,11 @@ import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
 
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'ljc-accounting-secret-key-2026';
+  console.warn('JWT_SECRET not set; using built-in default. Set JWT_SECRET in Render env for production.');
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
