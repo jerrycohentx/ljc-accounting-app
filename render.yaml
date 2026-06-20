@@ -1,3 +1,9 @@
+databases:
+  - name: ljc-accounting-db
+    plan: free
+    databaseName: ljc_accounting
+    user: ljc_accounting_user
+
 services:
   - type: web
     name: ljc-accounting-app
@@ -9,9 +15,15 @@ services:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        value: ljc-accounting-secret-key-2026
+        generateValue: true
       - key: PORT
         value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ljc-accounting-db
+          property: connectionString
+      - key: ADMIN_EMAIL
+        value: jerry@ljcfinancial.com
     routes:
       - path: /
         matchType: prefix

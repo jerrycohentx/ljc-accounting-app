@@ -46,7 +46,7 @@ app.use('/api', authMiddleware);
 app.get('/api/entities', async (req, res) => {
   try {
     const db = await getDatabase();
-    const entities = await db.all('SELECT id, name, code, type FROM entities WHERE status = "ACTIVE"');
+    const entities = await db.all("SELECT id, name, code, type FROM entities WHERE status = 'ACTIVE'");
     res.json(entities);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -99,7 +99,7 @@ async function start() {
     
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✓ Server running on http://localhost:${PORT}`);
-      console.log(`✓ Database at ./db/accounting.db`);
+      console.log(`✓ Database: ${process.env.DATABASE_URL ? 'PostgreSQL (cloud)' : './db/accounting.db'}`);
       console.log(`✓ API Endpoints ready`);
     });
   } catch (error) {
