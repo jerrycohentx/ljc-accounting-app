@@ -11,8 +11,9 @@ build/
 .env
 .env.*
 !.env.example
-integration/*config*.json
-integration/*.gmail.json
+integration/ljc_email_config.gmail.json
+integration/ljc_email_config.*.json
+!integration/ljc_email_config.example.json
 
 # SQLite database (keep schema.sql tracked)
 db/*.db
