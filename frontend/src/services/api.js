@@ -70,6 +70,7 @@ export default client;
 
 export const plaidAPI = {
   status: () => client.get('/api/plaid/status'),
+  testConnection: () => client.post('/api/plaid/test-connection'),
   createLinkToken: (entityId) => client.post('/api/plaid/create-link-token', { entityId }),
   exchangePublicToken: (entityId, publicToken, institution) =>
     client.post('/api/plaid/exchange-public-token', { entityId, publicToken, institution }),
