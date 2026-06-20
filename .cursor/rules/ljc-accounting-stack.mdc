@@ -1,0 +1,26 @@
+---
+description: Stack conventions for ljc-accounting-app (Express + SQLite + React)
+globs: "**/*.{js,jsx}"
+alwaysApply: true
+---
+
+# LJC Accounting App Stack
+
+## Layout
+- Backend: `server.js`, `routes/`, `lib/`, `config/database.js`, SQLite at `db/accounting.db`
+- Frontend: `frontend/src/` (React + MUI + Vite) → build to `frontend/dist/`
+- Integration/loan servicing hooks: `integration/`
+
+## Launchers (do not regress)
+- **Silent:** `START-APP.bat` → `Launch_LJC_AI_Accounting.vbs` (no console, opens browser)
+- **Debug:** `START-APP-Visible.bat` (console + pause)
+- Server port **3000**; health check at `/health`; logs in `logs/server.log`
+
+## API & auth
+- JWT auth middleware on protected routes; demo user documented in README.
+- Keep CORS/dev vs prod behavior in `server.js` — don't widen production CORS casually.
+
+## When adding features
+- Match existing route patterns and SQLite query style in sibling files.
+- Update README or `00-READ-ME-FIRST.txt` only when Jerry asks or launch behavior changes.
+- Verify: `npm start` or silent launcher after non-trivial changes.

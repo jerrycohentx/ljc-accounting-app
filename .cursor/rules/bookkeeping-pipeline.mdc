@@ -1,0 +1,25 @@
+---
+description: Ingestion, automation, and AI parsing rules (current + future phases)
+globs: "{routes/import.js,routes/reconciliation*.js,integration,lib}/**/*"
+alwaysApply: false
+---
+
+# Bookkeeping Pipeline
+
+## Current app (Phase 1 — manual + import)
+- OFX bank import, reconciliation, draft → approve → post journals are the live workflow.
+- Do not break existing SQLite schema or multi-entity chart without migration.
+- Manual categorization and review UI remain valid until automation replaces them.
+
+## Ingestion (all phases)
+- Bank webhooks, Plaid sync, and receipt uploads must use **idempotency keys** — no duplicate transactions.
+- Offload heavy OCR/LLM categorization to **background jobs** — never block the Express request thread.
+
+## AI categorization (when implemented)
+- Require **structured JSON** output (Zod/schema); no free-form-only parsing.
+- Every AI suggestion needs `confidence_score` (0–1). Below **0.85** → review queue, not auto-post.
+- **Strip PII** (card numbers, SSN, full account numbers) before sending text to external LLM APIs.
+
+## Prohibited
+- Hardcoding regional tax rules in core routes — use config/lookup tables.
+- Deleting or mutating posted ledger rows — use offsetting entries only.

@@ -1,0 +1,21 @@
+---
+description: Currency, timestamps, and ledger math for LJC accounting
+globs: "{routes,lib,frontend/src,scripts}/**/*.{js,jsx,ts,tsx}"
+alwaysApply: false
+---
+
+# Financial Math & Time
+
+## Currency
+- Never use JavaScript `float`/`Number` alone for **stored** balances or journal amounts when precision matters.
+- Prefer **integer cents** in the DB/API, or SQLite patterns that round explicitly at boundaries.
+- Display with `toLocaleString` / formatting helpers; parse user input carefully.
+
+## Timestamps
+- Store financial dates/times in **UTC ISO 8601** (`YYYY-MM-DD` for dates; full ISO when time matters).
+- Be explicit about entity timezone only at display/report layers — not mixed in storage.
+
+## Double-entry integrity
+- Journal entries must balance (debits = credits) before post.
+- **Posted** entries are immutable — corrections via reversing/adjusting entries, not silent UPDATE/DELETE of posted lines.
+- Tie every line to `account_id`, entity, and a stable reference where possible.
