@@ -33,6 +33,26 @@ if (total !== 0) throw new Error('Journal out of balance');
 assert sum(line.amount for line in journal_lines) == 0
 ```
 
+### Reference implementation (Node/SQLite — current stack)
+
+When writing journal post logic in this repo, mirror the Python pattern:
+
+```javascript
+function postJournalEntry(db, { tenantId, entityId, description, lines }) {
+  if (lines.length < 2) throw new Error('Journal requires at least two lines');
+
+  const total = lines.reduce((s, l) => s + l.amount_cents, 0);
+  if (total !== 0) throw new Error('Unbalanced Transaction: Total Debits must equal Total Credits.');
+
+  // Append-only INSERT; filter every query by tenantId / entityId
+  return true;
+}
+```
+
+### Reference implementation (Python — target stack)
+
+See global `python-qbo-system.mdc` for the full Pydantic `post_journal_entry` template.
+
 ---
 
 ## Audit
