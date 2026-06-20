@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getDatabase, closeDatabase } from './config/database.js';
+import { isPostgresUrl } from './config/db-url.js';
 import authRoutes from './routes/auth.js';
 import accountRoutes from './routes/accounts.js';
 import journalRoutes from './routes/journals.js';
@@ -43,7 +44,7 @@ app.get('/health', async (req, res) => {
   try {
     const db = await getDatabase();
     const row = await db.get('SELECT COUNT(*) as count FROM users');
-    payload.database = process.env.DATABASE_URL?.startsWith('postgresql') ? 'postgres' : 'sqlite';
+    payload.database = isPostgresUrl(process.env.DATABASE_URL) ? 'postgres' : 'sqlite';
     payload.users = Number(row?.count ?? 0);
   } catch (error) {
     payload.databaseError = error.message;

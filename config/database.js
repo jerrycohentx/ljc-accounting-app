@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { createPgAdapter } from './pg-adapter.js';
 import { bootstrapPostgres } from './bootstrap-postgres.js';
 import { bootstrapSqlite } from './bootstrap-sqlite.js';
+import { isPostgresUrl } from './db-url.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,9 +15,7 @@ let db = null;
 let postgresBootstrapped = false;
 let sqliteBootstrapped = false;
 
-const usePostgres = Boolean(
-  process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgresql')
-);
+const usePostgres = isPostgresUrl(process.env.DATABASE_URL);
 
 export function isPostgres() {
   return usePostgres;
