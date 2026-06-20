@@ -8,6 +8,7 @@ import { createPgAdapter } from './pg-adapter.js';
 import { bootstrapPostgres } from './bootstrap-postgres.js';
 import { bootstrapSqlite } from './bootstrap-sqlite.js';
 import { isPostgresUrl } from './db-url.js';
+import { ensurePlaidSchema } from './plaid-schema.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -59,6 +60,7 @@ export async function getDatabase() {
           await bootstrapPostgres(db);
           postgresBootstrapped = true;
         }
+        await ensurePlaidSchema(db);
 
         console.log('✓ Connected to PostgreSQL (cloud)');
         return db;
@@ -84,6 +86,7 @@ export async function getDatabase() {
       await bootstrapSqlite(db);
       sqliteBootstrapped = true;
     }
+    await ensurePlaidSchema(db);
 
     console.log('✓ Connected to SQLite (local)');
   }

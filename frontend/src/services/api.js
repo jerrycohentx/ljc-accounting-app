@@ -67,3 +67,13 @@ export const reportAPI = {
 };
 
 export default client;
+
+export const plaidAPI = {
+  status: () => client.get('/api/plaid/status'),
+  createLinkToken: (entityId) => client.post('/api/plaid/create-link-token', { entityId }),
+  exchangePublicToken: (entityId, publicToken, institution) =>
+    client.post('/api/plaid/exchange-public-token', { entityId, publicToken, institution }),
+  listItems: (entityId) => client.get('/api/plaid/items', { params: { entityId } }),
+  sync: (entityId, itemId) => client.post('/api/plaid/sync', { entityId, itemId }),
+  import: (importId) => client.post('/api/plaid/import', { importId }),
+};

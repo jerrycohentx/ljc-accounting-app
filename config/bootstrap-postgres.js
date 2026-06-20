@@ -159,6 +159,22 @@ CREATE INDEX IF NOT EXISTS idx_je_entity_date ON journal_entries(entity_id, post
 CREATE INDEX IF NOT EXISTS idx_gl_entity_date ON general_ledger(entity_id, posting_date);
 CREATE INDEX IF NOT EXISTS idx_gl_account_date ON general_ledger(account_id, posting_date);
 CREATE INDEX IF NOT EXISTS idx_import_fitid ON import_transactions(fitid);
+
+CREATE TABLE IF NOT EXISTS plaid_items (
+  id TEXT PRIMARY KEY,
+  entity_id TEXT NOT NULL REFERENCES entities(id),
+  item_id TEXT NOT NULL UNIQUE,
+  access_token_encrypted TEXT NOT NULL,
+  institution_id TEXT,
+  institution_name TEXT,
+  sync_cursor TEXT,
+  created_by TEXT NOT NULL REFERENCES users(id),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_plaid_items_entity ON plaid_items(entity_id);
 `;
 
 export async function bootstrapPostgres(db) {

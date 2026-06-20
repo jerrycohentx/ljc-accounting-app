@@ -26,4 +26,14 @@ services:
           property: connectionString
       - key: ADMIN_EMAIL
         value: jerry@ljcfinancial.com
+      - key: PLAID_CLIENT_ID
+        sync: false
+      - key: PLAID_SECRET
+        sync: false
+      - key: PLAID_ENV
+        value: sandbox
+      - key: PLAID_SIMMONS_INSTITUTION_IDS
+        value: ins_111008
+      - key: PLAID_WEBHOOK_URL
+        sync: false
     healthCheckPath: /health

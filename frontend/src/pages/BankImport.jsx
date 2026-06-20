@@ -20,9 +20,10 @@
  * 6. User reviews and posts to ledger
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { usePlaidLink } from 'react-plaid-link';
 import './BankImport.css';
-import api from '../services/api';
+import api, { plaidAPI } from '../services/api';
 
 const BankImport = () => {
   // State
@@ -36,13 +37,121 @@ const BankImport = () => {
   const [recentImports, setRecentImports] = useState([]);
   const [sortColumn, setSortColumn] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
+  const [plaidConfigured, setPlaidConfigured] = useState(false);
+  const [plaidLinkToken, setPlaidLinkToken] = useState(null);
+  const [linkedBanks, setLinkedBanks] = useState([]);
+  const [plaidSource, setPlaidSource] = useState(false);
   const fileInputRef = useRef(null);
 
   // Load entities on mount
   React.useEffect(() => {
     loadEntities();
     loadRecentImports();
+    loadPlaidStatus();
   }, []);
+
+  React.useEffect(() => {
+    if (selectedEntity) {
+      loadLinkedBanks();
+    }
+  }, [selectedEntity]);
+
+  const loadPlaidStatus = async () => {
+    try {
+      const response = await plaidAPI.status();
+      setPlaidConfigured(response.data.configured);
+    } catch (err) {
+      setPlaidConfigured(false);
+    }
+  };
+
+  const loadLinkedBanks = async () => {
+    if (!selectedEntity) return;
+    try {
+      const response = await plaidAPI.listItems(selectedEntity);
+      setLinkedBanks(response.data);
+    } catch (err) {
+      setLinkedBanks([]);
+    }
+  };
+
+  const handlePlaidSuccess = async (publicToken, metadata) => {
+    const institution = metadata?.institution;
+    const instName = (institution?.name || '').toLowerCase();
+
+    if (/lone\s*star|lonestar/.test(instName)) {
+      setError(
+        'Lone Star Bank cannot be connected through Plaid. Only Simmons Bank is supported for automatic feeds. Use OFX upload for Lone Star Bank.'
+      );
+      setPlaidLinkToken(null);
+      return;
+    }
+
+    if (!instName.includes('simmons')) {
+      setError(
+        `${institution?.name || 'This bank'} is not supported. Only Simmons Bank can be linked automatically. Use OFX file upload for other banks.`
+      );
+      setPlaidLinkToken(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      await plaidAPI.exchangePublicToken(selectedEntity, publicToken, institution);
+      setSuccess(`Simmons Bank connected successfully.`);
+      setPlaidLinkToken(null);
+      await loadLinkedBanks();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to link Simmons Bank');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const { open: openPlaidLink, ready: plaidReady } = usePlaidLink({
+    token: plaidLinkToken,
+    onSuccess: handlePlaidSuccess,
+    onExit: () => setPlaidLinkToken(null),
+  });
+
+  React.useEffect(() => {
+    if (plaidLinkToken && plaidReady) {
+      openPlaidLink();
+    }
+  }, [plaidLinkToken, plaidReady, openPlaidLink]);
+
+  const handleConnectSimmonsBank = async () => {
+    if (!selectedEntity) {
+      setError('Please select an entity');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await plaidAPI.createLinkToken(selectedEntity);
+      setPlaidLinkToken(response.data.linkToken);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Plaid is not available. Add API keys on the server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePlaidSync = async (itemId) => {
+    setLoading(true);
+    setError(null);
+    setPlaidSource(true);
+    try {
+      const response = await plaidAPI.sync(selectedEntity, itemId);
+      setImportSession(response.data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to sync from Plaid');
+      setImportSession(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /**
    * Load available entities
@@ -117,6 +226,7 @@ const BankImport = () => {
 
       // Store import session
       setImportSession(response.data);
+      setPlaidSource(false);
       setUploadProgress(100);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to parse OFX file');
@@ -151,10 +261,12 @@ const BankImport = () => {
     setError(null);
 
     try {
-      const response = await api.post('/api/import/transactions', {
-        importId: importSession.importId,
-        accountMappings: {}
-      });
+      const response = plaidSource
+        ? await plaidAPI.import(importSession.importId)
+        : await api.post('/api/import/transactions', {
+            importId: importSession.importId,
+            accountMappings: {},
+          });
 
       setSuccess(
         `Successfully imported ${response.data.transactionsProcessed} transactions. ` +
@@ -163,6 +275,7 @@ const BankImport = () => {
 
       // Clear session
       setImportSession(null);
+      setPlaidSource(false);
 
       // Reload recent imports
       loadRecentImports();
@@ -224,7 +337,7 @@ const BankImport = () => {
     <div className="bank-import-container">
       <div className="import-header">
         <h1>Bank Import</h1>
-        <p>Upload OFX files from your bank to import transactions as draft journal entries</p>
+        <p>Connect Simmons Bank with Plaid or upload OFX files to import transactions as draft journal entries</p>
       </div>
 
       {error && (
@@ -260,6 +373,40 @@ const BankImport = () => {
               ))}
             </select>
           </div>
+
+          {plaidConfigured && (
+            <div className="plaid-section">
+              <h3>Connect Simmons Bank (Plaid)</h3>
+              <p className="upload-hint">
+                Automatic Simmons Bank feeds only. Lone Star Bank and other banks — use OFX upload below.
+              </p>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleConnectSimmonsBank}
+                disabled={loading || importSession != null}
+              >
+                Connect Simmons Bank
+              </button>
+              {linkedBanks.length > 0 && (
+                <ul className="linked-banks-list">
+                  {linkedBanks.map((bank) => (
+                    <li key={bank.item_id}>
+                      <span>{bank.institution_name || 'Simmons Bank'}</span>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-small"
+                        onClick={() => handlePlaidSync(bank.item_id)}
+                        disabled={loading || importSession != null}
+                      >
+                        Sync Simmons Bank
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           <div
             className="upload-area"
@@ -309,7 +456,10 @@ const BankImport = () => {
               <h2>Import Preview</h2>
               <button
                 className="btn-secondary"
-                onClick={() => setImportSession(null)}
+                onClick={() => {
+                  setImportSession(null);
+                  setPlaidSource(false);
+                }}
                 disabled={loading}
               >
                 ← Back

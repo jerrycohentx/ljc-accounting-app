@@ -7,6 +7,38 @@
   background: #f8f9fa;
 }
 
+/* Plaid connect section */
+.plaid-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f0f7ff;
+  border: 1px solid #c5ddf8;
+  border-radius: 8px;
+}
+
+.plaid-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+.linked-banks-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0 0;
+}
+
+.linked-banks-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-top: 1px solid #dce9f8;
+}
+
+.linked-banks-list li:first-child {
+  border-top: none;
+}
+
 /* Header */
 .import-header {
   margin-bottom: 32px;

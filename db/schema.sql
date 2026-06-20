@@ -200,3 +200,21 @@ CREATE TABLE IF NOT EXISTS reconciliation_matches (
   INDEX idx_import_txn (import_transaction_id),
   INDEX idx_cleared (cleared)
 );
+
+CREATE TABLE IF NOT EXISTS plaid_items (
+  id TEXT PRIMARY KEY,
+  entity_id TEXT NOT NULL,
+  item_id TEXT NOT NULL UNIQUE,
+  access_token_encrypted TEXT NOT NULL,
+  institution_id TEXT,
+  institution_name TEXT,
+  sync_cursor TEXT,
+  created_by TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(entity_id) REFERENCES entities(id),
+  FOREIGN KEY(created_by) REFERENCES users(id)
+);
+
+CREATE INDEX idx_plaid_items_entity ON plaid_items(entity_id);

@@ -13,6 +13,7 @@ alwaysApply: false
 
 ## Ingestion (all phases)
 - Bank webhooks, Plaid sync, and receipt uploads must use **idempotency keys** — no duplicate transactions.
+- **Plaid:** Simmons Bank only — reject Lone Star Bank and other institutions; use `plaid-{transaction_id}` as `fitid`; never re-import the same Plaid transaction_id for an entity.
 - Offload heavy OCR/LLM categorization to **background jobs** — never block the Express request thread.
 
 ## AI categorization (when implemented)
