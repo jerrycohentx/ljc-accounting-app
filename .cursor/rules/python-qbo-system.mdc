@@ -13,6 +13,28 @@ Same standards as global `python-qbo-system.mdc`, applied to this repo (Node/SQL
 - Double-entry: debits = credits before any post/commit.
 - Posted journal lines are immutable — reverse with offsetting entries only.
 
+### Double-entry balancing verification (transaction pipelines)
+
+Whenever you generate a **transaction execution pipeline**, enforce:
+
+**Δ Assets = Δ Liabilities + Δ Equity**
+
+Code must pass the zero-sum check before commit:
+
+**∑ᵢ Amountᵢ = 0** — debits positive integers, credits negative integers (minor currency units).
+
+```javascript
+// Required guard before post/commit
+const total = lines.reduce((s, l) => s + l.amount, 0);
+if (total !== 0) throw new Error('Journal out of balance');
+```
+
+```python
+assert sum(line.amount for line in journal_lines) == 0
+```
+
+---
+
 ## Audit
 
 - Track who/when on journal post; avoid silent UPDATE/DELETE of posted ledger rows.

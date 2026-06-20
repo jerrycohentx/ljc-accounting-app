@@ -18,5 +18,7 @@ alwaysApply: false
 
 ## Double-entry integrity
 - Journal entries must balance (debits = credits) before post.
+- **Balancing formula:** Δ Assets = Δ Liabilities + Δ Equity.
+- **Pipeline check:** ∑ᵢ Amountᵢ = 0 where debits are **positive** integers and credits are **negative** integers (cents). Fail closed if the sum is not zero.
 - **Posted** entries are immutable — corrections via reversing/adjusting entries, not silent UPDATE/DELETE of posted lines.
 - Tie every line to `account_id`, entity, and a stable reference where possible.
