@@ -3,7 +3,7 @@ services:
     name: ljc-accounting-app
     env: node
     plan: free
-    buildCommand: rm -f package-lock.json frontend/package-lock.json && npm cache clean --force && npm install --no-save && cd frontend && npm install --no-save && npm run build && cd ..
+    buildCommand: npm install && npm run build:frontend
     startCommand: NODE_ENV=production node server.js
     envVars:
       - key: NODE_ENV
