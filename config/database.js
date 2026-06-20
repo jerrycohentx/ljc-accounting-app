@@ -28,25 +28,50 @@ function ensureDbDirectory() {
   }
 }
 
+const RETRY_DELAY_MS = 3000;
+const MAX_DB_RETRIES = 10;
+
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function connectPostgres() {
+  const client = new pg.Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.PGSSLMODE === 'disable' ? false : { rejectUnauthorized: false },
+  });
+  await client.connect();
+  return createPgAdapter(client);
+}
+
 export async function getDatabase() {
   if (db) {
     return db;
   }
 
   if (usePostgres) {
-    const client = new pg.Client({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.PGSSLMODE === 'disable' ? false : { rejectUnauthorized: false },
-    });
-    await client.connect();
-    db = createPgAdapter(client);
+    let lastError;
+    for (let attempt = 1; attempt <= MAX_DB_RETRIES; attempt += 1) {
+      try {
+        db = await connectPostgres();
 
-    if (!postgresBootstrapped) {
-      await bootstrapPostgres(db);
-      postgresBootstrapped = true;
+        if (!postgresBootstrapped) {
+          await bootstrapPostgres(db);
+          postgresBootstrapped = true;
+        }
+
+        console.log('✓ Connected to PostgreSQL (cloud)');
+        return db;
+      } catch (error) {
+        lastError = error;
+        console.warn(`PostgreSQL attempt ${attempt}/${MAX_DB_RETRIES} failed: ${error.message}`);
+        db = null;
+        if (attempt < MAX_DB_RETRIES) {
+          await sleep(RETRY_DELAY_MS);
+        }
+      }
     }
-
-    console.log('✓ Connected to PostgreSQL (cloud)');
+    throw lastError;
   } else {
     ensureDbDirectory();
     db = await open({

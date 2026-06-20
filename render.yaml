@@ -11,8 +11,8 @@ services:
     repo: https://github.com/jerrycohentx/ljc-accounting-app
     branch: master
     plan: free
-    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run build:frontend
-    startCommand: NODE_ENV=production node server.js
+    buildCommand: npm install && npm run build:frontend
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
