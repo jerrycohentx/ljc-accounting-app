@@ -9,6 +9,7 @@ import GeneralLedger from './pages/GeneralLedger';
 import JournalEntry from './pages/JournalEntry';
 import Reports from './pages/Reports';
 import Reconciliation from './pages/Reconciliation';
+import Receipts from './pages/Receipts';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const theme = createTheme({
@@ -45,6 +46,7 @@ function App() {
             <Route path="accounts" element={<ChartOfAccounts />} />
             <Route path="ledger" element={<GeneralLedger />} />
             <Route path="journal" element={<JournalEntry />} />
+            <Route path="receipts" element={<Receipts />} />
             <Route path="reports" element={<Reports />} />
             <Route path="reconciliation" element={<Reconciliation />} />
           </Route>

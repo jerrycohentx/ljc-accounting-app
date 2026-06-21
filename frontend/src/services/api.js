@@ -77,3 +77,26 @@ export const plaidAPI = {
   sync: (entityId, itemId) => client.post('/api/plaid/sync', { entityId, itemId }),
   import: (importId) => client.post('/api/plaid/import', { importId }),
 };
+
+export const receiptAPI = {
+  providers: () => client.get('/api/receipts/providers'),
+  listConnections: (entityId) => client.get('/api/receipts/connections', { params: { entityId } }),
+  connect: (data) => client.post('/api/receipts/connections', data),
+  disconnect: (id) => client.delete(`/api/receipts/connections/${id}`),
+  scan: (entityId, connectionId) => client.post('/api/receipts/scan', { entityId, connectionId }),
+  upload: (data) => client.post('/api/receipts/upload', data),
+  list: (entityId, status) => client.get('/api/receipts', { params: { entityId, status } }),
+  stats: (entityId) => client.get('/api/receipts/stats', { params: { entityId } }),
+  get: (id) => client.get(`/api/receipts/${id}`),
+  update: (id, data) => client.patch(`/api/receipts/${id}`, data),
+  approve: (id) => client.post(`/api/receipts/${id}/approve`),
+  reject: (id) => client.delete(`/api/receipts/${id}`),
+  post: (id) => client.post(`/api/receipts/${id}/post`),
+  sync: (id, connectionId) => client.post(`/api/receipts/${id}/sync`, { connectionId }),
+  exportUrl: (entityId, status) => {
+    const params = new URLSearchParams();
+    if (entityId) params.set('entityId', entityId);
+    if (status) params.set('status', status);
+    return `/api/receipts/export?${params.toString()}`;
+  },
+};

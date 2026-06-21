@@ -13,6 +13,7 @@ import reconciliationRoutes from './routes/reconciliation.js';
 import importRoutes from './routes/import.js';
 import bankReconciliationRoutes from './routes/reconciliation-bank.js';
 import plaidRoutes, { plaidWebhookHandler } from './routes/plaid.js';
+import receiptRoutes, { whatsappWebhookHandler } from './routes/receipts.js';
 import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
@@ -58,6 +59,9 @@ app.use('/auth', authRoutes);
 // Plaid webhook (no JWT — Plaid server calls this)
 app.post('/api/plaid/webhook', plaidWebhookHandler);
 
+// WhatsApp receipt-bot webhook (no JWT — secured by shared token)
+app.post('/api/receipts/webhook/whatsapp', whatsappWebhookHandler);
+
 // Protected routes
 app.use('/api', authMiddleware);
 
@@ -74,6 +78,7 @@ app.get('/api/entities', async (req, res) => {
 // Import, Plaid, and bank reconciliation routes (top level)
 app.use('/api/import', importRoutes);
 app.use('/api/plaid', plaidRoutes);
+app.use('/api/receipts', receiptRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
 
 // Entity-specific routes
