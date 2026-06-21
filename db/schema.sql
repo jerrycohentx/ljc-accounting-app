@@ -56,10 +56,11 @@ CREATE TABLE IF NOT EXISTS general_ledger (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(entity_id) REFERENCES entities(id),
   FOREIGN KEY(account_id) REFERENCES accounts(id),
-  FOREIGN KEY(journal_entry_id) REFERENCES journal_entries(id),
-  INDEX idx_entity_date (entity_id, posting_date),
-  INDEX idx_account_date (account_id, posting_date)
+  FOREIGN KEY(journal_entry_id) REFERENCES journal_entries(id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_gl_entity_date ON general_ledger(entity_id, posting_date);
+CREATE INDEX IF NOT EXISTS idx_gl_account_date ON general_ledger(account_id, posting_date);
 
 -- Journal Entries
 CREATE TABLE IF NOT EXISTS journal_entries (
@@ -81,9 +82,10 @@ CREATE TABLE IF NOT EXISTS journal_entries (
   FOREIGN KEY(entity_id) REFERENCES entities(id),
   FOREIGN KEY(created_by) REFERENCES users(id),
   FOREIGN KEY(approved_by) REFERENCES users(id),
-  UNIQUE(entity_id, je_number),
-  INDEX idx_entity_date (entity_id, posting_date)
+  UNIQUE(entity_id, je_number)
 );
+
+CREATE INDEX IF NOT EXISTS idx_je_entity_date ON journal_entries(entity_id, posting_date);
 
 -- Journal Entry Line Items
 CREATE TABLE IF NOT EXISTS journal_entry_lines (
@@ -136,10 +138,11 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   ip_address TEXT,
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(user_id) REFERENCES users(id),
-  FOREIGN KEY(entity_id) REFERENCES entities(id),
-  INDEX idx_user_timestamp (user_id, timestamp),
-  INDEX idx_entity_action (entity_id, action, timestamp)
+  FOREIGN KEY(entity_id) REFERENCES entities(id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_audit_user_timestamp ON audit_logs(user_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_audit_entity_action ON audit_logs(entity_id, action, timestamp);
 
 -- Sessions
 CREATE TABLE IF NOT EXISTS sessions (
@@ -173,11 +176,12 @@ CREATE TABLE IF NOT EXISTS import_transactions (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(entity_id) REFERENCES entities(id),
   FOREIGN KEY(account_id) REFERENCES accounts(id),
-  FOREIGN KEY(journal_entry_id) REFERENCES journal_entries(id),
-  INDEX idx_fitid (fitid),
-  INDEX idx_entity_account (entity_id, account_id),
-  INDEX idx_date (date)
+  FOREIGN KEY(journal_entry_id) REFERENCES journal_entries(id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_import_fitid ON import_transactions(fitid);
+CREATE INDEX IF NOT EXISTS idx_import_entity_account ON import_transactions(entity_id, account_id);
+CREATE INDEX IF NOT EXISTS idx_import_date ON import_transactions(date);
 
 -- Reconciliation Matches (GL to Bank)
 CREATE TABLE IF NOT EXISTS reconciliation_matches (
@@ -195,11 +199,12 @@ CREATE TABLE IF NOT EXISTS reconciliation_matches (
   FOREIGN KEY(gl_entry_id) REFERENCES general_ledger(id),
   FOREIGN KEY(import_transaction_id) REFERENCES import_transactions(id),
   FOREIGN KEY(matched_by) REFERENCES users(id),
-  FOREIGN KEY(cleared_by) REFERENCES users(id),
-  INDEX idx_gl_entry (gl_entry_id),
-  INDEX idx_import_txn (import_transaction_id),
-  INDEX idx_cleared (cleared)
+  FOREIGN KEY(cleared_by) REFERENCES users(id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_recon_gl_entry ON reconciliation_matches(gl_entry_id);
+CREATE INDEX IF NOT EXISTS idx_recon_import_txn ON reconciliation_matches(import_transaction_id);
+CREATE INDEX IF NOT EXISTS idx_recon_cleared ON reconciliation_matches(cleared);
 
 CREATE TABLE IF NOT EXISTS plaid_items (
   id TEXT PRIMARY KEY,
