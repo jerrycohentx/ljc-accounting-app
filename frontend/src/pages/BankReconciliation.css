@@ -500,3 +500,63 @@
     grid-template-columns: 1fr;
   }
 }
+
+.holdback-pending-panel {
+  background: white;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #1565c0;
+}
+
+.holdback-pending-panel h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.holdback-pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.holdback-pending-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.holdback-pending-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.holdback-memo {
+  font-family: monospace;
+  font-size: 12px;
+  color: #666;
+}
+
+.holdback-pending-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.holdback-pending-actions select {
+  min-width: 220px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 13px;
+}

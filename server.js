@@ -1,7 +1,9 @@
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
+import https from 'https';
 import { fileURLToPath } from 'url';
 import { getDatabase, closeDatabase, isPostgres } from './config/database.js';
 import authRoutes from './routes/auth.js';
@@ -13,6 +15,9 @@ import reconciliationRoutes from './routes/reconciliation.js';
 import importRoutes from './routes/import.js';
 import bankReconciliationRoutes from './routes/reconciliation-bank.js';
 import plaidRoutes, { plaidWebhookHandler } from './routes/plaid.js';
+import emailRoutes, { gmailOAuthCallbackHandler } from './routes/email.js';
+import documentCaptureRoutes from './routes/document-capture.js';
+import holdbackDrawRoutes from './routes/holdback-draws.js';
 import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
@@ -36,7 +41,7 @@ const corsOptions = NODE_ENV === 'production'
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' })); // Increase limit for OFX file uploads
-app.use(express.urlencoded({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 // Health check
 app.get('/health', async (req, res) => {
@@ -58,6 +63,9 @@ app.use('/auth', authRoutes);
 // Plaid webhook (no JWT — Plaid server calls this)
 app.post('/api/plaid/webhook', plaidWebhookHandler);
 
+// Gmail OAuth callback (no JWT — Google redirect)
+app.get('/api/email/gmail/callback', gmailOAuthCallbackHandler);
+
 // Protected routes
 app.use('/api', authMiddleware);
 
@@ -71,9 +79,12 @@ app.get('/api/entities', async (req, res) => {
   }
 });
 
-// Import, Plaid, and bank reconciliation routes (top level)
+// Import, Plaid, email OAuth, and bank reconciliation routes (top level)
 app.use('/api/import', importRoutes);
 app.use('/api/plaid', plaidRoutes);
+app.use('/api/email', emailRoutes);
+app.use('/api/document-capture', documentCaptureRoutes);
+app.use('/api/holdback-draws', holdbackDrawRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
 
 // Entity-specific routes
@@ -83,13 +94,16 @@ app.use('/api/entities/:entityId/ledger', ledgerRoutes);
 app.use('/api/entities/:entityId/reports', reportsRoutes);
 app.use('/api/entities/:entityId/reconciliations', reconciliationRoutes);
 
-// Serve frontend in production
-if (NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, 'frontend', 'dist');
-  app.use(express.static(frontendPath));
+const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
+const frontendIndexPath = path.join(frontendDistPath, 'index.html');
+const serveBuiltFrontend = NODE_ENV === 'production' || fs.existsSync(frontendIndexPath);
+
+if (serveBuiltFrontend) {
+  app.use(express.static(frontendDistPath));
   app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+    res.sendFile(frontendIndexPath);
   });
+  console.log('Serving frontend from frontend/dist');
 }
 
 // Error handling
@@ -110,17 +124,64 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// Start server — listen first so Render health checks pass during DB init
+// Start server ΓÇö listen first so Render health checks pass during DB init
 async function start() {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✓ Server running on http://localhost:${PORT}`);
+  const keyPath = path.join(__dirname, 'certs', 'key.pem');
+  const certPath = path.join(__dirname, 'certs', 'cert.pem');
+  const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
+  console.log(`[https-check] useHttps=${useHttps} key=${keyPath}:${fs.existsSync(keyPath)} cert=${certPath}:${fs.existsSync(certPath)}`);
+  const server = (useHttps
+    ? https.createServer({ key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }, app)
+    : app
+  ).listen(PORT, '0.0.0.0', () => {
+    console.log(`✓ Server running on ${useHttps ? 'https' : 'http'}://localhost:${PORT}`);
     console.log(`✓ Database target: ${isPostgres() ? 'PostgreSQL (cloud)' : './db/accounting.db'}`);
     console.log('✓ API Endpoints ready');
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use. Close the other process or use START-APP again.`);
+      process.exit(1);
+    }
+    console.error('Server listen error:', err);
+    process.exit(1);
   });
 
   try {
     await getDatabase();
     console.log('✓ Database connected');
+
+    const { bootstrapSandboxOnStartup } = await import('./lib/plaid-sandbox-bootstrap.js');
+    const db = await getDatabase();
+    await bootstrapSandboxOnStartup(db);
+
+    if (process.env.STATEMENT_EMAIL_SCAN_ON_STARTUP === 'true') {
+      const { scanShellpointEmailInbox } = await import('./lib/email-statement-ingest.js');
+      scanShellpointEmailInbox(db)
+        .then((result) => {
+          if (result.configured) {
+            console.log(
+              `✓ Shellpoint email scan: ${result.processed || 0} processed, ${result.skipped || 0} skipped` +
+              (result.accountCount ? ` (${result.accountCount} mailbox(es))` : '')
+            );
+          } else {
+            console.log('ℹ Shellpoint email scan skipped (STATEMENT_EMAIL_* not configured)');
+          }
+        })
+        .catch((err) => console.warn('Shellpoint email scan on startup failed:', err.message));
+
+      const scanIntervalMin = parseInt(process.env.STATEMENT_EMAIL_SCAN_INTERVAL_MINUTES || '0', 10);
+      if (scanIntervalMin > 0) {
+        setInterval(() => {
+          import('./lib/email-statement-ingest.js')
+            .then(({ scanShellpointEmailInbox }) => scanShellpointEmailInbox(db))
+            .then((r) => console.log(`✓ Statement email scan (scheduled): ${r.processed || 0} processed, ${r.skipped || 0} skipped`))
+            .catch((err) => console.warn('Scheduled statement email scan failed:', err.message));
+        }, scanIntervalMin * 60000);
+        console.log(`✓ Statement email scan scheduled every ${scanIntervalMin} min`);
+      }
+    }
   } catch (error) {
     console.error('Database initialization failed:', error);
     process.exit(1);
