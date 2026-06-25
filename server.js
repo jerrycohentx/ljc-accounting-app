@@ -15,8 +15,6 @@ import reconciliationRoutes from './routes/reconciliation.js';
 import importRoutes from './routes/import.js';
 import bankReconciliationRoutes from './routes/reconciliation-bank.js';
 import plaidRoutes, { plaidWebhookHandler } from './routes/plaid.js';
-import emailRoutes, { gmailOAuthCallbackHandler } from './routes/email.js';
-import documentCaptureRoutes from './routes/document-capture.js';
 import holdbackDrawRoutes from './routes/holdback-draws.js';
 import { authMiddleware } from './middleware/auth.js';
 
@@ -63,9 +61,6 @@ app.use('/auth', authRoutes);
 // Plaid webhook (no JWT — Plaid server calls this)
 app.post('/api/plaid/webhook', plaidWebhookHandler);
 
-// Gmail OAuth callback (no JWT — Google redirect)
-app.get('/api/email/gmail/callback', gmailOAuthCallbackHandler);
-
 // Protected routes
 app.use('/api', authMiddleware);
 
@@ -79,11 +74,9 @@ app.get('/api/entities', async (req, res) => {
   }
 });
 
-// Import, Plaid, email OAuth, and bank reconciliation routes (top level)
+// Import, Plaid, holdback draws, and bank reconciliation routes (top level)
 app.use('/api/import', importRoutes);
 app.use('/api/plaid', plaidRoutes);
-app.use('/api/email', emailRoutes);
-app.use('/api/document-capture', documentCaptureRoutes);
 app.use('/api/holdback-draws', holdbackDrawRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
 
@@ -151,37 +144,6 @@ async function start() {
   try {
     await getDatabase();
     console.log('✓ Database connected');
-
-    const { bootstrapSandboxOnStartup } = await import('./lib/plaid-sandbox-bootstrap.js');
-    const db = await getDatabase();
-    await bootstrapSandboxOnStartup(db);
-
-    if (process.env.STATEMENT_EMAIL_SCAN_ON_STARTUP === 'true') {
-      const { scanShellpointEmailInbox } = await import('./lib/email-statement-ingest.js');
-      scanShellpointEmailInbox(db)
-        .then((result) => {
-          if (result.configured) {
-            console.log(
-              `✓ Shellpoint email scan: ${result.processed || 0} processed, ${result.skipped || 0} skipped` +
-              (result.accountCount ? ` (${result.accountCount} mailbox(es))` : '')
-            );
-          } else {
-            console.log('ℹ Shellpoint email scan skipped (STATEMENT_EMAIL_* not configured)');
-          }
-        })
-        .catch((err) => console.warn('Shellpoint email scan on startup failed:', err.message));
-
-      const scanIntervalMin = parseInt(process.env.STATEMENT_EMAIL_SCAN_INTERVAL_MINUTES || '0', 10);
-      if (scanIntervalMin > 0) {
-        setInterval(() => {
-          import('./lib/email-statement-ingest.js')
-            .then(({ scanShellpointEmailInbox }) => scanShellpointEmailInbox(db))
-            .then((r) => console.log(`✓ Statement email scan (scheduled): ${r.processed || 0} processed, ${r.skipped || 0} skipped`))
-            .catch((err) => console.warn('Scheduled statement email scan failed:', err.message));
-        }, scanIntervalMin * 60000);
-        console.log(`✓ Statement email scan scheduled every ${scanIntervalMin} min`);
-      }
-    }
   } catch (error) {
     console.error('Database initialization failed:', error);
     process.exit(1);
