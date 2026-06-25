@@ -15,7 +15,6 @@ import QBDReconcile from './qbd/QBDReconcile';
 import QBDBankFeeds from './qbd/QBDBankFeeds';
 import Reconciliation from './pages/Reconciliation';
 import BankImport from './pages/BankImport';
-import DocumentCapture from './pages/DocumentCapture';
 import BankReconciliation from './pages/BankReconciliation';
 
 const theme = createTheme({
@@ -52,7 +51,6 @@ function App() {
             <Route path="reconciliation" element={<Reconciliation />} />
             <Route path="bank-import" element={<BankImport />} />
             <Route path="bank-reconciliation" element={<BankReconciliation />} />
-            <Route path="document-capture" element={<DocumentCapture />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
