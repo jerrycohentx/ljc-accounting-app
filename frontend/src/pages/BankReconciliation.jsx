@@ -387,6 +387,9 @@ const BankReconciliation = () => {
           </p>
           <div className="holdback-pending-list">
             {pendingDraws.map((draw) => {
+              const gross = Math.abs(Number(draw.gross_amount) || 0);
+              const inspection = Math.abs(Number(draw.inspection_fee) || 0);
+              const wire = Math.abs(Number(draw.wire_fee) || 0);
               const net = Math.abs(Number(draw.net_disbursement) || 0);
               const candidates = bankTransactions.filter((txn) => {
                 const amt = Math.abs(Number(txn.amount) || 0);
@@ -401,8 +404,18 @@ const BankReconciliation = () => {
                 <div key={draw.id} className="holdback-pending-row">
                   <div className="holdback-pending-info">
                     <strong>{draw.borrower_name || draw.loan_num || draw.draw_id}</strong>
-                    <span>{formatDate(draw.draw_date)} · Net wire {formatCurrency(net)}</span>
+                    <span>
+                      {formatDate(draw.draw_date)} · Gross {formatCurrency(gross)}
+                      {inspection > 0 ? ` · Inspection −${formatCurrency(inspection)}` : ''}
+                      {wire > 0 ? ` · Wire −${formatCurrency(wire)}` : ''}
+                      · Net wire {formatCurrency(net)}
+                    </span>
                     <span className="holdback-memo">{draw.memo || `HOLDBACK-DRAW:${draw.draw_id}`}</span>
+                    {inspection > 0 && (
+                      <span className="help-text" style={{ display: 'block', marginTop: 4 }}>
+                        Inspection ({formatCurrency(inspection)}) posts to account 5100 Draw &amp; Inspection Fees — not on this cash list.
+                      </span>
+                    )}
                   </div>
                   <div className="holdback-pending-actions">
                     {fallback.length > 0 ? (

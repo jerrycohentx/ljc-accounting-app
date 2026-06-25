@@ -17,6 +17,7 @@ export const CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '3000', name: "Owner's Equity", type: 'EQUITY' },
   { entity: 'ent-ljc', number: '4000', name: 'Interest Income', type: 'REVENUE' },
   { entity: 'ent-ljc', number: '5000', name: 'Interest Expense', type: 'EXPENSE' },
+  { entity: 'ent-ljc', number: '5100', name: 'Draw & Inspection Fees', type: 'EXPENSE' },
 ];
 
 async function upsertEntity(db, entity) {

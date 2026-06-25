@@ -7,9 +7,18 @@ import { getDatabase } from '../config/database.js';
 import {
   ensureHoldbackTable,
   createHoldbackJournal,
+  postHoldbackFeeCorrection,
   verifyDrawById,
   drawMemoContainsId,
 } from '../lib/holdback-disbursement.js';
+
+function holdbackFeesMatch(existing, payload) {
+  const eq = (a, b) => Math.abs(Number(a) - Number(b)) < 0.01;
+  return eq(existing.gross_amount, payload.grossAmount)
+    && eq(existing.inspection_fee, payload.inspectionFee)
+    && eq(existing.wire_fee, payload.wireFee)
+    && eq(existing.net_disbursement, payload.netDisbursement);
+}
 
 const router = express.Router();
 
@@ -49,12 +58,47 @@ router.post('/import', async (req, res) => {
     const db = req.db;
     const existing = await db.get('SELECT * FROM holdback_disbursements WHERE draw_id = ?', drawId);
     if (existing) {
+      const payload = { grossAmount, inspectionFee, wireFee, netDisbursement };
+      if (holdbackFeesMatch(existing, payload)) {
+        return res.json({
+          id: existing.id,
+          drawId: existing.draw_id,
+          status: existing.status,
+          journalEntryId: existing.journal_entry_id,
+          message: 'Draw already imported',
+        });
+      }
+      if (existing.status === 'verified') {
+        return res.status(409).json({ error: 'Draw already verified; fees cannot be changed' });
+      }
+      const correction = await postHoldbackFeeCorrection(db, {
+        entityId,
+        userId: req.user.id,
+        drawId,
+        drawDate: existing.draw_date || drawDate,
+        borrowerName: borrowerName || existing.borrower_name,
+        loanNum: loanNum || existing.loan_num,
+        oldInspectionFee: existing.inspection_fee,
+        oldWireFee: existing.wire_fee,
+        oldNetDisbursement: existing.net_disbursement,
+        inspectionFee,
+        wireFee,
+        netDisbursement,
+        wireFeeWasOnCash: Number(existing.wire_fee) > 0 && Number(existing.inspection_fee) === 0,
+      });
+      await db.run(
+        `UPDATE holdback_disbursements
+         SET inspection_fee = ?, wire_fee = ?, net_disbursement = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE draw_id = ?`,
+        [inspectionFee, wireFee, netDisbursement, drawId]
+      );
       return res.json({
         id: existing.id,
         drawId: existing.draw_id,
         status: existing.status,
-        journalEntryId: existing.journal_entry_id,
-        message: 'Draw already imported',
+        correctionJournalId: correction?.journalId,
+        correctionJeNumber: correction?.jeNumber,
+        message: 'Holdback draw fees corrected in accounting',
       });
     }
 
