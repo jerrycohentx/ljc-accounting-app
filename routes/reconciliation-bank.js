@@ -21,6 +21,29 @@ import { getDatabase } from '../config/database.js';
 
 const router = express.Router();
 
+async function ensureReconColumn(db) {
+  try {
+    await db.run(
+      'ALTER TABLE general_ledger ADD COLUMN IF NOT EXISTS reconciliation_status TEXT'
+    );
+  } catch (error) {
+    if (!/duplicate column|already exists/i.test(error.message)) {
+      throw error;
+    }
+  }
+}
+
+router.use(async (req, res, next) => {
+  try {
+    const db = await getDatabase();
+    await ensureReconColumn(db);
+    next();
+  } catch (error) {
+    console.error('Bank recon schema error:', error);
+    res.status(500).json({ error: 'Bank reconciliation schema unavailable', details: error.message });
+  }
+});
+
 /**
  * GET /api/reconciliation/bank/unreconciled
  * Get unreconciled transactions for an account
@@ -106,15 +129,24 @@ router.get('/candidates/:glId', async (req, res) => {
     const amount = glEntry.debit > 0 ? glEntry.debit : -glEntry.credit;
 
     // Get candidates: matching amount within 2 days
-    const candidates = await db.all(
+    const amountCandidates = await db.all(
       `SELECT * FROM import_transactions
        WHERE entity_id = ? AND account_id = ?
        AND matched_to_gl_id IS NULL
-       AND ABS(amount - ?) < 0.01
-       AND ABS(JULIANDAY(date) - JULIANDAY(?)) <= 2
-       ORDER BY ABS(JULIANDAY(date) - JULIANDAY(?))`,
-      [entityId, accountId, amount, glEntry.posting_date, glEntry.posting_date]
+       AND ABS(amount - ?) < 0.01`,
+      [entityId, accountId, amount]
     );
+    const glDate = new Date(glEntry.posting_date);
+    const candidates = (amountCandidates || [])
+      .filter((row) => {
+        const dayDiff = Math.abs(new Date(row.date) - glDate) / (1000 * 60 * 60 * 24);
+        return dayDiff <= 2;
+      })
+      .sort((a, b) => {
+        const diffA = Math.abs(new Date(a.date) - glDate);
+        const diffB = Math.abs(new Date(b.date) - glDate);
+        return diffA - diffB;
+      });
 
     return res.json({
       glEntry: {
@@ -477,19 +509,12 @@ router.get('/summary', async (req, res) => {
   }
 });
 
-// Self-healing migration: ensure the reconciliation_status column exists on general_ledger
-async function ensureReconColumn(db) {
-  try { await db.run(`ALTER TABLE general_ledger ADD COLUMN reconciliation_status TEXT`); }
-  catch (e) { /* column already exists */ }
-}
-
 // GET /api/reconciliation/bank/worksheet — QuickBooks-style statement reconcile worksheet
 router.get('/worksheet', async (req, res) => {
   try {
     const { entityId, accountId, statementDate } = req.query;
     if (!entityId || !accountId) return res.status(400).json({ error: 'Entity ID and Account ID required' });
     const db = await getDatabase();
-    await ensureReconColumn(db);
     const date = statementDate || new Date().toISOString().split('T')[0];
 
     const account = await db.get(
@@ -533,7 +558,6 @@ router.post('/reconcile', async (req, res) => {
       return res.status(400).json({ error: 'entityId, accountId and glIds[] required' });
     }
     const db = await getDatabase();
-    await ensureReconColumn(db);
     const recDate = statementDate || new Date().toISOString().split('T')[0];
     const placeholders = glIds.map(() => '?').join(',');
     await db.run(
