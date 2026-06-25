@@ -34,8 +34,8 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Middleware
 const corsOptions = NODE_ENV === 'production'
-  ? { origin: process.env.FRONTEND_URL || '*', credentials: true }
-  : { origin: '*', credentials: true };
+  ? { origin: process.env.FRONTEND_URL || '*', credentials: true, allowedHeaders: ['Content-Type', 'Authorization', 'X-Loan-Tracker-Key'] }
+  : { origin: '*', credentials: true, allowedHeaders: ['Content-Type', 'Authorization', 'X-Loan-Tracker-Key'] };
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' })); // Increase limit for OFX file uploads

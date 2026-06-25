@@ -89,6 +89,46 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /auth/loan-tracker-token — machine login for LJC Loan Tracker (holdback export)
+router.post('/loan-tracker-token', async (req, res) => {
+  try {
+    const key = req.headers['x-loan-tracker-key'];
+    const expected = process.env.LOAN_TRACKER_INTEGRATION_KEY;
+
+    if (!expected || !key || key !== expected) {
+      return res.status(401).json({ error: 'Invalid integration key' });
+    }
+
+    const email = process.env.LOAN_TRACKER_USER_EMAIL || 'demo@ljcfinancial.com';
+    const db = await getDatabase();
+    const user = await db.get('SELECT * FROM users WHERE email = ? AND is_active = 1', email);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Integration user not found' });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.full_name,
+        role: user.role,
+        entitiesAccess: user.entities_access ? JSON.parse(user.entities_access) : [],
+      },
+    });
+  } catch (error) {
+    console.error('Loan tracker token error:', error);
+    return res.status(500).json({ error: 'Integration login failed' });
+  }
+});
+
 // POST /auth/refresh
 router.post('/refresh', (req, res) => {
   try {
