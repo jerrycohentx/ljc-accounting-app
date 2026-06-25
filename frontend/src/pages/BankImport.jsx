@@ -41,6 +41,8 @@ const BankImport = () => {
   const [plaidLinkToken, setPlaidLinkToken] = useState(null);
   const [linkedBanks, setLinkedBanks] = useState([]);
   const [plaidSource, setPlaidSource] = useState(false);
+  const [plaidConnection, setPlaidConnection] = useState(null);
+  const [testingConnection, setTestingConnection] = useState(false);
   const fileInputRef = useRef(null);
 
   // Load entities on mount
@@ -72,6 +74,23 @@ const BankImport = () => {
       setLinkedBanks(response.data);
     } catch (err) {
       setLinkedBanks([]);
+    }
+  };
+
+  const handleTestPlaidConnection = async () => {
+    setTestingConnection(true);
+    setPlaidConnection(null);
+    setError(null);
+    try {
+      const response = await plaidAPI.testConnection();
+      setPlaidConnection({ ok: true, message: response.data.message });
+    } catch (err) {
+      setPlaidConnection({
+        ok: false,
+        message: err.response?.data?.error || 'Unable to reach Plaid. Check server credentials.',
+      });
+    } finally {
+      setTestingConnection(false);
     }
   };
 
@@ -380,14 +399,29 @@ const BankImport = () => {
               <p className="upload-hint">
                 Automatic Simmons Bank feeds only. Lone Star Bank and other banks — use OFX upload below.
               </p>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={handleConnectSimmonsBank}
-                disabled={loading || importSession != null}
-              >
-                Connect Simmons Bank
-              </button>
+              <div className="plaid-actions">
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleConnectSimmonsBank}
+                  disabled={loading || importSession != null}
+                >
+                  Connect Simmons Bank
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleTestPlaidConnection}
+                  disabled={testingConnection || loading}
+                >
+                  {testingConnection ? 'Testing…' : 'Test Connection'}
+                </button>
+              </div>
+              {plaidConnection && (
+                <p className={`plaid-connection-status ${plaidConnection.ok ? 'ok' : 'fail'}`}>
+                  {plaidConnection.ok ? '✓ ' : '! '}{plaidConnection.message}
+                </p>
+              )}
               {linkedBanks.length > 0 && (
                 <ul className="linked-banks-list">
                   {linkedBanks.map((bank) => (

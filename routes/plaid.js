@@ -14,7 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { CountryCode, Products } from 'plaid';
 import { getDatabase } from '../config/database.js';
 import { ensurePlaidSchema } from '../config/plaid-schema.js';
-import { getPlaidClient, isPlaidConfigured } from '../lib/plaid-client.js';
+import { getPlaidClient, isPlaidConfigured, verifyPlaidConnection } from '../lib/plaid-client.js';
 import { encryptSecret, decryptSecret } from '../lib/token-crypto.js';
 import { mapPlaidTransactions } from '../lib/plaid-transactions.js';
 import { commitBankImportTransactions, getExistingFitidsForEntity } from '../lib/import-commit.js';
@@ -39,6 +39,25 @@ router.get('/status', async (req, res) => {
     environment: process.env.PLAID_ENV || 'sandbox',
     allowedBank: simmons.allowedBankName,
     allowedInstitutionIds: simmons.allowedInstitutionIds,
+  });
+});
+
+router.post('/test-connection', async (req, res) => {
+  const result = await verifyPlaidConnection();
+  if (result.connected) {
+    return res.json({
+      connected: true,
+      environment: result.environment,
+      message: `Connected to Plaid (${result.environment}).`,
+    });
+  }
+
+  const statusCode = result.errorCode === 'NOT_CONFIGURED' ? 503 : 502;
+  return res.status(statusCode).json({
+    connected: false,
+    environment: result.environment,
+    error: result.error,
+    errorCode: result.errorCode,
   });
 });
 

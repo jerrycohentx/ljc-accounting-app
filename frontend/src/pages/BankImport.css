@@ -21,6 +21,26 @@
   font-size: 16px;
 }
 
+.plaid-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plaid-connection-status {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.plaid-connection-status.ok {
+  color: #1a7f37;
+}
+
+.plaid-connection-status.fail {
+  color: #b42318;
+}
+
 .linked-banks-list {
   list-style: none;
   padding: 0;
