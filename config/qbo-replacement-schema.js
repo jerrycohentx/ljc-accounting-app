@@ -52,11 +52,31 @@ CREATE TABLE IF NOT EXISTS loan_accrual_schedules (
 );
 
 CREATE INDEX IF NOT EXISTS idx_accrual_entity ON loan_accrual_schedules(entity_id);
+
+CREATE TABLE IF NOT EXISTS accounting_periods (
+  id TEXT PRIMARY KEY,
+  entity_id TEXT NOT NULL,
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  status TEXT DEFAULT 'OPEN' CHECK(status IN ('OPEN', 'CLOSED')),
+  closed_by TEXT,
+  closed_at TIMESTAMP,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(entity_id, period_start, period_end)
+);
+
+CREATE INDEX IF NOT EXISTS idx_periods_entity ON accounting_periods(entity_id, period_end);
 `;
 
 const ALTER_IMPORT = [
   'ALTER TABLE import_transactions ADD COLUMN offset_account_id TEXT',
   'ALTER TABLE import_transactions ADD COLUMN suggested_rule_id TEXT',
+];
+
+const ALTER_JOURNALS = [
+  'ALTER TABLE journal_entries ADD COLUMN reverses_je_id TEXT',
+  'ALTER TABLE journal_entries ADD COLUMN reversed_by_je_id TEXT',
 ];
 
 export async function ensureQboReplacementSchema(db) {
@@ -70,6 +90,15 @@ export async function ensureQboReplacementSchema(db) {
     } catch (error) {
       if (!/duplicate column|already exists/i.test(error.message)) {
         console.warn('import_transactions ALTER:', error.message);
+      }
+    }
+  }
+  for (const statement of ALTER_JOURNALS) {
+    try {
+      await db.exec(statement);
+    } catch (error) {
+      if (!/duplicate column|already exists/i.test(error.message)) {
+        console.warn('journal_entries ALTER:', error.message);
       }
     }
   }

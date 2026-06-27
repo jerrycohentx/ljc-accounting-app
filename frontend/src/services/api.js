@@ -54,7 +54,8 @@ export const journalAPI = {
   create: (entityId, data) => client.post(`/api/entities/${entityId}/journals`, data),
   update: (entityId, id, data) => client.put(`/api/entities/${entityId}/journals/${id}`, data),
   approve: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/approve`),
-  post: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/post`)
+  post: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/post`),
+  reverse: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/reverse`, data)
 };
 
 export const reportAPI = {
@@ -132,6 +133,20 @@ export const interestAPI = {
     client.get(`/api/entities/${entityId}/interest-accrual/preview`, { params: { asOfDate } }),
   post: (entityId, asOfDate) =>
     client.post(`/api/entities/${entityId}/interest-accrual/post`, { asOfDate }),
+};
+
+export const accountingAPI = {
+  listPeriods: (entityId) => client.get(`/api/entities/${entityId}/accounting/periods`),
+  closePeriod: (entityId, data) => client.post(`/api/entities/${entityId}/accounting/periods/close`, data),
+  reopenPeriod: (entityId, data) => client.post(`/api/entities/${entityId}/accounting/periods/reopen`, data),
+  previewOpeningBalances: (entityId, data) =>
+    client.post(`/api/entities/${entityId}/accounting/opening-balances/preview`, data),
+  postOpeningBalances: (entityId, data) =>
+    client.post(`/api/entities/${entityId}/accounting/opening-balances`, data),
+  previewYearEnd: (entityId, asOfDate) =>
+    client.get(`/api/entities/${entityId}/accounting/year-end/preview`, { params: { asOfDate } }),
+  postYearEnd: (entityId, data) =>
+    client.post(`/api/entities/${entityId}/accounting/year-end/close`, data),
 };
 
 export const gmailAPI = {

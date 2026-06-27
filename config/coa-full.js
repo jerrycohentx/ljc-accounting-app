@@ -29,6 +29,7 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '2902', name: 'Due To - OMC', type: 'LIABILITY' },
   { entity: 'ent-ljc', number: '3000', name: "Owner's Equity", type: 'EQUITY' },
   { entity: 'ent-ljc', number: '3100', name: 'Retained Earnings', type: 'EQUITY' },
+  { entity: 'ent-ljc', number: '3900', name: 'Opening Balance Equity', type: 'EQUITY' },
   { entity: 'ent-ljc', number: '4000', name: 'Interest Income', type: 'REVENUE' },
   { entity: 'ent-ljc', number: '4100', name: 'Rental Income', type: 'REVENUE' },
   { entity: 'ent-ljc', number: '4200', name: 'Origination & Fee Income', type: 'REVENUE' },
@@ -48,6 +49,8 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-justin', number: '2000', name: 'Accounts Payable', type: 'LIABILITY' },
   { entity: 'ent-justin', number: '2900', name: 'Due To - LJC Financial', type: 'LIABILITY' },
   { entity: 'ent-justin', number: '3000', name: "Owner's Equity", type: 'EQUITY' },
+  { entity: 'ent-justin', number: '3100', name: 'Retained Earnings', type: 'EQUITY' },
+  { entity: 'ent-justin', number: '3900', name: 'Opening Balance Equity', type: 'EQUITY' },
   { entity: 'ent-justin', number: '4000', name: 'Other Income', type: 'REVENUE' },
   { entity: 'ent-justin', number: '5000', name: 'Operating Expenses', type: 'EXPENSE' },
 
@@ -57,6 +60,8 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-omc', number: '2000', name: 'Accounts Payable', type: 'LIABILITY' },
   { entity: 'ent-omc', number: '2900', name: 'Due To - LJC Financial', type: 'LIABILITY' },
   { entity: 'ent-omc', number: '3000', name: "Owner's Equity", type: 'EQUITY' },
+  { entity: 'ent-omc', number: '3100', name: 'Retained Earnings', type: 'EQUITY' },
+  { entity: 'ent-omc', number: '3900', name: 'Opening Balance Equity', type: 'EQUITY' },
   { entity: 'ent-omc', number: '4000', name: 'Other Income', type: 'REVENUE' },
   { entity: 'ent-omc', number: '5000', name: 'Operating Expenses', type: 'EXPENSE' },
 
@@ -66,6 +71,8 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-gm', number: '2000', name: 'Accounts Payable', type: 'LIABILITY' },
   { entity: 'ent-gm', number: '2900', name: 'Due To - LJC Financial', type: 'LIABILITY' },
   { entity: 'ent-gm', number: '3000', name: "Owner's Equity", type: 'EQUITY' },
+  { entity: 'ent-gm', number: '3100', name: 'Retained Earnings', type: 'EQUITY' },
+  { entity: 'ent-gm', number: '3900', name: 'Opening Balance Equity', type: 'EQUITY' },
   { entity: 'ent-gm', number: '4000', name: 'Other Income', type: 'REVENUE' },
   { entity: 'ent-gm', number: '5000', name: 'Operating Expenses', type: 'EXPENSE' },
 ];

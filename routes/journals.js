@@ -4,6 +4,7 @@ import Decimal from 'decimal.js';
 import { getDatabase } from '../config/database.js';
 import { entityAccessMiddleware, requireRole } from '../middleware/auth.js';
 import { postJournalEntryToGl } from '../lib/post-journal.js';
+import { reverseJournalEntry } from '../lib/reverse-journal.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -240,6 +241,29 @@ router.post('/:id/post', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTA
   } catch (error) {
     if (error.message.includes('not found')) return res.status(404).json({ error: error.message });
     if (error.message.includes('already posted')) return res.status(409).json({ error: error.message });
+    if (error.message.includes('closed period')) return res.status(409).json({ error: error.message });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/entities/:entityId/journals/:id/reverse - Reverse a posted JE
+router.post('/:id/reverse', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    const { reversalDate, memo } = req.body || {};
+    const db = await getDatabase();
+    const result = await reverseJournalEntry(db, {
+      journalId: req.params.id,
+      entityId: req.entityId,
+      userId: req.user.id,
+      reversalDate,
+      memo,
+    });
+    res.json({ message: 'Journal entry reversed', ...result });
+  } catch (error) {
+    if (error.message.includes('not found')) return res.status(404).json({ error: error.message });
+    if (/already been reversed|Only posted|Cannot reverse|closed period/i.test(error.message)) {
+      return res.status(409).json({ error: error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });

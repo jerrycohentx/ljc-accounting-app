@@ -17,6 +17,7 @@ import bankReconciliationRoutes from './routes/reconciliation-bank.js';
 import plaidRoutes, { plaidWebhookHandler } from './routes/plaid.js';
 import holdbackDrawRoutes from './routes/holdback-draws.js';
 import interestAccrualRoutes from './routes/interest-accrual.js';
+import accountingOpsRoutes from './routes/accounting-ops.js';
 import receiptRoutes, { whatsappWebhookHandler } from './routes/receipts.js';
 import { authMiddleware } from './middleware/auth.js';
 
@@ -92,6 +93,7 @@ app.use('/api/entities/:entityId/journals', journalRoutes);
 app.use('/api/entities/:entityId/ledger', ledgerRoutes);
 app.use('/api/entities/:entityId/reports', reportsRoutes);
 app.use('/api/entities/:entityId/interest-accrual', interestAccrualRoutes);
+app.use('/api/entities/:entityId/accounting', accountingOpsRoutes);
 app.use('/api/entities/:entityId/reconciliations', reconciliationRoutes);
 
 const frontendDistPath = path.join(__dirname, 'frontend', 'dist');

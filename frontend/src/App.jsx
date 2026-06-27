@@ -13,6 +13,7 @@ import QBDJournalEntry from './qbd/QBDJournalEntry';
 import QBDCashEntry from './qbd/QBDCashEntry';
 import QBDReconcile from './qbd/QBDReconcile';
 import QBDBankFeeds from './qbd/QBDBankFeeds';
+import QBDPeriodClose from './qbd/QBDPeriodClose';
 import Receipts from './pages/Receipts';
 import Reconciliation from './pages/Reconciliation';
 import BankImport from './pages/BankImport';
@@ -49,6 +50,7 @@ function App() {
             <Route path="make-deposits" element={<QBDCashEntry mode="deposit" />} />
             <Route path="reconcile" element={<QBDReconcile />} />
             <Route path="bank-feeds" element={<QBDBankFeeds />} />
+            <Route path="period-close" element={<QBDPeriodClose />} />
             <Route path="receipts" element={<Receipts />} />
             <Route path="reconciliation" element={<Reconciliation />} />
             <Route path="bank-import" element={<BankImport />} />

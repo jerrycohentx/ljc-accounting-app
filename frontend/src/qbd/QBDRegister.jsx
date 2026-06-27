@@ -138,13 +138,38 @@ export default function QBDRegister() {
       </div>
       <div className="qbd-foot"><span>Ending balance</span><span className="sp" /><span className={endingBalance < 0 ? 'qbd-neg' : ''}>{fmt(endingBalance) || '0.00'}</span></div>
 
-      {entry && <TxnDetail entry={entry} onClose={() => setEntry(null)} />}
+      {entry && (
+        <TxnDetail
+          entry={entry}
+          entityId={entityId}
+          onClose={() => setEntry(null)}
+          onReversed={(rev) => {
+            setEntry(null);
+            reportAPI.generalLedger(entityId, accountId, from || undefined, to || undefined)
+              .then((r) => { setAccount(r.data.account); setEntries(r.data.entries || []); })
+              .catch(() => {});
+            if (rev?.reversalJeNumber) window.alert(`Reversed — ${rev.reversalJeNumber}`);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function TxnDetail({ entry, onClose }) {
+function TxnDetail({ entry, entityId, onClose, onReversed }) {
   const lines = entry.lines || [];
+  const [busy, setBusy] = useState(false);
+  const canReverse = entry.status === 'POSTED' && !entry.reversed_by_je_id && !entry.reverses_je_id;
+
+  const doReverse = () => {
+    if (!window.confirm(`Reverse ${entry.je_number}? This creates an offsetting posted entry.`)) return;
+    setBusy(true);
+    journalAPI.reverse(entityId, entry.id)
+      .then((r) => onReversed && onReversed(r.data))
+      .catch((e) => window.alert(e.response?.data?.error || e.message))
+      .finally(() => setBusy(false));
+  };
+
   let td = 0, tc = 0;
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,40,70,.35)', zIndex: 350, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
@@ -154,6 +179,10 @@ function TxnDetail({ entry, onClose }) {
           <span className="qbd-muted">Date</span><b>{entry.posting_date}</b>
           <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{entry.description || ''}</span>
           <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {entry.status}</span>
+          {entry.reversed_by_je_id && <span className="qbd-muted" style={{ marginLeft: 8 }}>(reversed)</span>}
+          {canReverse && (
+            <button className="qbd-btn" disabled={busy} onClick={doReverse} style={{ marginLeft: 12 }}>Reverse entry</button>
+          )}
         </div>
         <div className="qbd-wbody">
           <table className="qbd-reg">
