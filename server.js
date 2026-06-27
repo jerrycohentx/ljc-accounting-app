@@ -18,6 +18,7 @@ import plaidRoutes, { plaidWebhookHandler } from './routes/plaid.js';
 import holdbackDrawRoutes from './routes/holdback-draws.js';
 import interestAccrualRoutes from './routes/interest-accrual.js';
 import accountingOpsRoutes from './routes/accounting-ops.js';
+import intercompanyRoutes from './routes/intercompany.js';
 import receiptRoutes, { whatsappWebhookHandler } from './routes/receipts.js';
 import { authMiddleware } from './middleware/auth.js';
 
@@ -82,6 +83,7 @@ app.get('/api/entities', async (req, res) => {
 
 // Import, Plaid, holdback draws, and bank reconciliation routes (top level)
 app.use('/api/import', importRoutes);
+app.use('/api/intercompany', intercompanyRoutes);
 app.use('/api/plaid', plaidRoutes);
 app.use('/api/holdback-draws', holdbackDrawRoutes);
 app.use('/api/receipts', receiptRoutes);

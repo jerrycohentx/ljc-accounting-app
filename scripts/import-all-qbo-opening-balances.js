@@ -58,4 +58,15 @@ for (const entityId of Object.keys(ENTITY_TB_FILES)) {
 }
 
 console.log(JSON.stringify({ asOfDate, dryRun, results }, null, 2));
+
+if (!dryRun) {
+  const { execSync } = await import('child_process');
+  try {
+    execSync(`node scripts/verify-intercompany-tieout.js ${asOfDate} --gl`, { stdio: 'inherit', cwd: root });
+  } catch {
+    console.error('Intercompany verification failed after import');
+    process.exitCode = 1;
+  }
+}
+
 await closeDatabase();

@@ -35,5 +35,8 @@
     }
   },
   "import": "node scripts/import-all-qbo-opening-balances.js 2025-12-31",
-  "rollup": "node scripts/rollup-qbo-trial-balances.js"
+  "rollup": "node scripts/rollup-qbo-trial-balances.js",
+  "verifyIntercompany": "node scripts/verify-intercompany-tieout.js 2025-12-31",
+  "intercompanyPairs": 7,
+  "intercompanyTieout": "data/opening-balances/2025-12-31/intercompany-tieout.json"
 }
