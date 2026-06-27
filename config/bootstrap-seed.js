@@ -1,5 +1,6 @@
 import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import { FULL_CHART_OF_ACCOUNTS } from './coa-full.js';
 
 export const ENTITIES = [
   { id: 'ent-ljc', name: 'LJC Financial, LLC', code: 'LJC', type: 'OPERATING' },
@@ -8,20 +9,8 @@ export const ENTITIES = [
   { id: 'ent-gm', name: 'GM', code: 'GM', type: 'RELATED' },
 ];
 
-export const CHART_OF_ACCOUNTS = [
-  { entity: 'ent-ljc', number: '1000', name: 'Cash & Bank Accounts - Simmons', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1200', name: 'Accounts Receivable', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1300', name: 'Notes Receivable', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1310', name: 'Notes Receivable - Simmons DLOC', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1350', name: 'Holdbacks - Simmons Bank', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1400', name: 'Loan Receivable', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '2000', name: 'Accounts Payable', type: 'LIABILITY' },
-  { entity: 'ent-ljc', number: '2110', name: 'DLOC - Simmons Bank', type: 'LIABILITY' },
-  { entity: 'ent-ljc', number: '3000', name: "Owner's Equity", type: 'EQUITY' },
-  { entity: 'ent-ljc', number: '4000', name: 'Interest Income', type: 'REVENUE' },
-  { entity: 'ent-ljc', number: '5000', name: 'Interest Expense', type: 'EXPENSE' },
-  { entity: 'ent-ljc', number: '5100', name: 'Draw & Inspection Fees', type: 'EXPENSE' },
-];
+/** @deprecated use FULL_CHART_OF_ACCOUNTS */
+export const CHART_OF_ACCOUNTS = FULL_CHART_OF_ACCOUNTS;
 
 async function upsertEntity(db, entity) {
   const existing = await db.get('SELECT id FROM entities WHERE id = ?', entity.id);
@@ -43,7 +32,7 @@ async function upsertUser(db, { id, email, password, fullName, role, entitiesAcc
 }
 
 async function seedChartOfAccounts(db) {
-  for (const acc of CHART_OF_ACCOUNTS) {
+  for (const acc of FULL_CHART_OF_ACCOUNTS) {
     const existing = await db.get(
       'SELECT id FROM accounts WHERE entity_id = ? AND account_number = ?',
       [acc.entity, acc.number]

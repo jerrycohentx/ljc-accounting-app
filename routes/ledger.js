@@ -14,7 +14,7 @@ router.get('/', entityAccessMiddleware, async (req, res) => {
       SELECT gl.*, a.account_number, a.account_name, je.je_number
       FROM general_ledger gl
       JOIN accounts a ON gl.account_id = a.id
-      JOIN journal_entries je ON gl.journal_entry_id = je.id
+      JOIN journal_entries je ON gl.journal_entry_id = je.id AND je.status = 'POSTED'
       WHERE gl.entity_id = ?
     `;
     const params = [req.entityId];
