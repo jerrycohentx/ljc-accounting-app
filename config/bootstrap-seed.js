@@ -4,10 +4,14 @@ import { FULL_CHART_OF_ACCOUNTS } from './coa-full.js';
 
 export const ENTITIES = [
   { id: 'ent-ljc', name: 'LJC Financial, LLC', code: 'LJC', type: 'OPERATING' },
-  { id: 'ent-justin', name: 'Justin Cohen', code: 'JUSTIN', type: 'RELATED' },
-  { id: 'ent-omc', name: 'OMC', code: 'OMC', type: 'RELATED' },
-  { id: 'ent-gm', name: 'GM', code: 'GM', type: 'RELATED' },
+  { id: 'ent-justin', name: 'Justin Financial LLC', code: 'JUSTIN', type: 'RELATED' },
+  { id: 'ent-omc', name: 'OMC Housing LLC', code: 'OMC', type: 'RELATED' },
+  { id: 'ent-gm', name: 'Graceful Meadows Assisted Living LLC', code: 'GM', type: 'RELATED' },
+  { id: 'ent-qof', name: 'LJC QOF LLC', code: 'QOF', type: 'RELATED' },
+  { id: 'ent-4jl', name: '4 J & L Partners, LTD', code: '4JL', type: 'RELATED' },
 ];
+
+const ALL_ENTITY_IDS = ENTITIES.map((e) => e.id);
 
 /** @deprecated use FULL_CHART_OF_ACCOUNTS */
 export const CHART_OF_ACCOUNTS = FULL_CHART_OF_ACCOUNTS;
@@ -57,7 +61,7 @@ export async function seedDatabaseContent(db) {
     password: 'demo123',
     fullName: 'Demo User',
     role: 'ACCOUNTANT',
-    entitiesAccess: ['ent-ljc', 'ent-justin', 'ent-omc', 'ent-gm'],
+    entitiesAccess: ALL_ENTITY_IDS,
   });
 
   const adminEmail = process.env.ADMIN_EMAIL || 'jerry@ljcfinancial.com';
@@ -68,7 +72,7 @@ export async function seedDatabaseContent(db) {
     password: adminPassword,
     fullName: 'Admin User',
     role: 'ADMIN',
-    entitiesAccess: ['ent-ljc', 'ent-justin', 'ent-omc', 'ent-gm'],
+    entitiesAccess: ALL_ENTITY_IDS,
   });
 
   await seedChartOfAccounts(db);
