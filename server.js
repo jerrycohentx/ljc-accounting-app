@@ -23,6 +23,7 @@ import intercompanyRoutes from './routes/intercompany.js';
 import taxFinancialsRoutes, { entityTaxRouter } from './routes/tax-financials.js';
 import productionBootstrapRoutes from './routes/production-bootstrap.js';
 import lonestarCatchupRoutes from './routes/lonestar-catchup.js';
+import amexCatchupRoutes from './routes/amex-catchup.js';
 import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
@@ -74,6 +75,7 @@ app.post('/api/receipts/webhook/whatsapp', whatsappWebhookHandler);
 // Production bootstrap (integration key — no JWT)
 app.use('/api/production-bootstrap', productionBootstrapRoutes);
 app.use('/api/lonestar-catchup', lonestarCatchupRoutes);
+app.use('/api/amex-catchup', amexCatchupRoutes);
 
 // Protected routes
 app.use('/api', authMiddleware);
