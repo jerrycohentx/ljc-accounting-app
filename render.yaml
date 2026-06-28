@@ -55,7 +55,7 @@ services:
       - key: LOAN_TRACKER_INTEGRATION_KEY
         value: ljc-cohen-loan-tracker-2026
       - key: LONESTAR_ONLINE_USER
-        sync: false
+        value: "984900000208"
       - key: LONESTAR_ONLINE_PASSWORD
         sync: false
       - key: LONESTAR_ACCOUNT_LAST4

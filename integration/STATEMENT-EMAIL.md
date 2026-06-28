@@ -32,8 +32,8 @@ Lone Star sends emails like **"eStatement …7367 is ready to view"** from `info
 **Render environment (agent setup):**
 
 ```
-LONESTAR_ONLINE_USER=your NetTeller ID
-LONESTAR_ONLINE_PASSWORD=your password
+LONESTAR_ONLINE_USER=984900000208
+LONESTAR_ONLINE_PASSWORD=your NetTeller password
 LONESTAR_ACCOUNT_LAST4=7367
 ```
 
