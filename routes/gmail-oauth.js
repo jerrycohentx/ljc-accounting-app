@@ -7,6 +7,9 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import {
   getGmailOAuthAccounts,
+  getStatementEmailAccounts,
+  inferImapHost,
+  isGraphConfigured,
 } from '../lib/statement-email-config.js';
 import {
   upsertGmailMailbox,
@@ -32,6 +35,44 @@ function oauthConfigured() {
   return !!(process.env.GMAIL_OAUTH_CLIENT_ID && process.env.GMAIL_OAUTH_CLIENT_SECRET);
 }
 
+function defaultMailboxTargets() {
+  return [
+    { label: 'documents', user: 'documents.ljcfinancial@gmail.com' },
+    { label: 'jerrycohentx', user: 'jerrycohentx@gmail.com' },
+    { label: 'jerry', user: 'jerry@ljcfinancial.com' },
+  ];
+}
+
+function buildAccountList(dbMailboxes, envAccounts) {
+  const seen = new Set();
+  const out = [];
+
+  const add = (t) => {
+    const user = String(t.user || '').trim().toLowerCase();
+    if (!user || seen.has(user)) return;
+    seen.add(user);
+    const dbRow = dbMailboxes.find((m) => m.email_user?.toLowerCase() === user);
+    const envRow = envAccounts.find((a) => a.user?.toLowerCase() === user);
+    const connected = !!(dbRow && dbRow.status === 'CONNECTED') || !!envRow?.refresh_token;
+    out.push({
+      label: t.label || user.split('@')[0],
+      user,
+      connected,
+      transport: dbRow?.transport || (envRow?.refresh_token ? 'gmail-oauth' : null),
+      source: dbRow ? 'database' : envRow?.refresh_token ? 'environment' : null,
+      lastSyncAt: dbRow?.last_sync_at || null,
+      lastError: dbRow?.last_error || null,
+      graphManaged: isGraphConfigured() && user === String(process.env.GRAPH_MAILBOX_USER || '').toLowerCase(),
+    });
+  };
+
+  for (const t of defaultMailboxTargets()) add(t);
+  for (const a of getStatementEmailAccounts()) add({ label: a.label, user: a.user });
+  for (const row of dbMailboxes) add({ label: row.label, user: row.email_user });
+
+  return out.sort((a, b) => a.user.localeCompare(b.user));
+}
+
 router.get('/status', async (req, res) => {
   try {
     const db = await getDatabase();
@@ -39,36 +80,13 @@ router.get('/status', async (req, res) => {
     const dbMailboxes = await listStatementMailboxes(db);
     const envAccounts = getGmailOAuthAccounts();
     const configured = oauthConfigured();
-
-    const targets = [
-      { label: 'documents', user: 'documents.ljcfinancial@gmail.com' },
-      { label: 'jerrycohentx', user: 'jerrycohentx@gmail.com' },
-    ];
-
-    const accounts = targets.map((t) => {
-      const dbRow = dbMailboxes.find((m) => m.email_user === t.user);
-      const envRow = envAccounts.find((a) => a.user === t.user);
-      const connected = !!(dbRow && dbRow.status === 'CONNECTED') || !!envRow?.refresh_token;
-      return {
-        ...t,
-        connected,
-        transport: dbRow?.transport || (envRow?.refresh_token ? 'gmail-oauth' : null),
-        source: dbRow ? 'database' : envRow?.refresh_token ? 'environment' : null,
-        lastSyncAt: dbRow?.last_sync_at || null,
-        lastError: dbRow?.last_error || null,
-      };
-    });
+    const accounts = buildAccountList(dbMailboxes, envAccounts);
 
     return res.json({
       configured,
       redirectUri: redirectUri(),
       accounts,
-      graphConfigured: !!(
-        process.env.GRAPH_TENANT_ID
-        && process.env.GRAPH_CLIENT_ID
-        && process.env.GRAPH_CLIENT_SECRET
-        && process.env.GRAPH_MAILBOX_USER
-      ),
+      graphConfigured: isGraphConfigured(),
       graphMailbox: process.env.GRAPH_MAILBOX_USER || null,
     });
   } catch (error) {
@@ -187,22 +205,29 @@ router.post('/disconnect', async (req, res) => {
   }
 });
 
-/** Connect Gmail via IMAP app password (works without Google Cloud OAuth keys). */
+/** Connect via IMAP app password (Gmail, Microsoft 365, etc.). */
 router.post('/imap-connect', async (req, res) => {
   try {
-    const { user, password, label, entityId = 'ent-ljc' } = req.body;
+    const { user, password, label, entityId = 'ent-ljc', host } = req.body;
     if (!user || !password) {
       return res.status(400).json({ error: 'user and password required' });
     }
+    const email = String(user).trim().toLowerCase();
+    const imapHost = host || inferImapHost(email);
     const db = await getDatabase();
     await upsertImapMailbox(db, {
       entityId,
-      label: label || user.split('@')[0],
-      user,
+      label: label || email.split('@')[0],
+      user: email,
       password: String(password).replace(/\s/g, ''),
-      host: 'imap.gmail.com',
+      host: imapHost,
     });
-    return res.json({ ok: true, user, message: `${user} connected — scanning will start automatically` });
+    return res.json({
+      ok: true,
+      user: email,
+      host: imapHost,
+      message: `${email} connected — scanning will start automatically`,
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

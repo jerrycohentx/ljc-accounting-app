@@ -15,25 +15,40 @@ function fmtWhen(iso) {
 function ConnectRow({ acc, busy, gmailConfigured, onOAuth, onImap, showToast }) {
   const [showPassword, setShowPassword] = useState(false);
   const [appPassword, setAppPassword] = useState('');
+  const isGmail = /@gmail\.com$|@googlemail\.com$/i.test(acc.user);
 
   if (acc.connected) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 11 }}>
         <span style={{ flex: 1 }}>{acc.user}</span>
+        {acc.graphManaged && <span className="qbd-muted">Microsoft (auto)</span>}
         <span className="qbd-pill">Connected ✓</span>
+      </div>
+    );
+  }
+
+  if (acc.graphManaged) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 11 }}>
+        <span style={{ flex: 1 }}>{acc.user}</span>
+        <span className="qbd-muted">Microsoft — connecting on server</span>
       </div>
     );
   }
 
   const submitPassword = () => {
     if (!appPassword.trim()) {
-      showToast && showToast('Paste the 16-character app password');
+      showToast && showToast('Paste the app password');
       return;
     }
     onImap(acc, appPassword.trim());
     setShowPassword(false);
     setAppPassword('');
   };
+
+  const passwordHint = isGmail
+    ? 'Google Account → Security → App passwords → create “Mail” → paste below.'
+    : 'Microsoft 365 → Security → App password (or use your mailbox app password) → paste below.';
 
   return (
     <div style={{ marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #e8ecf0' }}>
@@ -57,7 +72,7 @@ function ConnectRow({ acc, busy, gmailConfigured, onOAuth, onImap, showToast }) 
       {showPassword && (
         <div style={{ marginTop: 8, fontSize: 11 }}>
           <div className="qbd-muted" style={{ marginBottom: 6, lineHeight: 1.4 }}>
-            Google Account → Security → 2-Step Verification → App passwords → create “Mail” → paste the 16-character password below.
+            {passwordHint}
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <input
@@ -79,6 +94,8 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
   const [busy, setBusy] = useState(false);
   const [gmail, setGmail] = useState(null);
   const [ingest, setIngest] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
 
   const load = useCallback(() => {
     if (!open) return;
@@ -152,6 +169,49 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
               showToast={showToast}
             />
           ))}
+
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #c9d3df' }}>
+            {!showAdd ? (
+              <button type="button" className="qbd-btn" onClick={() => setShowAdd(true)}>+ Add email address</button>
+            ) : (
+              <div style={{ fontSize: 11 }}>
+                <div className="fhd" style={{ fontSize: 11, marginBottom: 6 }}>Add another mailbox</div>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    style={{ flex: 1, fontSize: 11, padding: '4px 6px' }}
+                  />
+                  <button
+                    type="button"
+                    className="qbd-btn qbd-btn-import"
+                    disabled={busy || !newEmail.includes('@')}
+                    onClick={() => {
+                      const user = newEmail.trim().toLowerCase();
+                      if (!user.includes('@')) return;
+                      const exists = (gmail?.accounts || []).some((a) => a.user === user);
+                      if (exists) {
+                        showToast && showToast('That email is already in the list — click Connect next to it');
+                        return;
+                      }
+                      setGmail((g) => ({
+                        ...g,
+                        accounts: [...(g?.accounts || []), { user, label: user.split('@')[0], connected: false }],
+                      }));
+                      setNewEmail('');
+                      setShowAdd(false);
+                    }}
+                  >
+                    Add
+                  </button>
+                  <button type="button" className="qbd-btn" onClick={() => { setShowAdd(false); setNewEmail(''); }}>Cancel</button>
+                </div>
+                <div className="qbd-muted">Then click Connect and paste the app password for that mailbox.</div>
+              </div>
+            )}
+          </div>
 
           {(ingest?.recentImports || []).length > 0 && (
             <>
