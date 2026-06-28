@@ -20,9 +20,19 @@ if not exist "frontend\node_modules" (
 )
 
 if not exist "frontend\dist\index.html" (
-    cd frontend
-    call npm run build >nul 2>&1
-    cd ..
+    goto :buildfrontend
 )
+
+REM Rebuild when React source is newer than the last build (after git pull)
+powershell -NoProfile -Command "$d=Get-Item 'frontend\dist\index.html'; $src=Get-ChildItem -Recurse 'frontend\src' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if ($null -eq $src -or $src.LastWriteTime -gt $d.LastWriteTime) { exit 1 } else { exit 0 }" >nul 2>&1
+if errorlevel 1 goto :buildfrontend
+goto :skipbuild
+
+:buildfrontend
+cd frontend
+call npm run build >nul 2>&1
+cd ..
+
+:skipbuild
 
 exit /b 0
