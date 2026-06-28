@@ -2,35 +2,25 @@
   COHEN ENTITIES AI ACCOUNTING — HOW TO LAUNCH
 ================================================================================
 
-USE THE WEBSITE (recommended):
+WEBSITE:
 
   https://ljc-accounting-app.onrender.com
 
-  Log in with your usual email and password.
-
 --------------------------------------------------------------------------------
-DESKTOP / TASKBAR SHORTCUT (one time)
+DESKTOP SHORTCUT (double-click ONE of these — a black window will open)
 --------------------------------------------------------------------------------
 
-  1. In THIS folder, double-click:
+  CREATE-WEB-SHORTCUT.bat          <-- use this if .vbs did nothing
 
-       create_desktop_shortcut.vbs
+  create_desktop_shortcut.bat      <-- same thing, different name
 
-  2. You should see "Shortcuts updated."
+  create_desktop_shortcut.vbs      <-- only if the .bat files above exist
 
-  3. Use the new desktop icon "Cohen Entities AI Accounting"
+  When you see "DONE", check your desktop for:
+  "Cohen Entities AI Accounting"
 
-  4. Taskbar: if the old icon still opens localhost, right-click it →
-     Unpin from taskbar. Then right-click the NEW desktop icon →
-     Pin to taskbar.
+  Taskbar: unpin the OLD icon, then pin the NEW desktop icon.
 
-  Or double-click START-APP.bat — it opens the same website.
-
---------------------------------------------------------------------------------
-NO create_desktop_shortcut.vbs YET?
---------------------------------------------------------------------------------
-
-  In Chrome, open https://ljc-accounting-app.onrender.com
-  Menu (three dots) → More tools → Create shortcut → Create
+  START-APP.bat also opens the website (no local server).
 
 ================================================================================
