@@ -64,7 +64,7 @@ export const ENTITY_ROLLUP_CONFIG = {
       { pattern: /utilities|rental property:utilities/i, accountNumber: '5500' },
       { pattern: /professional fees|legal and professional|legal fees|cokinos|harmon law|invicta|keever|rental property:legal/i, accountNumber: '5600' },
       { pattern: /computer and internet|office supplies|software subscription|loan management|quickbooks|web hosting|1password|carbonite|mortgage office/i, accountNumber: '5700' },
-      { pattern: /chargeback|bounced checks|uncategorized expense/i, accountNumber: '5800' },
+      { pattern: /chargeback|bounced checks|uncategorized expense/i, accountNumber: '5801' },
     ],
   },
 

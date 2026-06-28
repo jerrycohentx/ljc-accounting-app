@@ -25,6 +25,7 @@ import productionBootstrapRoutes from './routes/production-bootstrap.js';
 import lonestarCatchupRoutes from './routes/lonestar-catchup.js';
 import amexCatchupRoutes from './routes/amex-catchup.js';
 import simmonsOfxCatchupRoutes from './routes/simmons-ofx-catchup.js';
+import qboPlCatchupRoutes from './routes/qbo-pl-catchup.js';
 import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
@@ -78,6 +79,7 @@ app.use('/api/production-bootstrap', productionBootstrapRoutes);
 app.use('/api/lonestar-catchup', lonestarCatchupRoutes);
 app.use('/api/amex-catchup', amexCatchupRoutes);
 app.use('/api/simmons-ofx-catchup', simmonsOfxCatchupRoutes);
+app.use('/api/qbo-pl-catchup', qboPlCatchupRoutes);
 
 // Protected routes
 app.use('/api', authMiddleware);
