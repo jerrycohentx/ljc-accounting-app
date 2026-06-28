@@ -210,6 +210,10 @@ export default function QBDReconcile() {
   const stmtScrollRef = useRef(null);
   const regScrollRef = useRef(null);
   const importFileRef = useRef(null);
+  const prepareTimerRef = useRef(null);
+  const prepareRequestRef = useRef(0);
+  const dateInputFocusedRef = useRef(false);
+  const [dateDraft, setDateDraft] = useState(stmtDate);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
   const [importFileName, setImportFileName] = useState('');
   const [showUnmatchedOnly, setShowUnmatchedOnly] = useState(false);
@@ -224,18 +228,25 @@ export default function QBDReconcile() {
     if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
   }, [pdfPreviewUrl]);
 
-  const refreshPrepare = useCallback(() => {
+  useEffect(() => {
+    if (!dateInputFocusedRef.current) setDateDraft(stmtDate);
+  }, [stmtDate]);
+
+  const runPrepare = useCallback((dateForPrepare) => {
     if (!entityId || !accountId) {
       setPrepareMsg('');
       setBeginBal('');
       setEndBal('');
       return Promise.resolve();
     }
+    const requestId = prepareRequestRef.current + 1;
+    prepareRequestRef.current = requestId;
     setPrepareBusy(true);
-    return bankReconAPI.prepare(entityId, accountId, stmtDate || undefined)
+    const requestedDate = dateForPrepare || undefined;
+    return bankReconAPI.prepare(entityId, accountId, requestedDate)
       .then((r) => {
+        if (prepareRequestRef.current !== requestId) return;
         const p = r.data;
-        if (p.statementDate) setStmtDate(p.statementDate);
         if (p.endingBalance != null) setEndBal(String(p.endingBalance));
         else setEndBal('');
         if (p.beginningBalance != null) setBeginBal(String(p.beginningBalance));
@@ -243,12 +254,20 @@ export default function QBDReconcile() {
         setPrepareMsg(p.message || '');
       })
       .catch((e) => {
+        if (prepareRequestRef.current !== requestId) return;
         setPrepareMsg(e.response?.data?.error || 'Could not load statement');
         setBeginBal('');
         setEndBal('');
       })
-      .finally(() => setPrepareBusy(false));
-  }, [entityId, accountId, stmtDate]);
+      .finally(() => {
+        if (prepareRequestRef.current === requestId) setPrepareBusy(false);
+      });
+  }, [entityId, accountId]);
+
+  const refreshPrepare = useCallback(
+    (dateForPrepare) => runPrepare(dateForPrepare),
+    [runPrepare]
+  );
 
   const handleImportStatement = async (file) => {
     if (!file || !accountId) return;
@@ -326,8 +345,18 @@ export default function QBDReconcile() {
   }, [entityId, searchParams]);
 
   useEffect(() => {
-    refreshPrepare();
-  }, [refreshPrepare]);
+    if (!entityId || !accountId) {
+      setPrepareMsg('');
+      return undefined;
+    }
+    if (prepareTimerRef.current) clearTimeout(prepareTimerRef.current);
+    prepareTimerRef.current = setTimeout(() => {
+      runPrepare(stmtDate || undefined);
+    }, 500);
+    return () => {
+      if (prepareTimerRef.current) clearTimeout(prepareTimerRef.current);
+    };
+  }, [entityId, accountId, stmtDate, runPrepare]);
 
   const applyAutoChecked = useCallback((worksheet) => {
     const ids = worksheet?.suggestedCheckedGlIds || [];
@@ -493,13 +522,24 @@ export default function QBDReconcile() {
           {accountId && (
             <>
               <div className="frow"><label>Statement date</label>
-                <input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} disabled={prepareBusy} />
+                <input
+                  type="date"
+                  value={dateDraft}
+                  onFocus={() => { dateInputFocusedRef.current = true; }}
+                  onBlur={(e) => {
+                    dateInputFocusedRef.current = false;
+                    const v = e.target.value;
+                    if (v) setStmtDate(v);
+                    else setDateDraft(stmtDate);
+                  }}
+                  onChange={(e) => setDateDraft(e.target.value)}
+                />
               </div>
               <div className="frow"><label>Beginning balance</label>
-                <input type="text" readOnly value={prepareBusy ? '…' : (beginBal ? fmt(+beginBal) : '—')} style={{ textAlign: 'right', width: 180, background: '#f5f7fa' }} />
+                <input type="text" readOnly value={prepareBusy && !beginBal ? '…' : (beginBal ? fmt(+beginBal) : '—')} style={{ textAlign: 'right', width: 180, background: '#f5f7fa' }} />
               </div>
               <div className="frow"><label>Ending balance</label>
-                <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 180 }} disabled={prepareBusy} />
+                <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 180 }} />
               </div>
               {prepareMsg && (
                 <div className="qbd-muted" style={{ padding: '0 12px 8px', fontSize: 11, color: /invalid|failed|error|not found/i.test(prepareMsg) ? '#b3261e' : undefined }}>
