@@ -61,13 +61,42 @@ function StatusCell({ label, value, warn, onClick }) {
   );
 }
 
-export default function AppStatusPanel({ data, onBackupClick, onEmailClick, compact }) {
+function SummaryChip({ children, warn, onClick }) {
+  const cls = ['ljc-status-chip', warn ? 'warn' : '', onClick ? 'clickable' : ''].filter(Boolean).join(' ');
+  return (
+    <span
+      className={cls}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter') onClick(e); } : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
+      {children}
+    </span>
+  );
+}
+
+export default function AppStatusPanel({
+  data,
+  onBackupClick,
+  onEmailClick,
+  defaultCollapsed = true,
+}) {
+  const [expanded, setExpanded] = useState(!defaultCollapsed);
   const s = normalizeStatus(data);
+
+  const stop = (fn) => (e) => {
+    e.stopPropagation();
+    fn?.(e);
+  };
+
   if (!s) {
     return (
-      <div className={`ljc-status-panel${compact ? ' compact' : ''}`}>
-        <div className="ljc-status-title">System Status</div>
-        <div className="ljc-status-loading">Loading…</div>
+      <div className="ljc-status-panel collapsed">
+        <div className="ljc-status-head">
+          <div className="ljc-status-title">System Status</div>
+          <div className="ljc-status-loading">Loading…</div>
+        </div>
       </div>
     );
   }
@@ -76,55 +105,81 @@ export default function AppStatusPanel({ data, onBackupClick, onEmailClick, comp
   const backupFile = backup.lastBackup?.filename;
   const backupSize = backup.lastBackup?.sizeLabel;
   const emailLabel = email.lastRunAt ? fmtShortDate(email.lastRunAt) : 'Not scanned yet';
+  const versionLabel = app.buildLabel || `v${app.version || '0.1.0'}`;
+  const ok = !backup.lastBackupError;
 
   return (
-    <div className={`ljc-status-panel${compact ? ' compact' : ''}`}>
-      <div className="ljc-status-title">System Status</div>
-      <div className="ljc-status-grid">
-        <StatusCell label="Version" value={app.buildLabel || `v${app.version || '0.1.0'}`} />
-        <StatusCell label="Build" value={app.gitSha || 'local'} />
-        <StatusCell label="Environment" value={app.nodeEnv || 'production'} />
-        <StatusCell label="Database" value={db.label || '—'} />
-
-        <StatusCell
-          label="Last Backup"
-          value={fmtDateTime(backup.lastBackupAt)}
-          warn={!backup.lastBackupAt}
-          onClick={onBackupClick}
-        />
-        <StatusCell
-          label="Latest Backup File"
-          value={backupFile ? `${backupFile}${backupSize ? ` (${backupSize})` : ''}` : 'None yet'}
-        />
-        <StatusCell
-          label="Backups Stored"
-          value={`${backup.backupCount ?? 0} (keep ${backup.retentionCount ?? 30})`}
-        />
-        <StatusCell
-          label="Auto Backup"
-          value={`Every ${backup.intervalMinutes ?? 60} minutes`}
-        />
-
-        <StatusCell
-          label="Email Last Scan"
-          value={emailLabel}
-          warn={!email.lastRunAt}
-          onClick={onEmailClick}
-        />
-        <StatusCell
-          label="Email Auto Scan"
-          value={`Every ${email.intervalHours ?? 6} hours`}
-        />
-        <StatusCell
-          label="Server Started"
-          value={fmtDateTime(app.startedAt)}
-        />
-        {backup.lastBackupError ? (
-          <StatusCell label="Backup Alert" value={backup.lastBackupError} warn />
-        ) : (
-          <StatusCell label="Status" value="OK" />
+    <div className={`ljc-status-panel${expanded ? ' expanded' : ' collapsed'}`}>
+      <div
+        className="ljc-status-head expandable"
+        onClick={() => setExpanded((v) => !v)}
+        title={expanded ? 'Collapse system status' : 'Expand system status'}
+      >
+        <div className="ljc-status-title">System Status</div>
+        {!expanded && (
+          <div className="ljc-status-bar">
+            <SummaryChip>{versionLabel}</SummaryChip>
+            <SummaryChip>{app.nodeEnv || 'production'}</SummaryChip>
+            <SummaryChip>{db.label || '—'}</SummaryChip>
+            <SummaryChip warn={!backup.lastBackupAt} onClick={stop(onBackupClick)}>
+              Backup: {fmtShortDate(backup.lastBackupAt)}
+            </SummaryChip>
+            <SummaryChip warn={!email.lastRunAt} onClick={stop(onEmailClick)}>
+              Email: {emailLabel}
+            </SummaryChip>
+            <SummaryChip warn={!ok}>{ok ? 'OK' : 'Alert'}</SummaryChip>
+          </div>
         )}
+        <span className="ljc-status-chevron" aria-hidden>{expanded ? '▾' : '▴'}</span>
       </div>
+
+      {expanded && (
+        <div className="ljc-status-grid">
+          <StatusCell label="Version" value={versionLabel} />
+          <StatusCell label="Build" value={app.gitSha || 'local'} />
+          <StatusCell label="Environment" value={app.nodeEnv || 'production'} />
+          <StatusCell label="Database" value={db.label || '—'} />
+
+          <StatusCell
+            label="Last Backup"
+            value={fmtDateTime(backup.lastBackupAt)}
+            warn={!backup.lastBackupAt}
+            onClick={onBackupClick}
+          />
+          <StatusCell
+            label="Latest File"
+            value={backupFile ? `${backupFile}${backupSize ? ` (${backupSize})` : ''}` : 'None yet'}
+          />
+          <StatusCell
+            label="Stored"
+            value={`${backup.backupCount ?? 0} (keep ${backup.retentionCount ?? 30})`}
+          />
+          <StatusCell
+            label="Auto Backup"
+            value={`Every ${backup.intervalMinutes ?? 60} min`}
+          />
+
+          <StatusCell
+            label="Email Scan"
+            value={emailLabel}
+            warn={!email.lastRunAt}
+            onClick={onEmailClick}
+          />
+          <StatusCell
+            label="Email Auto"
+            value={`Every ${email.intervalHours ?? 6} h`}
+          />
+          <StatusCell
+            label="Server"
+            value={fmtDateTime(app.startedAt)}
+          />
+          {backup.lastBackupError ? (
+            <StatusCell label="Alert" value={backup.lastBackupError} warn />
+          ) : (
+            <StatusCell label="Status" value="OK" />
+          )}
+        </div>
+      )}
     </div>
   );
 }

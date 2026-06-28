@@ -403,7 +403,7 @@ export default function LoginPage() {
       </Container>
 
       <Box sx={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
-        <AppStatusPanel data={serverStatus} />
+        <AppStatusPanel data={serverStatus} defaultCollapsed />
       </Box>
     </Box>
   );

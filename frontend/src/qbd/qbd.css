@@ -59,7 +59,7 @@
 .qbd-foot .sp{flex:1}.qbd-muted{color:#7a8696;font-weight:normal}.qbd-empty{padding:30px;text-align:center;color:#8a96a6}
 /* QBD reconcile — statement + register side-by-side */
 .qbd-work:has(.qbd-recon-window){padding:0;overflow:hidden;display:flex;flex-direction:column}
-.qbd-recon-window{flex:1;min-height:0;margin:4px!important;max-height:none!important;height:calc(100vh - 132px);display:flex;flex-direction:column}
+.qbd-recon-window{flex:1;min-height:0;margin:4px!important;max-height:none!important;height:calc(100vh - 108px);display:flex;flex-direction:column}
 .qbd-recon-window .qbd-wtitle{flex-shrink:0;padding:4px 10px;font-size:11px}
 .qbd-recon-window .qbd-foot{flex-shrink:0;padding:4px 10px;font-size:11px}
 .qbd-recon-split{display:flex;flex:1;min-height:0;border-top:1px solid #c9d3df;position:relative;user-select:none;overflow:hidden}
