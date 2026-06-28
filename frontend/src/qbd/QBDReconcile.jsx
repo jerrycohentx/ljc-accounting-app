@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, bankReconAPI } from '../services/api';
+import { useBackupStatus } from './QBDBackupDialog';
 import {
   fmt,
   leafLabel,
@@ -191,6 +192,7 @@ export default function QBDReconcile() {
   const [checked, setChecked] = useState({});
   const [busy, setBusy] = useState(false);
   const [highlightGlId, setHighlightGlId] = useState(null);
+  const { info: buildInfo } = useBackupStatus();
   const [syncScroll, setSyncScroll] = useState(true);
   const [splitPct, setSplitPct] = useState(() => {
     const saved = parseFloat(localStorage.getItem(SPLIT_STORAGE_KEY) || '');
@@ -394,6 +396,8 @@ export default function QBDReconcile() {
       </div>
       <div className="qbd-tools" style={{ gap: 12 }}>
         <button className="qbd-btn" onClick={() => { setStarted(false); setData(null); }}>← Change</button>
+        <span className="qbd-pill" title="Side-by-side statement + register (2026-06 build)">Side-by-side</span>
+        {buildInfo?.app?.buildLabel && <span className="qbd-muted">{buildInfo.app.buildLabel}</span>}
         <span className="qbd-muted">{statementLines.length} statement · {entries.length} register</span>
         {stmtMeta.statementLabel && <span className="qbd-muted">{stmtMeta.statementLabel}</span>}
         <label className="qbd-recon-tools-chk">
