@@ -114,9 +114,12 @@
 .qbd-rpt .sub{text-align:center;color:#6a7889;margin-bottom:14px;font-size:11px}
 .qbd-rpt td{padding:2px 8px}.qbd-rpt .sec{font-weight:bold;color:#2a5596;padding-top:10px}
 .qbd-rpt .ramt{text-align:right;font-variant-numeric:tabular-nums;width:160px}
+.qbd-rpt-hint{text-align:center;color:#6a7889;font-size:11px;margin:6px 0 0;padding:0 12px}
+.qbd-rpt-row{cursor:pointer}.qbd-rpt-row:hover .ind,.qbd-rpt-row:hover .qbd-drill{color:#2a5596}
 .qbd-rpt .tot{border-top:1px solid #36506f;font-weight:bold}
 .qbd-rpt .grand{border-top:2px double #36506f;font-weight:bold}
-.qbd-rpt .ind{padding-left:24px;cursor:pointer}.qbd-rpt .ind:hover{color:#2a5596;text-decoration:underline}
+.qbd-rpt .ind{padding-left:24px}.qbd-rpt .ind,.qbd-rpt .qbd-drill{cursor:pointer}
+.qbd-rpt-row:hover .ind,.qbd-rpt-row:hover .qbd-drill{text-decoration:underline}
 .qbd-placeholder{background:#fff;border:1px dashed #aebccd;border-radius:5px;padding:40px;text-align:center;color:#6a7889;margin:10px}
 .qbd-form{background:#fff;margin:10px;border:1px solid #9fb4c8;border-radius:4px;padding:0}
 .qbd-form .fhd{background:linear-gradient(#5a85c4,#3c66a6);color:#fff;padding:6px 12px;font-weight:bold}

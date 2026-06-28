@@ -87,10 +87,13 @@ export default function QBDReports() {
       </div>
       <div className="qbd-wbody">
         {loading ? <div className="qbd-loading">Loading…</div> : !data ? <div className="qbd-empty">No data.</div> : (
-          rtype === 'bs' ? <BS data={data} zoom={zoomByNumber} />
-            : rtype === 'pl' ? <PL data={data} zoom={zoomByNumber} />
-              : rtype === 'tb' ? <TB data={data} zoom={zoomById} />
-                : <GL data={data} zoom={zoomById} from={from} to={to} />
+          <>
+            <div className="qbd-rpt-hint">Click any account name or amount to open its register.</div>
+            {rtype === 'bs' ? <BS data={data} zoom={zoomByNumber} />
+              : rtype === 'pl' ? <PL data={data} zoom={zoomByNumber} />
+                : rtype === 'tb' ? <TB data={data} zoom={zoomById} />
+                  : <GL data={data} zoom={zoomById} from={from} to={to} />}
+          </>
         )}
       </div>
     </div>
@@ -98,10 +101,11 @@ export default function QBDReports() {
 }
 
 function lineRow(item, zoom, range) {
+  const openRegister = () => zoom(item.accountNumber, range);
   return (
-    <tr key={item.accountNumber}>
-      <td className="ind" onClick={() => zoom(item.accountNumber, range)}>{leafLabel(item.accountName)}</td>
-      <td className={'ramt' + (item.amount < 0 ? ' qbd-neg' : '')}>{fmt(item.amount)}</td>
+    <tr key={item.accountNumber} className="qbd-rpt-row" onClick={openRegister} title="Click to open account register">
+      <td className="ind">{leafLabel(item.accountName)}</td>
+      <td className={'ramt qbd-drill' + (item.amount < 0 ? ' qbd-neg' : '')}>{fmt(item.amount)}</td>
     </tr>
   );
 }
