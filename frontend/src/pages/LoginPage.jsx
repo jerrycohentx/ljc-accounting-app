@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Container, Paper, TextField, Button, Typography, Alert,
@@ -11,6 +11,15 @@ export default function LoginPage() {
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [buildLabel, setBuildLabel] = useState('');
+
+  useEffect(() => {
+    fetch('/health')
+      .then((r) => r.json())
+      .then((d) => setBuildLabel(d.app || d.version || ''))
+      .catch(() => {});
+  }, []);
+
   const [formData, setFormData] = useState({
     email: 'demo@ljcfinancial.com',
     password: 'demo123',
@@ -131,6 +140,11 @@ export default function LoginPage() {
           <Typography variant="caption" align="center" display="block" sx={{ mt: 2 }}>
             Demo credentials: demo@ljcfinancial.com / demo123
           </Typography>
+          {buildLabel && (
+            <Typography variant="caption" align="center" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
+              Server {buildLabel}
+            </Typography>
+          )}
         </Paper>
       </Container>
     </Box>
