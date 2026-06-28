@@ -50,7 +50,7 @@ router.get('/income-statement', entityAccessMiddleware, async (req, res) => {
     // Filter to date range
     let query = `
       SELECT 
-        a.id, a.account_number, a.account_name, a.account_type,
+        a.id, a.account_number, a.account_name, a.account_type, a.normal_balance,
         COALESCE(SUM(gl.debit), 0) as total_debit,
         COALESCE(SUM(gl.credit), 0) as total_credit
       FROM accounts a
@@ -58,7 +58,7 @@ router.get('/income-statement', entityAccessMiddleware, async (req, res) => {
       WHERE a.entity_id = ? AND a.is_active = 1
       AND a.account_type IN ('REVENUE', 'EXPENSE')
       AND (gl.posting_date IS NULL OR (gl.posting_date >= ? AND gl.posting_date <= ?))
-      GROUP BY a.id, a.account_number, a.account_name, a.account_type
+      GROUP BY a.id, a.account_number, a.account_name, a.account_type, a.normal_balance
       ORDER BY a.account_type, a.account_number
     `;
 
