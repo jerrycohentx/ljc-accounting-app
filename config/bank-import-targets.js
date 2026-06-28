@@ -18,9 +18,11 @@ export const BANK_ACCOUNTS = {
 export const RECONCILIATION_TARGETS = {
   'ent-ljc': {
     '1000': [
-      { statementDate: '2026-02-01', endingBalance: 15880.28, label: 'January 2026 activity' },
-      // Add each month as statements arrive:
-      // { statementDate: '2026-03-01', endingBalance: null, label: 'February 2026' },
+      { statementDate: '2026-02-01', endingBalance: 15880.28, label: 'January 2026' },
+      { statementDate: '2026-03-01', endingBalance: 9912.36, label: 'February 2026' },
+      { statementDate: '2026-03-31', endingBalance: 33074.61, label: 'March 2026' },
+      { statementDate: '2026-04-30', endingBalance: 79722.84, label: 'April 2026' },
+      { statementDate: '2026-05-31', endingBalance: 19977.13, label: 'May 2026' },
     ],
   },
 };

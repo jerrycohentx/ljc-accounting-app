@@ -1,30 +1,50 @@
 {
-  "generatedAt": "2026-06-28T04:44:50.030Z",
+  "generatedAt": "2026-06-28T04:52:59.168Z",
   "ofxFilesFound": [],
   "entities": [
     {
       "entityId": "ent-ljc",
       "name": "LJC Financial, LLC",
       "period2025Closed": true,
-      "postedTransactions2026": 0,
+      "postedTransactions2026": 247,
       "pendingDraftImports": 0,
       "bankAccounts": [
         {
           "accountNumber": "1000",
           "name": "Simmons Bank ckg-0260",
-          "currentBalance": 225200.19,
+          "currentBalance": 19977.12999999989,
           "reconciliationTargets": [
             {
               "statementDate": "2026-02-01",
               "endingBalance": 15880.28,
-              "label": "January 2026 activity"
+              "label": "January 2026"
+            },
+            {
+              "statementDate": "2026-03-01",
+              "endingBalance": 9912.36,
+              "label": "February 2026"
+            },
+            {
+              "statementDate": "2026-03-31",
+              "endingBalance": 33074.61,
+              "label": "March 2026"
+            },
+            {
+              "statementDate": "2026-04-30",
+              "endingBalance": 79722.84,
+              "label": "April 2026"
+            },
+            {
+              "statementDate": "2026-05-31",
+              "endingBalance": 19977.13,
+              "label": "May 2026"
             }
           ]
         },
         {
           "accountNumber": "1001",
           "name": "Lone Star Bank ckg-7367",
-          "currentBalance": -193.15,
+          "currentBalance": 724560.59,
           "reconciliationTargets": []
         }
       ]
