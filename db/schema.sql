@@ -223,3 +223,89 @@ CREATE TABLE IF NOT EXISTS plaid_items (
 );
 
 CREATE INDEX idx_plaid_items_entity ON plaid_items(entity_id);
+
+-- Email statement import log (Shellpoint IMAP ingest)
+CREATE TABLE IF NOT EXISTS email_import_log (
+  id TEXT PRIMARY KEY,
+  message_id TEXT NOT NULL UNIQUE,
+  entity_id TEXT NOT NULL,
+  from_address TEXT,
+  subject TEXT,
+  received_at DATETIME,
+  attachment_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'PROCESSED',
+  result_summary TEXT,
+  error_message TEXT,
+  processed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  processed_by TEXT,
+  FOREIGN KEY(entity_id) REFERENCES entities(id)
+);
+
+CREATE INDEX idx_email_import_message ON email_import_log(message_id);
+CREATE INDEX idx_email_import_entity ON email_import_log(entity_id, processed_at);
+
+-- Document Capture: captured financial documents (bank/CRE statements, tax invoices, receipts)
+CREATE TABLE IF NOT EXISTS captured_documents (
+  id TEXT PRIMARY KEY,
+  entity_id TEXT NOT NULL,
+  doc_type TEXT NOT NULL DEFAULT 'OTHER'
+    CHECK(doc_type IN ('BANK_STATEMENT', 'CRE_STATEMENT', 'TAX_INVOICE', 'RECEIPT', 'OTHER')),
+  source TEXT NOT NULL DEFAULT 'gmail' CHECK(source IN ('gmail', 'upload')),
+  source_message_id TEXT,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  vendor TEXT,
+  receipt_date DATE,
+  amount_cents INTEGER DEFAULT 0,
+  tax_cents INTEGER DEFAULT 0,
+  currency TEXT DEFAULT 'USD',
+  category TEXT,
+  gl_account_id TEXT,
+  confidence_score REAL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'NEEDS_REVIEW'
+    CHECK(status IN ('DRAFT', 'NEEDS_REVIEW', 'APPROVED', 'POSTED', 'REJECTED')),
+  journal_entry_id TEXT,
+  raw_text TEXT,
+  attachment_path TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(entity_id) REFERENCES entities(id),
+  FOREIGN KEY(gl_account_id) REFERENCES accounts(id),
+  FOREIGN KEY(journal_entry_id) REFERENCES journal_entries(id)
+);
+
+CREATE UNIQUE INDEX idx_captured_documents_idempotency ON captured_documents(idempotency_key);
+CREATE INDEX idx_captured_documents_entity_status ON captured_documents(entity_id, status);
+CREATE INDEX idx_captured_documents_type ON captured_documents(entity_id, doc_type);
+CREATE INDEX idx_captured_documents_status ON captured_documents(status);
+
+-- Holdback draw disbursements (imported from Loan Tracker, verified via bank recon)
+CREATE TABLE IF NOT EXISTS holdback_disbursements (
+  id TEXT PRIMARY KEY,
+  draw_id TEXT NOT NULL UNIQUE,
+  entity_id TEXT NOT NULL,
+  loan_id TEXT,
+  loan_num TEXT,
+  borrower_name TEXT,
+  property_address TEXT,
+  draw_date DATE NOT NULL,
+  gross_amount NUMERIC(19,2) NOT NULL,
+  inspection_fee NUMERIC(19,2) DEFAULT 0,
+  wire_fee NUMERIC(19,2) DEFAULT 35,
+  net_disbursement NUMERIC(19,2) NOT NULL,
+  status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'exported', 'matched', 'verified')),
+  journal_entry_id TEXT,
+  gl_entry_id TEXT,
+  import_transaction_id TEXT,
+  bank_reference TEXT,
+  verified_at TIMESTAMP,
+  verified_by TEXT,
+  memo TEXT,
+  note TEXT,
+  source_app TEXT DEFAULT 'loan-tracker',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(entity_id) REFERENCES entities(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_holdback_draw_id ON holdback_disbursements(draw_id);
+CREATE INDEX IF NOT EXISTS idx_holdback_status ON holdback_disbursements(status);

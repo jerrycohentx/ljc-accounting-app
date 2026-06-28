@@ -36,4 +36,6 @@ services:
         value: ins_111008
       - key: PLAID_WEBHOOK_URL
         sync: false
+      - key: LOAN_TRACKER_INTEGRATION_KEY
+        value: ljc-cohen-loan-tracker-2026
     healthCheckPath: /health

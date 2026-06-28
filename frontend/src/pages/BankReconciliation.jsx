@@ -40,6 +40,8 @@ const BankReconciliation = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [pendingDraws, setPendingDraws] = useState([]);
+  const [verifyingDraw, setVerifyingDraw] = useState(null);
 
   // Load entities on mount
   useEffect(() => {
@@ -60,6 +62,12 @@ const BankReconciliation = () => {
       loadReconData();
     }
   }, [selectedEntity, selectedAccount, asOfDate]);
+
+  useEffect(() => {
+    if (selectedEntity) {
+      loadPendingDraws(selectedEntity);
+    }
+  }, [selectedEntity]);
 
   /**
    * Load available entities
@@ -120,6 +128,36 @@ const BankReconciliation = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingDraws = async (entityId) => {
+    try {
+      const response = await api.get('/api/holdback-draws/pending', {
+        params: { entityId }
+      });
+      setPendingDraws(response.data.disbursements || []);
+    } catch (err) {
+      console.error('Failed to load pending holdback draws:', err);
+      setPendingDraws([]);
+    }
+  };
+
+  const handleVerifyDrawFromBank = async (drawId, importTransactionId) => {
+    setVerifyingDraw(drawId);
+    setError(null);
+    try {
+      const response = await api.post('/api/holdback-draws/verify-match', {
+        drawId,
+        importTransactionId,
+      });
+      setSuccess(response.data.message || 'Draw verified');
+      loadPendingDraws(selectedEntity);
+      loadReconData();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to verify draw');
+    } finally {
+      setVerifyingDraw(null);
     }
   };
 
@@ -336,6 +374,79 @@ const BankReconciliation = () => {
           <div className="summary-box">
             <label>Transactions</label>
             <value>{summary.transactions.cleared} / {summary.transactions.total} cleared</value>
+          </div>
+        </div>
+      )}
+
+      {pendingDraws.length > 0 && (
+        <div className="holdback-pending-panel">
+          <h3>Pending Holdback Wire Disbursements</h3>
+          <p className="help-text">
+            These draws were exported from Loan Servicing. Match the net wire on your bank statement
+            (memo contains HOLDBACK-DRAW:drawId) to verify payment.
+          </p>
+          <div className="holdback-pending-list">
+            {pendingDraws.map((draw) => {
+              const gross = Math.abs(Number(draw.gross_amount) || 0);
+              const inspection = Math.abs(Number(draw.inspection_fee) || 0);
+              const wire = Math.abs(Number(draw.wire_fee) || 0);
+              const net = Math.abs(Number(draw.net_disbursement) || 0);
+              const candidates = bankTransactions.filter((txn) => {
+                const amt = Math.abs(Number(txn.amount) || 0);
+                const text = `${txn.description || ''} ${draw.memo || ''}`;
+                return Math.abs(amt - net) < 0.02 && text.includes(draw.draw_id);
+              });
+              const fallback = candidates.length
+                ? candidates
+                : bankTransactions.filter((txn) => Math.abs(Math.abs(Number(txn.amount) || 0) - net) < 0.02);
+
+              return (
+                <div key={draw.id} className="holdback-pending-row">
+                  <div className="holdback-pending-info">
+                    <strong>{draw.borrower_name || draw.loan_num || draw.draw_id}</strong>
+                    <span>
+                      {formatDate(draw.draw_date)} · Gross {formatCurrency(gross)}
+                      {inspection > 0 ? ` · Inspection −${formatCurrency(inspection)}` : ''}
+                      {wire > 0 ? ` · Wire −${formatCurrency(wire)}` : ''}
+                      · Net wire {formatCurrency(net)}
+                    </span>
+                    <span className="holdback-memo">{draw.memo || `HOLDBACK-DRAW:${draw.draw_id}`}</span>
+                    {inspection > 0 && (
+                      <span className="help-text" style={{ display: 'block', marginTop: 4 }}>
+                        Inspection ({formatCurrency(inspection)}) posts to account 5100 Draw &amp; Inspection Fees — not on this cash list.
+                      </span>
+                    )}
+                  </div>
+                  <div className="holdback-pending-actions">
+                    {fallback.length > 0 ? (
+                      <select
+                        id={`match-${draw.draw_id}`}
+                        defaultValue={fallback[0]?.id || ''}
+                        disabled={verifyingDraw === draw.draw_id}
+                      >
+                        {fallback.map((txn) => (
+                          <option key={txn.id} value={txn.id}>
+                            {formatDate(txn.date)} — {txn.description?.slice(0, 40) || 'Bank line'} ({formatCurrency(Math.abs(txn.amount))})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-muted">No matching bank line loaded</span>
+                    )}
+                    <button
+                      className="btn-action btn-primary"
+                      disabled={!fallback.length || verifyingDraw === draw.draw_id}
+                      onClick={() => {
+                        const sel = document.getElementById(`match-${draw.draw_id}`);
+                        if (sel?.value) handleVerifyDrawFromBank(draw.draw_id, sel.value);
+                      }}
+                    >
+                      {verifyingDraw === draw.draw_id ? 'Verifying…' : 'Verify wire'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -180,6 +180,9 @@ CREATE INDEX IF NOT EXISTS idx_plaid_items_entity ON plaid_items(entity_id);
 export async function bootstrapPostgres(db) {
   console.log('Initializing PostgreSQL schema...');
   await db.exec(SCHEMA);
+  await db.run(
+    'ALTER TABLE general_ledger ADD COLUMN IF NOT EXISTS reconciliation_status TEXT'
+  );
   await seedDatabaseContent(db);
   console.log('✓ PostgreSQL bootstrap complete (demo@ljcfinancial.com / demo123)');
 }
