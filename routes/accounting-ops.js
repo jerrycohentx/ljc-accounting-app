@@ -10,6 +10,7 @@ import {
 } from '../lib/period-lock.js';
 import { previewOpeningBalances, postOpeningBalances, parseOpeningBalanceCsv } from '../lib/opening-balances.js';
 import { previewYearEndClose, postYearEndClose } from '../lib/year-end-close.js';
+import { runLonestarBalanceFixes } from '../lib/fix-lonestar-opening-balance.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -162,6 +163,17 @@ router.post('/year-end/close', [entityAccessMiddleware, requireRole('ADMIN', 'AC
     if (/already posted|closed period/i.test(error.message)) {
       return res.status(409).json({ error: error.message });
     }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/entities/:entityId/accounting/lonestar/fix-opening-balance
+router.post('/lonestar/fix-opening-balance', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const result = await runLonestarBalanceFixes(db, { userId: req.user.id });
+    res.json({ ok: true, ...result });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
