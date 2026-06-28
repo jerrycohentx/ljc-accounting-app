@@ -2,10 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Container, Paper, TextField, Button, Typography, Alert,
-  Tabs, Tab, CircularProgress, Link, InputAdornment, IconButton
+  Tabs, Tab, CircularProgress, Link, InputAdornment
 } from '@mui/material';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { authAPI } from '../services/api';
 import AppStatusPanel, { useServerStatus } from '../components/AppStatusPanel';
 
@@ -18,6 +16,41 @@ const EMPTY_FORM = {
   confirmPassword: '',
 };
 
+function PasswordField({
+  name, label, value, onChange, disabled, show, onToggleShow, helperText, autoComplete, autoFocus,
+}) {
+  return (
+    <TextField
+      fullWidth
+      label={label}
+      name={name}
+      type={show ? 'text' : 'password'}
+      value={value}
+      onChange={onChange}
+      margin="normal"
+      disabled={disabled}
+      helperText={helperText}
+      autoComplete={autoComplete}
+      autoFocus={autoFocus}
+      InputProps={{
+        endAdornment: (
+          <InputAdornment position="end">
+            <Button
+              type="button"
+              size="small"
+              variant="outlined"
+              onClick={onToggleShow}
+              sx={{ fontSize: 12, minWidth: 52, py: 0.25 }}
+            >
+              {show ? 'Hide' : 'Show'}
+            </Button>
+          </InputAdornment>
+        ),
+      }}
+    />
+  );
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState(0);
@@ -28,6 +61,7 @@ export default function LoginPage() {
   const { data: serverStatus } = useServerStatus(60000);
   const [resetChannel, setResetChannel] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const forgotOpenedAt = useRef(0);
 
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -225,30 +259,15 @@ export default function LoginPage() {
                   autoComplete="email"
                 />
 
-                <TextField
-                  fullWidth
-                  label="Password"
+                <PasswordField
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  label="Password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  margin="normal"
                   disabled={loading}
+                  show={showPassword}
+                  onToggleShow={() => setShowPassword((v) => !v)}
                   autoComplete={tab === 0 ? 'current-password' : 'new-password'}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="show password"
-                          onClick={() => setShowPassword((v) => !v)}
-                          edge="end"
-                          tabIndex={-1}
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
                 />
 
                 {tab === 0 && (
@@ -335,27 +354,25 @@ export default function LoginPage() {
                   inputProps={{ maxLength: 6, inputMode: 'numeric', pattern: '[0-9]*' }}
                   autoFocus
                 />
-                <TextField
-                  fullWidth
-                  label="New password"
+                <PasswordField
                   name="newPassword"
-                  type="password"
+                  label="New password"
                   value={formData.newPassword}
                   onChange={handleInputChange}
-                  margin="normal"
                   disabled={loading}
+                  show={showNewPassword}
+                  onToggleShow={() => setShowNewPassword((v) => !v)}
                   helperText="At least 8 characters"
                   autoComplete="new-password"
                 />
-                <TextField
-                  fullWidth
-                  label="Confirm new password"
+                <PasswordField
                   name="confirmPassword"
-                  type="password"
+                  label="Confirm new password"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  margin="normal"
                   disabled={loading}
+                  show={showNewPassword}
+                  onToggleShow={() => setShowNewPassword((v) => !v)}
                   autoComplete="new-password"
                 />
                 <Button fullWidth variant="contained" size="large" type="submit" sx={{ mt: 3 }} disabled={loading}>
