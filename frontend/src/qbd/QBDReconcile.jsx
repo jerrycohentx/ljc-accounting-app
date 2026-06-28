@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, bankReconAPI } from '../services/api';
 import { useBackupStatus } from './QBDBackupDialog';
@@ -183,9 +183,13 @@ function useSyncScroll(enabled, stmtRef, regRef) {
 export default function QBDReconcile() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
+  const [searchParams] = useSearchParams();
   const [accounts, setAccounts] = useState([]);
   const [accountId, setAccountId] = useState('');
-  const [stmtDate, setStmtDate] = useState(todayISO());
+  const [stmtDate, setStmtDate] = useState(() => {
+    const d = searchParams.get('date') || searchParams.get('asOf');
+    return d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : todayISO();
+  });
   const [beginBal, setBeginBal] = useState('');
   const [endBal, setEndBal] = useState('');
   const [prepareMsg, setPrepareMsg] = useState('');
@@ -267,9 +271,26 @@ export default function QBDReconcile() {
     if (!entityId) return;
     accountAPI.list(entityId).then((r) => {
       const all = flat(Array.isArray(r.data) ? r.data : (r.data?.data || []), []);
-      setAccounts(all.filter((a) => a.account_type === 'ASSET' && /^Cash|Bank/.test(a.account_name) || (a.account_type === 'LIABILITY' && /Credit-Cards/.test(a.account_name))));
+      const bankAccounts = all.filter(
+        (a) => (a.account_type === 'ASSET' && /^Cash|Bank/.test(a.account_name))
+          || (a.account_type === 'LIABILITY' && /Credit-Cards/.test(a.account_name))
+      );
+      setAccounts(bankAccounts);
+      setAccountId((prev) => {
+        if (prev) return prev;
+        const want = searchParams.get('account');
+        const match = want
+          ? bankAccounts.find((a) => a.id === want || a.account_number === want)
+          : null;
+        if (match) return match.id;
+        if (entityId === 'ent-ljc') {
+          const loneStar = bankAccounts.find((a) => a.account_number === '1001');
+          if (loneStar) return loneStar.id;
+        }
+        return prev;
+      });
     }).catch(() => {});
-  }, [entityId]);
+  }, [entityId, searchParams]);
 
   useEffect(() => {
     if (!entityId || !accountId) {
@@ -431,6 +452,10 @@ export default function QBDReconcile() {
     return (
       <div className="qbd-form">
         <div className="fhd">Begin Reconciliation</div>
+        <div className="qbd-muted" style={{ padding: '0 12px 10px', fontSize: 11, lineHeight: 1.45 }}>
+          QuickBooks-style reconcile: statement lines on the left, register checkboxes on the right.
+          Pick the account and statement ending date, then click <strong>Start reconciling</strong>.
+        </div>
         <div className="frow"><label>Account</label>
           <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
             <option value="">— select bank / card account —</option>
