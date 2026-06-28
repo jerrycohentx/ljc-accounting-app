@@ -18,7 +18,6 @@ import QBDTaxFinancials from './qbd/QBDTaxFinancials';
 import Receipts from './pages/Receipts';
 import Reconciliation from './pages/Reconciliation';
 import BankImport from './pages/BankImport';
-import BankReconciliation from './pages/BankReconciliation';
 
 const theme = createTheme({
   palette: { primary: { main: '#1976d2' }, secondary: { main: '#dc004e' }, background: { default: '#f5f5f5' } },
@@ -56,7 +55,7 @@ function App() {
             <Route path="receipts" element={<Receipts />} />
             <Route path="reconciliation" element={<Reconciliation />} />
             <Route path="bank-import" element={<BankImport />} />
-            <Route path="bank-reconciliation" element={<BankReconciliation />} />
+            <Route path="bank-reconciliation" element={<Navigate to="/reconcile" replace />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
