@@ -28,6 +28,7 @@ import simmonsOfxCatchupRoutes from './routes/simmons-ofx-catchup.js';
 import qboPlCatchupRoutes from './routes/qbo-pl-catchup.js';
 import backupRoutes from './routes/backup.js';
 import emailIngestRoutes from './routes/email-ingest.js';
+import gmailOAuthRoutes, { gmailOAuthCallbackHandler } from './routes/gmail-oauth.js';
 import { authMiddleware } from './middleware/auth.js';
 import { getAppInfo } from './lib/app-info.js';
 import { getBackupStatus, startAutoBackup } from './lib/app-backup.js';
@@ -69,10 +70,10 @@ app.get('/health', async (req, res) => {
     gitSha: appInfo.gitSha,
     lastBackupAt: backup.lastBackupAt,
     statementAutoLoad: getStatementAutoLoadStatus(),
-    statementEmailIngest: getStatementEmailIngestStatus(),
   };
   try {
     const db = await getDatabase();
+    payload.statementEmailIngest = await getStatementEmailIngestStatus(db);
     const row = await db.get('SELECT COUNT(*) as count FROM users');
     payload.database = isPostgres() ? 'postgres' : 'sqlite';
     payload.users = Number(row?.count ?? 0);
@@ -90,6 +91,9 @@ app.post('/api/plaid/webhook', plaidWebhookHandler);
 
 // WhatsApp receipt-bot webhook (no JWT — secured by shared token)
 app.post('/api/receipts/webhook/whatsapp', whatsappWebhookHandler);
+
+// Gmail OAuth callback for bank statement email (no JWT — Google redirect)
+app.get('/api/email/gmail/callback', gmailOAuthCallbackHandler);
 
 // Production bootstrap (integration key — no JWT)
 app.use('/api/production-bootstrap', productionBootstrapRoutes);
@@ -119,6 +123,7 @@ app.use('/api/plaid', plaidRoutes);
 app.use('/api/receipts', receiptRoutes);
 app.use('/api/holdback-draws', holdbackDrawRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/email/gmail', gmailOAuthRoutes);
 app.use('/api/email/ingest', emailIngestRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
 

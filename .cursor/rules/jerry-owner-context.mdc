@@ -28,8 +28,9 @@ Do not reset to “tutorial mode” when the domain changes. Same owner, same ex
 3. **No IT person** — never say "ask your IT person" or "have someone configure…". The agent *is* the technical staff.
 4. **Automate first** — email ingest, auto-match, auto-load, Plaid, backups: prefer flows that need **zero** daily clicks from Jerry.
 5. **Plain language** — explain outcomes ("statement loads automatically"), not stack details, unless he asks.
-6. **Fix production for him** — default environment is https://ljc-accounting-app.onrender.com; push to master so he gets updates without local builds when possible.
-7. **Secrets** — configure Render env vars and integrations in repo/docs; Jerry should not hunt for `.env` or app passwords unless absolutely unavoidable (e.g. one-time bank OAuth in browser).
+6. **Fix production for him** — deploy and configure servers (Render, etc.) so he gets updates without local builds when possible.
+7. **Secrets** — configure env vars and integrations; Jerry should not hunt for `.env` or app passwords unless absolutely unavoidable (e.g. one-time bank OAuth in browser).
+8. **Cross-repo consistency** — loan servicing, accounting, tax, CRE: same launch patterns (double-click / open URL), same “agent does the technical work” standard.
 
 ## When Jerry must do something
 

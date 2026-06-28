@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import QBDBackupDialog, { useBackupStatus, formatBackupShort } from './QBDBackupDialog';
+import QBEmailIngestDialog, { useEmailIngestStatus, formatEmailScanShort } from './QBEmailIngestDialog';
 import { backupAPI } from '../services/api';
 import './qbd.css';
 
@@ -25,8 +26,10 @@ export default function QBDLayout() {
   const [menuPos, setMenuPos] = useState({ left: 0, top: 0 });
   const [toast, setToast] = useState('');
   const [backupOpen, setBackupOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const toastTimer = useRef(null);
   const { info: backupInfo, refresh: refreshBackup } = useBackupStatus();
+  const { info: emailInfo, refresh: refreshEmail } = useEmailIngestStatus();
 
   const showToast = (m) => {
     setToast(m);
@@ -83,7 +86,7 @@ export default function QBDLayout() {
       case 'Customers': return [['Customer Center', t('Live app')], '-', ['Create Invoices', t('Live app')], ['Receive Payments', t('Live app')], ['Create Sales Receipts', t('Live app')]];
       case 'Vendors': return [['Vendor Center', t('Live app')], '-', ['Enter Bills', t('Live app')], ['Pay Bills', t('Live app')]];
       case 'Employees': return [['Employee Center', t('Live app')], '-', ['Enter Time', t('Live app')]];
-      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], ['Bank Reconciliation', () => nav('/bank-reconciliation')], '-', ['Bank Feeds', () => nav('/bank-feeds')]];
+      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], ['Bank Reconciliation', () => nav('/bank-reconciliation')], '-', ['Connect bank email…', () => setEmailOpen(true)], ['Bank Feeds', () => nav('/bank-feeds')]];
       case 'Reports': return [['Report Center', () => nav('/reports')], ['Tax Year Financials…', () => nav('/tax-financials')], '-', ['H', 'Company & Financial'], ['Balance Sheet', () => nav('/reports?r=bs')], ['Profit & Loss', () => nav('/reports?r=pl')], '-', ['H', 'Accountant & Lists'], ['Account Listing', () => nav('/accounts')], ['Journal', () => nav('/journal')]];
       case 'Window': return [['Home', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')]];
       case 'Help': return [['About…', showAbout]];
@@ -102,6 +105,7 @@ export default function QBDLayout() {
   const toolActive = (path) => path && (path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path));
   const appLabel = backupInfo?.app?.buildLabel || 'v0.1.0';
   const backupLabel = formatBackupShort(backupInfo?.backup?.lastBackupAt);
+  const emailLabel = formatEmailScanShort(emailInfo?.lastRunAt);
 
   return (
     <div className="qbd">
@@ -130,18 +134,14 @@ export default function QBDLayout() {
 
       <div className="qbd-work"><Outlet context={{ showToast }} /></div>
 
-      <div className="qbd-statusbar" onClick={() => setBackupOpen(true)} title="Click to view backups">
-        <span>{appLabel}</span>
+      <div className="qbd-statusbar">
+        <span onClick={() => setBackupOpen(true)} title="View backups" style={{ cursor: 'pointer' }}>{appLabel}</span>
         <span className="qbd-status-sep">|</span>
-        <span>Backup: {backupLabel}</span>
-        {backupInfo?.backup?.lastBackup?.filename && (
-          <>
-            <span className="qbd-status-sep">|</span>
-            <span className="qbd-muted">{backupInfo.backup.lastBackup.filename}</span>
-          </>
-        )}
+        <span onClick={() => setBackupOpen(true)} title="View backups" style={{ cursor: 'pointer' }}>Backup: {backupLabel}</span>
+        <span className="qbd-status-sep">|</span>
+        <span onClick={() => setEmailOpen(true)} title="Bank statement email" style={{ cursor: 'pointer' }}>Email: {emailLabel}</span>
         <span className="sp" />
-        <span className="qbd-muted">Auto every {backupInfo?.backup?.intervalMinutes || 60}m</span>
+        <span className="qbd-muted">Auto backup {backupInfo?.backup?.intervalMinutes || 60}m · email {emailInfo?.intervalHours || 6}h</span>
       </div>
 
       {openMenu && (
@@ -159,6 +159,13 @@ export default function QBDLayout() {
         onClose={() => setBackupOpen(false)}
         showToast={showToast}
         onStatusChange={refreshBackup}
+      />
+
+      <QBEmailIngestDialog
+        open={emailOpen}
+        onClose={() => setEmailOpen(false)}
+        showToast={showToast}
+        onStatusChange={refreshEmail}
       />
 
       {toast && <div className="qbd-toast">{toast}</div>}

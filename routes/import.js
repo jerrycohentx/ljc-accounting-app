@@ -376,4 +376,29 @@ router.delete('/:importId', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/import/email-scan
+ * Scan connected mailboxes for bank statement attachments (alias for email ingest run).
+ */
+router.post('/email-scan', async (req, res) => {
+  try {
+    const { runStatementEmailIngest } = await import('../lib/statement-email-ingest.js');
+    const db = await getDatabase();
+    const result = await runStatementEmailIngest(db, {
+      reason: 'manual-scan',
+      userId: req.user?.id || 'usr-admin',
+    });
+    return res.json({
+      ok: true,
+      message: result.processedEmails
+        ? `Processed ${result.processedEmails} email(s) with statement attachments`
+        : 'Scan complete — no new statement emails',
+      ...result,
+    });
+  } catch (error) {
+    console.error('Email scan error:', error);
+    return res.status(500).json({ error: error.message || 'Email scan failed' });
+  }
+});
+
 export default router;

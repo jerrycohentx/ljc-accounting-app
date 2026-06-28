@@ -185,10 +185,16 @@ export const accountingAPI = {
     client.post(`/api/entities/${entityId}/accounting/year-end/close`, data),
 };
 
+export const emailIngestAPI = {
+  status: () => client.get('/api/email/ingest/status'),
+  run: () => client.post('/api/email/ingest/run'),
+  history: (limit = 20) => client.get('/api/email/ingest/history', { params: { limit } }),
+};
+
 export const gmailAPI = {
   status: () => client.get('/api/email/gmail/status'),
-  authUrl: (user) => client.get('/api/email/gmail/auth-url', { params: user ? { user } : {} }),
-  disconnect: () => client.post('/api/email/gmail/disconnect'),
+  authUrl: (user, label) => client.get('/api/email/gmail/auth-url', { params: { user, label } }),
+  disconnect: (user) => client.post('/api/email/gmail/disconnect', { user }),
   scanStatements: (options = {}) => client.post('/api/import/email-scan', options),
 };
 

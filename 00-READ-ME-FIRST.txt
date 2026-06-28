@@ -38,10 +38,13 @@ TO IMPORT BANK TRANSACTIONS:
   5. Done
 
 TO RECONCILE:
-  1. Bank Reconciliation tab
-  2. System auto-matches
-  3. Click "Clear Reconciliation"
-  4. Done
+  1. Banking → Reconcile → pick account → Start reconciling
+  2. Statements auto-load; matched lines pre-checked
+  3. Review unmatched → Reconcile Now when difference = $0
+
+CONNECT EMAIL (one time):
+  Banking → Connect bank email… → Connect each Gmail → sign in once
+  Lone Star PDFs at jerry@ — forward to documents@ until Graph is wired
 
 TO VIEW REPORTS:
   1. Reports tab
