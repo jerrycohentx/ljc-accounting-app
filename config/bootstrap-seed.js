@@ -25,14 +25,22 @@ async function upsertEntity(db, entity) {
   );
 }
 
-async function upsertUser(db, { id, email, password, fullName, role, entitiesAccess }) {
+async function upsertUser(db, { id, email, password, fullName, role, entitiesAccess, phone }) {
   const existing = await db.get('SELECT id FROM users WHERE email = ?', email);
   if (existing) return;
   const passwordHash = await bcryptjs.hash(password, 10);
-  await db.run(
-    'INSERT INTO users (id, email, password_hash, full_name, role, entities_access, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [id, email, passwordHash, fullName, role, JSON.stringify(entitiesAccess), 1]
-  );
+  const phoneVal = phone || null;
+  try {
+    await db.run(
+      'INSERT INTO users (id, email, password_hash, full_name, role, entities_access, is_active, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, email, passwordHash, fullName, role, JSON.stringify(entitiesAccess), 1, phoneVal]
+    );
+  } catch {
+    await db.run(
+      'INSERT INTO users (id, email, password_hash, full_name, role, entities_access, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [id, email, passwordHash, fullName, role, JSON.stringify(entitiesAccess), 1]
+    );
+  }
 }
 
 async function seedChartOfAccounts(db) {
@@ -73,6 +81,7 @@ export async function seedDatabaseContent(db) {
     fullName: 'Admin User',
     role: 'ADMIN',
     entitiesAccess: ALL_ENTITY_IDS,
+    phone: process.env.ADMIN_PHONE || null,
   });
 
   await seedChartOfAccounts(db);

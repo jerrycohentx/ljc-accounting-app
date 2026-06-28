@@ -81,7 +81,7 @@ export default function LoginPage() {
       const response = await authAPI.forgotPasswordRequest(formData.email);
       setSuccess(response.data.message || 'Verification code sent');
       if (response.data.devCode) {
-        setSuccess(`${response.data.message} (Dev code: ${response.data.devCode})`);
+        setSuccess(`${response.data.message} Code: ${response.data.devCode}`);
       }
       setView('forgot-reset');
     } catch (err) {
@@ -224,7 +224,7 @@ export default function LoginPage() {
             <>
               <Typography variant="h6" sx={{ mb: 2 }}>Reset password — step 1</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Enter your email. We will send a 6-digit verification code.
+                Enter your email. We will text a 6-digit verification code to your mobile number on file.
               </Typography>
               <form onSubmit={handleForgotRequest}>
                 <TextField
@@ -239,7 +239,7 @@ export default function LoginPage() {
                   autoFocus
                 />
                 <Button fullWidth variant="contained" size="large" type="submit" sx={{ mt: 3 }} disabled={loading}>
-                  {loading ? <CircularProgress size={24} /> : 'Send verification code'}
+                  {loading ? <CircularProgress size={24} /> : 'Send text verification code'}
                 </Button>
                 <Button fullWidth sx={{ mt: 1 }} onClick={goBackLogin} disabled={loading}>
                   Back to login
@@ -252,7 +252,7 @@ export default function LoginPage() {
             <>
               <Typography variant="h6" sx={{ mb: 2 }}>Reset password — step 2</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Enter the 6-digit code from your email and choose a new password.
+                Enter the 6-digit code from your text message and choose a new password.
               </Typography>
               <form onSubmit={handleForgotReset}>
                 <TextField
@@ -305,7 +305,7 @@ export default function LoginPage() {
                   onClick={() => setView('forgot-request')}
                   disabled={loading}
                 >
-                  Resend code
+                  Resend text code
                 </Button>
                 <Button fullWidth sx={{ mt: 1 }} onClick={goBackLogin} disabled={loading}>
                   Back to login

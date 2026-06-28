@@ -34,6 +34,7 @@ import { getAppInfo } from './lib/app-info.js';
 import { getBackupStatus, startAutoBackup } from './lib/app-backup.js';
 import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
 import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
+import { syncAdminPhoneFromEnv } from './lib/user-phone.js';
 
 dotenv.config();
 
@@ -192,8 +193,9 @@ async function start() {
   });
 
   try {
-    await getDatabase();
+    const db = await getDatabase();
     console.log('✓ Database connected');
+    await syncAdminPhoneFromEnv(db);
     startAutoBackup();
     startStatementAutoLoad(getDatabase);
     startStatementEmailIngest(getDatabase);

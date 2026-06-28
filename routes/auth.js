@@ -4,13 +4,14 @@ import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../config/database.js';
 import { issuePasswordResetCode, verifyPasswordResetCode } from '../lib/password-reset-store.js';
-import { isSmtpConfigured, sendPasswordResetCode } from '../lib/outbound-mail.js';
+import { isSmsConfigured, sendPasswordResetSms, maskPhone } from '../lib/outbound-sms.js';
+import { resolvePhoneForUser } from '../lib/user-phone.js';
 
 const router = express.Router();
 
-const GENERIC_RESET_MSG = 'If that email is registered, a verification code was sent. Check your inbox.';
+const GENERIC_RESET_MSG = 'If that email is registered, a verification code was sent by text message.';
 
-// POST /auth/forgot-password/request — step 1: email verification code
+// POST /auth/forgot-password/request — step 1: SMS verification code
 router.post('/forgot-password/request', async (req, res) => {
   try {
     const email = String(req.body.email || '').trim().toLowerCase();
@@ -25,25 +26,38 @@ router.post('/forgot-password/request', async (req, res) => {
       return res.json({ message: GENERIC_RESET_MSG });
     }
 
-    const { code, expiresMinutes } = await issuePasswordResetCode(db, email);
-
-    if (!isSmtpConfigured()) {
-      console.warn('[password-reset] SMTP not configured — code not emailed for', email);
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[password-reset] DEV code:', code);
-        return res.json({
-          message: GENERIC_RESET_MSG,
-          devCode: code,
-          smtpConfigured: false,
-        });
-      }
-      return res.status(503).json({
-        error: 'Password reset email is not configured yet. Contact support.',
+    const phone = await resolvePhoneForUser(db, email);
+    if (!phone) {
+      console.warn('[password-reset] No phone on file for', email);
+      return res.status(400).json({
+        error: 'No mobile number on file for this account. Contact support to add your phone number.',
       });
     }
 
-    await sendPasswordResetCode({ to: email, code, expiresMinutes });
-    return res.json({ message: GENERIC_RESET_MSG, smtpConfigured: true });
+    const { code, expiresMinutes } = await issuePasswordResetCode(db, email);
+
+    if (!isSmsConfigured()) {
+      console.warn('[password-reset] Twilio not configured — code not sent for', email);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[password-reset] DEV code:', code, 'phone:', phone);
+        return res.json({
+          message: `${GENERIC_RESET_MSG} (Dev: ${maskPhone(phone)})`,
+          devCode: code,
+          smsConfigured: false,
+          sentTo: maskPhone(phone),
+        });
+      }
+      return res.status(503).json({
+        error: 'Text message reset is not configured yet. Contact support.',
+      });
+    }
+
+    await sendPasswordResetSms({ to: phone, code, expiresMinutes });
+    return res.json({
+      message: `${GENERIC_RESET_MSG} Sent to ${maskPhone(phone)}.`,
+      smsConfigured: true,
+      sentTo: maskPhone(phone),
+    });
   } catch (error) {
     console.error('Forgot password request error:', error);
     return res.status(500).json({ error: 'Could not send verification code' });
