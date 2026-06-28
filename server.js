@@ -35,8 +35,10 @@ import { buildHealthPayload } from './lib/health-status.js';
 import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
 import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
 import { syncAdminPhoneFromEnv } from './lib/user-phone.js';
+import { ensurePlaywrightBrowsers, getPlaywrightBrowsersPath } from './lib/playwright-browsers.js';
 
 dotenv.config();
+getPlaywrightBrowsersPath();
 
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = 'ljc-accounting-secret-key-2026';
@@ -191,6 +193,9 @@ async function start() {
   try {
     const db = await getDatabase();
     console.log('✓ Database connected');
+    ensurePlaywrightBrowsers().catch((err) => {
+      console.warn('Playwright Chromium preload skipped:', err.message);
+    });
     await syncAdminPhoneFromEnv(db);
     startAutoBackup();
     startStatementAutoLoad(getDatabase);

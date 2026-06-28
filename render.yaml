@@ -66,4 +66,6 @@ services:
         sync: false
       - key: GMAIL_OAUTH_REDIRECT_URI
         value: https://ljc-accounting-app.onrender.com/api/email/gmail/callback
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /opt/render/project/src/.playwright-browsers
     healthCheckPath: /health
