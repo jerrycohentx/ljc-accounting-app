@@ -202,12 +202,62 @@ export default function QBDReconcile() {
   const splitRef = useRef(null);
   const stmtScrollRef = useRef(null);
   const regScrollRef = useRef(null);
+  const importFileRef = useRef(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
+  const [importFileName, setImportFileName] = useState('');
   const startResize = useSplitResize(splitRef, setSplitPct);
   const { onStmtScroll, onRegScroll } = useSyncScroll(syncScroll, stmtScrollRef, regScrollRef);
 
   useEffect(() => {
     localStorage.setItem(SPLIT_STORAGE_KEY, String(Math.round(splitPct)));
   }, [splitPct]);
+
+  useEffect(() => () => {
+    if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+  }, [pdfPreviewUrl]);
+
+  const handleImportStatement = async (file) => {
+    if (!file || !accountId) return;
+    setBusy(true);
+    const isPdf = /\.pdf$/i.test(file.name);
+    const isOfx = /\.(ofx|qfx)$/i.test(file.name);
+    if (!isPdf && !isOfx) {
+      showToast && showToast('Use .ofx, .qfx, or .pdf bank statement');
+      setBusy(false);
+      return;
+    }
+
+    try {
+      let payload = { entityId, accountId, fileName: file.name, autoPost: true };
+      if (isPdf) {
+        if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+        setPdfPreviewUrl(URL.createObjectURL(file));
+        setImportFileName(file.name);
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+        payload.pdfBase64 = btoa(binary);
+      } else {
+        payload.ofxContent = await file.text();
+      }
+
+      const res = await bankReconAPI.importStatement(payload);
+      if (res.data.endingBalance != null) {
+        setEndBal(String(res.data.endingBalance));
+      }
+      if (res.data.statementDate) {
+        setStmtDate(res.data.statementDate);
+      }
+      showToast && showToast(res.data.message || 'Statement imported');
+      await loadWorksheet();
+    } catch (e) {
+      showToast && showToast('Import failed: ' + (e.response?.data?.error || e.message));
+    } finally {
+      setBusy(false);
+      if (importFileRef.current) importFileRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     if (!entityId) return;
@@ -343,16 +393,17 @@ export default function QBDReconcile() {
         </div>
         <div className="frow"><label>Statement date</label><input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} /></div>
         <div className="frow"><label>Ending balance</label><input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From your bank statement" style={{ textAlign: 'right', width: 180 }} /></div>
-        <div className="qbd-botbar"><span className="qbd-muted">QuickBooks-style reconcile: mark cleared register items until difference is zero. Statement appears beside the register — drag the center bar to resize.</span><span className="sp" /><button className="qbd-btn" disabled={busy} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button></div>
+        <div className="qbd-botbar">
+          <span className="qbd-muted">Import OFX or PDF on the reconcile screen — statement shows beside the register.</span>
+          <span className="sp" />
+          <button className="qbd-btn" disabled={busy} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button>
+        </div>
       </div>
     );
   }
 
   const sessionBanner = periodSession ? (
-    <div style={{
-      padding: '8px 12px',
-      marginBottom: 0,
-      borderRadius: 0,
+    <div className="qbd-recon-banner" style={{
       background: periodSession.balanced ? '#eaf6ec' : '#fdecea',
       color: periodSession.balanced ? '#2f6b3a' : '#b3261e',
       display: 'flex',
@@ -376,55 +427,78 @@ export default function QBDReconcile() {
   ) : null;
 
   return (
-    <div className="qbd-window" style={{ maxHeight: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+    <div className="qbd-window qbd-recon-window">
+      <input
+        ref={importFileRef}
+        type="file"
+        accept=".ofx,.qfx,.pdf,application/pdf"
+        style={{ display: 'none' }}
+        onChange={(e) => handleImportStatement(e.target.files?.[0])}
+      />
       <div className="qbd-wtitle">Reconcile — {data.account.account_number} · {leafLabel(data.account.account_name)}
         {isCard && <span style={{ fontWeight: 'normal', fontSize: 11, marginLeft: 8 }}>(Credit card)</span>}
-        <span className="x" onClick={() => { setStarted(false); setData(null); }}>✕</span>
+        <span className="x" onClick={() => { setStarted(false); setData(null); if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl); setPdfPreviewUrl(null); }}>✕</span>
       </div>
       {sessionBanner}
       <div className="qbd-recon-summary">
-        <div><span className="lbl">Statement period</span><span className="val">{stmtPeriod.periodStart || '—'} → {stmtPeriod.periodEnd || data.statementDate}</span></div>
-        <div><span className="lbl">Stmt beginning</span><span className="val">{stmtMeta.previousBalance != null ? fmt(stmtMeta.previousBalance) : fmt(beginning)}</span></div>
-        <div><span className="lbl">Books beginning</span><span className="val">{fmt(beginning)}</span></div>
-        <div><span className="lbl">{labels.cleared1}</span><span className="val">{fmt(clearedCol1) || '0.00'}</span></div>
-        <div><span className="lbl">{labels.cleared2}</span><span className="val">{fmt(clearedCol2) || '0.00'}</span></div>
-        <div><span className="lbl">Statement ending</span><span className="val">{fmt(target) || '0.00'}</span></div>
-        <div>
+        <span className="item"><span className="lbl">Period</span><span className="val">{stmtPeriod.periodStart || '—'} → {stmtPeriod.periodEnd || data.statementDate}</span></span>
+        <span className="item"><span className="lbl">Beginning</span><span className="val">{fmt(stmtMeta.previousBalance != null ? stmtMeta.previousBalance : beginning)}</span></span>
+        <span className="item"><span className="lbl">{labels.cleared1}</span><span className="val">{fmt(clearedCol1) || '0.00'}</span></span>
+        <span className="item"><span className="lbl">{labels.cleared2}</span><span className="val">{fmt(clearedCol2) || '0.00'}</span></span>
+        <span className="item"><span className="lbl">Ending</span><span className="val">{fmt(target) || '0.00'}</span></span>
+        <span className="item">
           <span className="lbl">Difference</span>
           <span className={`val ${balanced ? 'diff-ok' : 'diff-bad'}`}>{fmt(difference) || '0.00'} {balanced ? '✓' : ''}</span>
-        </div>
+        </span>
       </div>
-      <div className="qbd-tools" style={{ gap: 12 }}>
+      <div className="qbd-tools qbd-recon-tools" style={{ gap: 8 }}>
         <button className="qbd-btn" onClick={() => { setStarted(false); setData(null); }}>← Change</button>
-        <span className="qbd-pill" title="Side-by-side statement + register (2026-06 build)">Side-by-side</span>
-        {buildInfo?.app?.buildLabel && <span className="qbd-muted">{buildInfo.app.buildLabel}</span>}
-        <span className="qbd-muted">{statementLines.length} statement · {entries.length} register</span>
-        {stmtMeta.statementLabel && <span className="qbd-muted">{stmtMeta.statementLabel}</span>}
+        <button
+          type="button"
+          className="qbd-btn qbd-btn-import"
+          disabled={busy}
+          onClick={() => importFileRef.current?.click()}
+          title="Import OFX/QFX or PDF bank statement"
+        >
+          📄 Import bank statement
+        </button>
+        <span className="qbd-muted">{statementLines.length} stmt · {entries.length} reg</span>
+        {(importFileName || stmtMeta.statementLabel) && (
+          <span className="qbd-muted" title={importFileName || stmtMeta.statementLabel}>
+            {(importFileName || stmtMeta.statementLabel).slice(0, 36)}
+          </span>
+        )}
         <label className="qbd-recon-tools-chk">
           <input type="checkbox" checked={syncScroll} onChange={(e) => setSyncScroll(e.target.checked)} />
           Sync scroll
         </label>
-        <button type="button" className="qbd-btn" style={{ fontSize: 10, padding: '2px 8px' }} onClick={() => setSplitPct(DEFAULT_SPLIT)} title="Reset pane width">
-          Reset split
-        </button>
+        <button type="button" className="qbd-btn" style={{ fontSize: 10, padding: '2px 6px' }} onClick={() => setSplitPct(DEFAULT_SPLIT)}>Reset split</button>
         <span className="sp" />
-        <span className="qbd-muted">Drag center bar to resize · click statement line to toggle register match</span>
+        {buildInfo?.app?.buildLabel && <span className="qbd-muted">{buildInfo.app.buildLabel}</span>}
       </div>
       <div className="qbd-recon-split" ref={splitRef}>
         <div className="qbd-recon-pane" style={{ width: `${splitPct}%` }}>
           <div className="qbd-recon-panehead">
             {isCard ? 'Card statement' : 'Bank statement'}
-            <span className="qbd-muted">{stmtMeta.bankName || stmtMeta.cardName || 'Imported / PDF'}</span>
+            <span className="qbd-muted">{stmtMeta.bankName || stmtMeta.cardName || 'Import or loaded'}</span>
+            {pdfPreviewUrl && <span className="qbd-pill">PDF</span>}
           </div>
-          <div className="qbd-recon-panebody" ref={stmtScrollRef} onScroll={onStmtScroll}>
-            <StmtTable
-              lines={statementLines}
-              account={account}
-              labels={labels}
-              highlightGlId={highlightGlId}
-              onSelect={onStatementSelect}
-              onHover={setHighlightGlId}
-            />
+          <div className={`qbd-recon-panebody${pdfPreviewUrl ? ' stmt-with-pdf' : ''}`} ref={stmtScrollRef} onScroll={onStmtScroll}>
+            {pdfPreviewUrl && (
+              <div className="qbd-stmt-pdf">
+                <iframe title="Bank statement PDF" src={pdfPreviewUrl} />
+              </div>
+            )}
+            <div className="qbd-stmt-lines">
+              <StmtTable
+                lines={statementLines}
+                account={account}
+                labels={labels}
+                highlightGlId={highlightGlId}
+                onSelect={onStatementSelect}
+                onHover={setHighlightGlId}
+              />
+            </div>
           </div>
         </div>
         <div

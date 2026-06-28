@@ -23,6 +23,7 @@ import {
   closeBankReconciliation,
   reopenBankReconciliation,
 } from '../lib/bank-reconcile-session.js';
+import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
 
 const router = express.Router();
 
@@ -592,6 +593,50 @@ router.post('/reconcile', async (req, res) => {
   } catch (error) {
     console.error('Reconcile error:', error);
     return res.status(500).json({ error: error.message || 'Failed to reconcile' });
+  }
+});
+
+// POST /api/reconciliation/bank/import-statement — OFX or PDF while reconciling
+router.post('/import-statement', async (req, res) => {
+  try {
+    const {
+      entityId,
+      accountId,
+      ofxContent,
+      pdfBase64,
+      fileName,
+      autoPost = true,
+    } = req.body;
+    if (!entityId || !accountId) {
+      return res.status(400).json({ error: 'entityId and accountId required' });
+    }
+    if (!ofxContent && !pdfBase64) {
+      return res.status(400).json({ error: 'ofxContent or pdfBase64 required' });
+    }
+
+    const db = await getDatabase();
+    const result = await importStatementForReconcile(db, {
+      entityId,
+      accountId,
+      userId: req.user?.id || 'usr-admin',
+      ofxContent,
+      pdfBase64,
+      fileName,
+      autoPost,
+    });
+
+    return res.json({
+      ok: true,
+      message: result.imported
+        ? `Imported ${result.imported} line(s), posted ${result.posted} to register`
+        : result.skippedDuplicates
+          ? `All ${result.skippedDuplicates} line(s) already imported`
+          : 'No transactions found on statement',
+      ...result,
+    });
+  } catch (error) {
+    console.error('Import statement error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to import statement' });
   }
 });
 
