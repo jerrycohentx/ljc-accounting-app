@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, bankReconAPI } from '../services/api';
@@ -14,6 +14,95 @@ function periodLabel(statementDate) {
   return String(statementDate).slice(0, 7);
 }
 
+function StmtTable({ lines, highlightGlId, onSelect, onHover }) {
+  if (!lines.length) {
+    return <div className="qbd-empty">No statement lines for this period.</div>;
+  }
+  return (
+    <table className="qbd-reg qbd-recon-stmt">
+      <thead>
+        <tr>
+          <th className="qbd-d">DATE</th>
+          <th>MEMO</th>
+          <th className="qbd-amt">Deposit</th>
+          <th className="qbd-amt">Payment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((line) => {
+          const hl = highlightGlId && line.matchedGlId === highlightGlId;
+          const matched = !!line.matchedGlId;
+          return (
+            <tr
+              key={line.id}
+              className={[hl ? 'hl' : '', matched ? 'matched' : ''].filter(Boolean).join(' ') || undefined}
+              style={{ cursor: line.matchedGlId ? 'pointer' : 'default' }}
+              onMouseEnter={() => onHover && onHover(line.matchedGlId)}
+              onMouseLeave={() => onHover && onHover(null)}
+              onClick={() => onSelect && onSelect(line)}
+            >
+              <td className="qbd-d">{line.date}</td>
+              <td>{line.description}</td>
+              <td className="qbd-amt">{line.deposit ? fmt(line.deposit) : ''}</td>
+              <td className="qbd-amt">{line.payment ? fmt(line.payment) : ''}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+function RegisterTable({ entries, checked, highlightGlId, onToggle, onHover }) {
+  if (!entries.length) {
+    return <div className="qbd-empty">No uncleared register items.</div>;
+  }
+  return (
+    <table className="qbd-reg qbd-recon-reg">
+      <thead>
+        <tr>
+          <th style={{ width: 30 }}>✓</th>
+          <th className="qbd-d">DATE</th>
+          <th className="qbd-je">ENTRY</th>
+          <th>MEMO</th>
+          <th className="qbd-amt">Deposit</th>
+          <th className="qbd-amt">Payment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {entries.map((e) => {
+          const isChecked = !!checked[e.id];
+          const hl = highlightGlId === e.id;
+          return (
+            <tr
+              key={e.id}
+              className={[hl ? 'hl' : '', isChecked ? 'cleared' : ''].filter(Boolean).join(' ') || undefined}
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={() => onHover && onHover(e.id)}
+              onMouseLeave={() => onHover && onHover(null)}
+              onClick={() => onToggle(e.id)}
+            >
+              <td style={{ textAlign: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => onToggle(e.id)}
+                  onClick={(ev) => ev.stopPropagation()}
+                />
+              </td>
+              <td className="qbd-d">{e.posting_date}</td>
+              <td className="qbd-je">{e.je_number}</td>
+              <td>{e.je_description || e.description || ''}</td>
+              <td className="qbd-amt">{(+e.debit) ? fmt(+e.debit) : ''}</td>
+              <td className="qbd-amt">{(+e.credit) ? fmt(+e.credit) : ''}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
 export default function QBDReconcile() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
@@ -25,6 +114,7 @@ export default function QBDReconcile() {
   const [data, setData] = useState(null);
   const [checked, setChecked] = useState({});
   const [busy, setBusy] = useState(false);
+  const [highlightGlId, setHighlightGlId] = useState(null);
 
   useEffect(() => {
     if (!entityId) return;
@@ -38,7 +128,18 @@ export default function QBDReconcile() {
     if (!accountId) return Promise.resolve();
     setBusy(true);
     return bankReconAPI.worksheet(entityId, accountId, stmtDate)
-      .then((r) => { setData(r.data); setChecked({}); setStarted(true); })
+      .then((r) => {
+        setData(r.data);
+        setChecked({});
+        setHighlightGlId(null);
+        setStarted(true);
+        setEndBal((prev) => {
+          if (prev) return prev;
+          if (r.data?.statementMeta?.currentBalance != null) return String(r.data.statementMeta.currentBalance);
+          if (r.data?.endingBalance != null) return String(r.data.endingBalance);
+          return prev;
+        });
+      })
       .catch((e) => showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message)))
       .finally(() => setBusy(false));
   }, [entityId, accountId, stmtDate, showToast]);
@@ -51,17 +152,45 @@ export default function QBDReconcile() {
   const toggle = (id) => setChecked((c) => ({ ...c, [id]: !c[id] }));
 
   const entries = data?.entries || [];
+  const statementLines = data?.statementLines || [];
   const beginning = +(data?.beginningBalance || 0);
   const clearedSigned = entries.filter((e) => checked[e.id]).reduce((s, e) => s + ((+e.debit || 0) - (+e.credit || 0)), 0);
   const clearedDep = entries.filter((e) => checked[e.id]).reduce((s, e) => s + (+e.debit || 0), 0);
   const clearedPay = entries.filter((e) => checked[e.id]).reduce((s, e) => s + (+e.credit || 0), 0);
-  const target = parseFloat(endBal || data?.endingBalance || '0') || 0;
+  const target = parseFloat(endBal || data?.endingBalance || data?.statementMeta?.currentBalance || '0') || 0;
   const difference = Math.round((target - (beginning + clearedSigned)) * 100) / 100;
   const balanced = Math.abs(difference) < 0.005;
   const checkedIds = entries.filter((e) => checked[e.id]).map((e) => e.id);
 
+  const glByAmountDate = useMemo(() => {
+    const map = new Map();
+    for (const e of entries) {
+      const amt = roundAmt((+e.debit || 0) - (+e.credit || 0));
+      const key = `${e.posting_date}|${amt}`;
+      if (!map.has(key)) map.set(key, e.id);
+    }
+    return map;
+  }, [entries]);
+
+  const onStatementSelect = (line) => {
+    if (line.matchedGlId && entries.some((e) => e.id === line.matchedGlId)) {
+      toggle(line.matchedGlId);
+      setHighlightGlId(line.matchedGlId);
+      return;
+    }
+    const amt = roundAmt(line.amount);
+    const key = `${line.date}|${amt}`;
+    const glId = glByAmountDate.get(key);
+    if (glId) {
+      toggle(glId);
+      setHighlightGlId(glId);
+    }
+  };
+
   const periodSession = data?.periodSession || data?.priorSession;
   const needsReopen = periodSession && !periodSession.balanced;
+  const stmtMeta = data?.statementMeta || {};
+  const stmtPeriod = data?.statementPeriod || {};
 
   const reopenPeriod = () => {
     setBusy(true);
@@ -72,7 +201,7 @@ export default function QBDReconcile() {
   };
 
   const finish = () => {
-    if (!balanced) { showToast && showToast('Difference must be $0.00 to close reconciliation'); return; }
+    if (!balanced) { showToast && showToast('Difference must be $0.00 to reconcile'); return; }
     if (checkedIds.length === 0) { showToast && showToast('Mark the cleared transactions first'); return; }
     setBusy(true);
     bankReconAPI.reconcile({ entityId, accountId, glIds: checkedIds, statementDate: stmtDate, statementEndingBalance: target })
@@ -97,7 +226,7 @@ export default function QBDReconcile() {
         </div>
         <div className="frow"><label>Statement date</label><input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} /></div>
         <div className="frow"><label>Ending balance</label><input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From your bank statement" style={{ textAlign: 'right', width: 180 }} /></div>
-        <div className="qbd-botbar"><span className="qbd-muted">Enter your statement's ending balance and date, then start.</span><span className="sp" /><button className="qbd-btn" disabled={busy} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button></div>
+        <div className="qbd-botbar"><span className="qbd-muted">QuickBooks-style reconcile: mark cleared register items until difference is zero. Statement appears beside the register.</span><span className="sp" /><button className="qbd-btn" disabled={busy} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button></div>
       </div>
     );
   }
@@ -105,14 +234,15 @@ export default function QBDReconcile() {
   const sessionBanner = periodSession ? (
     <div style={{
       padding: '8px 12px',
-      marginBottom: 8,
-      borderRadius: 4,
+      marginBottom: 0,
+      borderRadius: 0,
       background: periodSession.balanced ? '#eaf6ec' : '#fdecea',
       color: periodSession.balanced ? '#2f6b3a' : '#b3261e',
       display: 'flex',
       alignItems: 'center',
       gap: 12,
       flexWrap: 'wrap',
+      borderBottom: '1px solid #c9d3df',
     }}>
       <span>
         {periodSession.balanced ? '✓' : '⚠'} Reconcile {periodLabel(periodSession.statementDate)} ({periodSession.status})
@@ -129,39 +259,60 @@ export default function QBDReconcile() {
   ) : null;
 
   return (
-    <div className="qbd-window">
-      <div className="qbd-wtitle">✓ Reconcile — {data.account.account_number} · {data.account.account_name}
+    <div className="qbd-window" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+      <div className="qbd-wtitle">Reconcile — {data.account.account_number} · {leafLabel(data.account.account_name)}
         <span className="x" onClick={() => { setStarted(false); setData(null); }}>✕</span>
       </div>
       {sessionBanner}
-      <div className="qbd-tools" style={{ gap: 18 }}>
-        <button className="qbd-btn" onClick={() => { setStarted(false); setData(null); }}>← Change</button>
-        <span><span className="qbd-muted">Beginning</span> <b>{fmt(beginning) || '0.00'}</b></span>
-        <span><span className="qbd-muted">Cleared deposits</span> <b>{fmt(clearedDep) || '0.00'}</b></span>
-        <span><span className="qbd-muted">Cleared payments</span> <b>{fmt(clearedPay) || '0.00'}</b></span>
-        <span><span className="qbd-muted">Statement ending</span> <b>{fmt(target) || '0.00'}</b></span>
-        <span style={{ marginLeft: 'auto', fontWeight: 'bold', color: balanced ? '#2f6b3a' : '#b3261e' }}>
-          Difference: {fmt(difference) || '0.00'} {balanced ? '✓' : ''}
-        </span>
+      <div className="qbd-recon-summary">
+        <div><span className="lbl">Statement period</span><span className="val">{stmtPeriod.periodStart || '—'} → {stmtPeriod.periodEnd || data.statementDate}</span></div>
+        <div><span className="lbl">Stmt beginning</span><span className="val">{stmtMeta.previousBalance != null ? fmt(stmtMeta.previousBalance) : fmt(beginning)}</span></div>
+        <div><span className="lbl">Books beginning</span><span className="val">{fmt(beginning)}</span></div>
+        <div><span className="lbl">Cleared deposits</span><span className="val">{fmt(clearedDep) || '0.00'}</span></div>
+        <div><span className="lbl">Cleared payments</span><span className="val">{fmt(clearedPay) || '0.00'}</span></div>
+        <div><span className="lbl">Statement ending</span><span className="val">{fmt(target) || '0.00'}</span></div>
+        <div>
+          <span className="lbl">Difference</span>
+          <span className={`val ${balanced ? 'diff-ok' : 'diff-bad'}`}>{fmt(difference) || '0.00'} {balanced ? '✓' : ''}</span>
+        </div>
       </div>
-      <div className="qbd-wbody">
-        {entries.length === 0 ? <div className="qbd-empty">No uncleared transactions up to {data.statementDate}.</div> : (
-          <table className="qbd-reg">
-            <thead><tr><th style={{ width: 30 }}>✓</th><th className="qbd-d">DATE</th><th className="qbd-je">ENTRY</th><th>MEMO</th><th className="qbd-amt">Deposit</th><th className="qbd-amt">Payment</th></tr></thead>
-            <tbody>
-              {entries.map((e) => (
-                <tr key={e.id} onClick={() => toggle(e.id)} style={{ cursor: 'pointer', background: checked[e.id] ? '#eaf6ec' : undefined }}>
-                  <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!checked[e.id]} onChange={() => toggle(e.id)} onClick={(ev) => ev.stopPropagation()} /></td>
-                  <td className="qbd-d">{e.posting_date}</td>
-                  <td className="qbd-je">{e.je_number}</td>
-                  <td>{e.je_description || e.description || ''}</td>
-                  <td className="qbd-amt">{(+e.debit) ? fmt(+e.debit) : ''}</td>
-                  <td className="qbd-amt">{(+e.credit) ? fmt(+e.credit) : ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="qbd-tools" style={{ gap: 12 }}>
+        <button className="qbd-btn" onClick={() => { setStarted(false); setData(null); }}>← Change</button>
+        <span className="qbd-muted">{statementLines.length} statement lines · {entries.length} register items</span>
+        {stmtMeta.statementLabel && <span className="qbd-muted">PDF: {stmtMeta.statementLabel}</span>}
+        <span className="sp" />
+        <span className="qbd-muted">Click a statement line to mark its register match cleared</span>
+      </div>
+      <div className="qbd-recon-split">
+        <div className="qbd-recon-pane">
+          <div className="qbd-recon-panehead">
+            Bank statement
+            <span className="qbd-muted">{stmtMeta.bankName || 'Imported / PDF'}</span>
+          </div>
+          <div className="qbd-recon-panebody">
+            <StmtTable
+              lines={statementLines}
+              highlightGlId={highlightGlId}
+              onSelect={onStatementSelect}
+              onHover={setHighlightGlId}
+            />
+          </div>
+        </div>
+        <div className="qbd-recon-pane">
+          <div className="qbd-recon-panehead">
+            Register — mark cleared
+            <span className="qbd-muted">{checkedIds.length} marked</span>
+          </div>
+          <div className="qbd-recon-panebody">
+            <RegisterTable
+              entries={entries}
+              checked={checked}
+              highlightGlId={highlightGlId}
+              onToggle={toggle}
+              onHover={setHighlightGlId}
+            />
+          </div>
+        </div>
       </div>
       <div className="qbd-foot">
         <span className="qbd-muted">{checkedIds.length} marked cleared</span>
@@ -171,4 +322,8 @@ export default function QBDReconcile() {
       </div>
     </div>
   );
+}
+
+function roundAmt(n) {
+  return Math.round(Number(n) * 100) / 100;
 }

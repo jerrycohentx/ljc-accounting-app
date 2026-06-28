@@ -128,6 +128,7 @@ async function main() {
     CREATE TABLE journal_entries (id TEXT PRIMARY KEY, entity_id TEXT, je_number TEXT, description TEXT, posting_date TEXT, status TEXT, created_by TEXT, total_debit REAL, total_credit REAL, reversed_by_je_id TEXT, reverses_je_id TEXT);
     CREATE TABLE journal_entry_lines (id TEXT PRIMARY KEY, journal_entry_id TEXT, account_id TEXT, debit REAL, credit REAL, line_number INTEGER);
     CREATE TABLE general_ledger (id TEXT PRIMARY KEY, entity_id TEXT, account_id TEXT, journal_entry_id TEXT, debit REAL, credit REAL, posting_date TEXT, description TEXT, reconciliation_status TEXT, reconciliation_session_id TEXT);
+    CREATE TABLE import_transactions (id TEXT PRIMARY KEY, fitid TEXT, entity_id TEXT, account_id TEXT, journal_entry_id TEXT, date TEXT, amount REAL, description TEXT, matched_to_gl_id TEXT, status TEXT);
   `;
   for (const stmt of schema.split(';').filter(Boolean)) await db.exec(stmt);
   await seedMinimal(db);
