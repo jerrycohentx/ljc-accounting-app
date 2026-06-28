@@ -224,6 +224,32 @@ export default function QBDReconcile() {
     if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
   }, [pdfPreviewUrl]);
 
+  const refreshPrepare = useCallback(() => {
+    if (!entityId || !accountId) {
+      setPrepareMsg('');
+      setBeginBal('');
+      setEndBal('');
+      return Promise.resolve();
+    }
+    setPrepareBusy(true);
+    return bankReconAPI.prepare(entityId, accountId, stmtDate || undefined)
+      .then((r) => {
+        const p = r.data;
+        if (p.statementDate) setStmtDate(p.statementDate);
+        if (p.endingBalance != null) setEndBal(String(p.endingBalance));
+        else setEndBal('');
+        if (p.beginningBalance != null) setBeginBal(String(p.beginningBalance));
+        else setBeginBal('');
+        setPrepareMsg(p.message || '');
+      })
+      .catch((e) => {
+        setPrepareMsg(e.response?.data?.error || 'Could not load statement');
+        setBeginBal('');
+        setEndBal('');
+      })
+      .finally(() => setPrepareBusy(false));
+  }, [entityId, accountId, stmtDate]);
+
   const handleImportStatement = async (file) => {
     if (!file || !accountId) return;
     setBusy(true);
@@ -254,11 +280,18 @@ export default function QBDReconcile() {
       if (res.data.endingBalance != null) {
         setEndBal(String(res.data.endingBalance));
       }
+      if (res.data.meta?.previousBalance != null) {
+        setBeginBal(String(res.data.meta.previousBalance));
+      }
       if (res.data.statementDate) {
         setStmtDate(res.data.statementDate);
       }
       showToast && showToast(res.data.message || 'Statement imported');
-      await loadWorksheet();
+      if (started) {
+        await loadWorksheet();
+      } else {
+        await refreshPrepare();
+      }
     } catch (e) {
       showToast && showToast('Import failed: ' + (e.response?.data?.error || e.message));
     } finally {
@@ -293,22 +326,8 @@ export default function QBDReconcile() {
   }, [entityId, searchParams]);
 
   useEffect(() => {
-    if (!entityId || !accountId) {
-      setPrepareMsg('');
-      return;
-    }
-    setPrepareBusy(true);
-    bankReconAPI.prepare(entityId, accountId, stmtDate || undefined)
-      .then((r) => {
-        const p = r.data;
-        if (p.statementDate) setStmtDate(p.statementDate);
-        if (p.endingBalance != null) setEndBal(String(p.endingBalance));
-        if (p.beginningBalance != null) setBeginBal(String(p.beginningBalance));
-        setPrepareMsg(p.message || '');
-      })
-      .catch((e) => setPrepareMsg(e.response?.data?.error || 'Could not load statement'))
-      .finally(() => setPrepareBusy(false));
-  }, [entityId, accountId]);
+    refreshPrepare();
+  }, [refreshPrepare]);
 
   const applyAutoChecked = useCallback((worksheet) => {
     const ids = worksheet?.suggestedCheckedGlIds || [];
@@ -450,38 +469,68 @@ export default function QBDReconcile() {
 
   if (!started) {
     return (
-      <div className="qbd-form">
-        <div className="fhd">Begin Reconciliation</div>
-        <div className="qbd-muted" style={{ padding: '0 12px 10px', fontSize: 11, lineHeight: 1.45 }}>
-          QuickBooks-style reconcile: statement lines on the left, register checkboxes on the right.
-          Pick the account and statement ending date, then click <strong>Start reconciling</strong>.
+      <>
+        <input
+          ref={importFileRef}
+          type="file"
+          accept=".ofx,.qfx,.pdf,application/pdf"
+          style={{ display: 'none' }}
+          onChange={(e) => handleImportStatement(e.target.files?.[0])}
+        />
+        <div className="qbd-form">
+          <div className="fhd">Begin Reconciliation</div>
+          <div className="qbd-muted" style={{ padding: '0 12px 10px', fontSize: 11, lineHeight: 1.45 }}>
+            QuickBooks-style reconcile: statement lines on the left, register checkboxes on the right.
+            Pick the account and <strong>statement ending date</strong> — beginning and ending balances load from
+            your saved statements, email imports, or a file you upload below.
+          </div>
+          <div className="frow"><label>Account</label>
+            <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+              <option value="">— select bank / card account —</option>
+              {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
+            </select>
+          </div>
+          {accountId && (
+            <>
+              <div className="frow"><label>Statement date</label>
+                <input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} disabled={prepareBusy} />
+              </div>
+              <div className="frow"><label>Beginning balance</label>
+                <input type="text" readOnly value={prepareBusy ? '…' : (beginBal ? fmt(+beginBal) : '—')} style={{ textAlign: 'right', width: 180, background: '#f5f7fa' }} />
+              </div>
+              <div className="frow"><label>Ending balance</label>
+                <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 180 }} disabled={prepareBusy} />
+              </div>
+              {prepareMsg && (
+                <div className="qbd-muted" style={{ padding: '0 12px 8px', fontSize: 11, color: /invalid|failed|error|not found/i.test(prepareMsg) ? '#b3261e' : undefined }}>
+                  {prepareMsg}
+                </div>
+              )}
+              <div className="frow" style={{ alignItems: 'center', gap: 8 }}>
+                <label>Statement file</label>
+                <button
+                  type="button"
+                  className="qbd-btn qbd-btn-import"
+                  disabled={busy || prepareBusy}
+                  onClick={() => importFileRef.current?.click()}
+                  title="Upload OFX/QFX or PDF bank statement"
+                >
+                  Import statement (PDF / OFX)
+                </button>
+                {importFileName && <span className="qbd-muted" style={{ fontSize: 11 }}>{importFileName}</span>}
+              </div>
+            </>
+          )}
+          <div className="qbd-botbar">
+            <span className="qbd-muted" style={{ maxWidth: 420, lineHeight: 1.4 }}>
+              Auto: bundled statements in <code>data/bank-imports/</code> and email/portal downloads.
+              Manual: use <strong>Import statement</strong> above.
+            </span>
+            <span className="sp" />
+            <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button>
+          </div>
         </div>
-        <div className="frow"><label>Account</label>
-          <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-            <option value="">— select bank / card account —</option>
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-          </select>
-        </div>
-        {accountId && (
-          <>
-            <div className="frow"><label>Statement date</label>
-              <input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} />
-            </div>
-            <div className="frow"><label>Beginning balance</label>
-              <input type="text" readOnly value={beginBal ? fmt(+beginBal) : '—'} style={{ textAlign: 'right', width: 180, background: '#f5f7fa' }} />
-            </div>
-            <div className="frow"><label>Ending balance</label>
-              <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 180 }} />
-            </div>
-            {prepareMsg && <div className="qbd-muted" style={{ padding: '0 12px 8px', fontSize: 11 }}>{prepareMsg}</div>}
-          </>
-        )}
-        <div className="qbd-botbar">
-          <span className="qbd-muted">Statement loads from your import folder — fields fill automatically.</span>
-          <span className="sp" />
-          <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button>
-        </div>
-      </div>
+      </>
     );
   }
 
