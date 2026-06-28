@@ -23,6 +23,7 @@ export const RECONCILIATION_TARGETS = {
       { statementDate: '2026-03-31', endingBalance: 33074.61, label: 'March 2026' },
       { statementDate: '2026-04-30', endingBalance: 79722.84, label: 'April 2026' },
       { statementDate: '2026-05-31', endingBalance: 19977.13, label: 'May 2026' },
+      { statementDate: '2026-06-26', endingBalance: 29603.53, label: 'June 2026 (OFX)' },
     ],
     '1001': [
       { statementDate: '2026-01-31', endingBalance: 726.07, label: 'January 2026' },
