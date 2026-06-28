@@ -1,10 +1,10 @@
-' Install / replace desktop + taskbar shortcuts → cloud app (one-time or after updates)
+' Creates desktop + taskbar shortcuts → https://ljc-accounting-app.onrender.com
+' Double-click this file (same as INSTALL-SHORTCUTS.bat)
 Option Explicit
 
-Const APP_NAME = "LJC Accounting"
 Const APP_URL = "https://ljc-accounting-app.onrender.com"
 
-Dim oShell, oFSO, desktop, taskbar, urlBody, names, n, p
+Dim oShell, oFSO, desktop, taskbar, urlBody, names, n, p, label
 
 Set oShell = CreateObject("WScript.Shell")
 Set oFSO = CreateObject("Scripting.FileSystemObject")
@@ -16,7 +16,6 @@ urlBody = "[InternetShortcut]" & vbCrLf & _
           "URL=" & APP_URL & vbCrLf & _
           "IconIndex=0" & vbCrLf
 
-' Remove old local shortcuts (common names from prior installs)
 names = Array( _
     "LJC AI Accounting.lnk", _
     "LJC Accounting.lnk", _
@@ -32,18 +31,17 @@ For Each n In names
     If oFSO.FileExists(p) Then oFSO.DeleteFile p, True
 Next
 
-Dim label
-For Each label In Array(APP_NAME, "Cohen Entities AI Accounting")
+For Each label In Array("Cohen Entities AI Accounting", "LJC Accounting")
     WriteUrl desktop & "\" & label & ".url", urlBody
     If oFSO.FolderExists(taskbar) Then
         WriteUrl taskbar & "\" & label & ".url", urlBody
     End If
 Next
 
-MsgBox APP_NAME & " shortcuts updated." & vbCrLf & vbCrLf & _
-       "Desktop and taskbar now open:" & vbCrLf & APP_URL & vbCrLf & vbCrLf & _
-       "If the taskbar icon did not change, unpin the old one and pin the new desktop icon.", _
-       vbInformation, APP_NAME
+MsgBox "Shortcuts updated." & vbCrLf & vbCrLf & _
+       "Desktop icons now open:" & vbCrLf & APP_URL & vbCrLf & vbCrLf & _
+       "If the taskbar still opens the old app, unpin it and pin the new desktop icon.", _
+       vbInformation, "Cohen Entities AI Accounting"
 
 Sub WriteUrl(path, body)
     Dim f
