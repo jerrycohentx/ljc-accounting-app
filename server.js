@@ -30,8 +30,8 @@ import backupRoutes from './routes/backup.js';
 import emailIngestRoutes from './routes/email-ingest.js';
 import gmailOAuthRoutes, { gmailOAuthCallbackHandler } from './routes/gmail-oauth.js';
 import { authMiddleware } from './middleware/auth.js';
-import { getAppInfo } from './lib/app-info.js';
-import { getBackupStatus, startAutoBackup } from './lib/app-backup.js';
+import { startAutoBackup } from './lib/app-backup.js';
+import { buildHealthPayload } from './lib/health-status.js';
 import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
 import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
 import { syncAdminPhoneFromEnv } from './lib/user-phone.js';
@@ -59,29 +59,25 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' })); // Increase limit for OFX file uploads
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
-// Health check
+// Health check — full system status (loan tracker sidebar pattern)
 app.get('/health', async (req, res) => {
-  const appInfo = getAppInfo();
-  const backup = getBackupStatus();
-  const payload = {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    app: appInfo.buildLabel,
-    version: appInfo.version,
-    gitSha: appInfo.gitSha,
-    lastBackupAt: backup.lastBackupAt,
-    statementAutoLoad: getStatementAutoLoadStatus(),
-  };
   try {
     const db = await getDatabase();
-    payload.statementEmailIngest = await getStatementEmailIngestStatus(db);
+    const emailIngest = await getStatementEmailIngestStatus(db);
     const row = await db.get('SELECT COUNT(*) as count FROM users');
-    payload.database = isPostgres() ? 'postgres' : 'sqlite';
-    payload.users = Number(row?.count ?? 0);
+    const payload = await buildHealthPayload({
+      statementEmailIngest: emailIngest,
+      users: Number(row?.count ?? 0),
+    });
+    // Legacy flat fields for older clients
+    payload.version = payload.app?.version;
+    payload.gitSha = payload.app?.gitSha;
+    payload.lastBackupAt = payload.backup?.lastBackupAt;
+    res.json(payload);
   } catch (error) {
-    payload.databaseError = error.message;
+    const payload = await buildHealthPayload({ databaseError: error.message });
+    res.json(payload);
   }
-  res.json(payload);
 });
 
 // Routes

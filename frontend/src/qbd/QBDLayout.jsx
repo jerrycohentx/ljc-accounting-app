@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import QBDBackupDialog, { useBackupStatus, formatBackupShort } from './QBDBackupDialog';
 import QBEmailIngestDialog, { useEmailIngestStatus, formatEmailScanShort } from './QBEmailIngestDialog';
+import AppStatusPanel, { useServerStatus } from '../components/AppStatusPanel';
 import { backupAPI } from '../services/api';
 import './qbd.css';
 
@@ -30,6 +31,7 @@ export default function QBDLayout() {
   const toastTimer = useRef(null);
   const { info: backupInfo, refresh: refreshBackup } = useBackupStatus();
   const { info: emailInfo, refresh: refreshEmail } = useEmailIngestStatus();
+  const { data: statusData, refresh: refreshStatus } = useServerStatus(60000);
 
   const showToast = (m) => {
     setToast(m);
@@ -103,9 +105,6 @@ export default function QBDLayout() {
   };
 
   const toolActive = (path) => path && (path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path));
-  const appLabel = backupInfo?.app?.buildLabel || 'v0.1.0';
-  const backupLabel = formatBackupShort(backupInfo?.backup?.lastBackupAt);
-  const emailLabel = formatEmailScanShort(emailInfo?.lastRunAt);
 
   return (
     <div className="qbd">
@@ -134,21 +133,12 @@ export default function QBDLayout() {
 
       <div className="qbd-work"><Outlet context={{ showToast }} /></div>
 
-      <div className="qbd-statusbar">
-        <span onClick={() => setBackupOpen(true)} title="View backups" style={{ cursor: 'pointer' }}>
-          <strong>Version</strong> {appLabel}
-        </span>
-        <span className="qbd-status-sep">|</span>
-        <span onClick={() => setBackupOpen(true)} title="View backups" style={{ cursor: 'pointer' }}>
-          <strong>Backup</strong> {backupLabel}
-        </span>
-        <span className="qbd-status-sep">|</span>
-        <span onClick={() => setEmailOpen(true)} title="Bank statement email" style={{ cursor: 'pointer' }}>
-          <strong>Email</strong> {emailLabel}
-        </span>
-        <span className="sp" />
-        <span className="qbd-muted">Auto backup {backupInfo?.backup?.intervalMinutes || 60}m · email {emailInfo?.intervalHours || 6}h</span>
-      </div>
+      <AppStatusPanel
+        compact
+        data={statusData}
+        onBackupClick={() => setBackupOpen(true)}
+        onEmailClick={() => setEmailOpen(true)}
+      />
 
       {openMenu && (
         <div className="qbd-topmenu" style={{ left: menuPos.left, top: menuPos.top }}>
@@ -164,14 +154,14 @@ export default function QBDLayout() {
         open={backupOpen}
         onClose={() => setBackupOpen(false)}
         showToast={showToast}
-        onStatusChange={refreshBackup}
+        onStatusChange={() => { refreshBackup(); refreshStatus(); }}
       />
 
       <QBEmailIngestDialog
         open={emailOpen}
         onClose={() => setEmailOpen(false)}
         showToast={showToast}
-        onStatusChange={refreshEmail}
+        onStatusChange={() => { refreshEmail(); refreshStatus(); }}
       />
 
       {toast && <div className="qbd-toast">{toast}</div>}

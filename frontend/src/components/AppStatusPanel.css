@@ -1,0 +1,86 @@
+.ljc-status-panel {
+  background: linear-gradient(180deg, #eef3f9 0%, #dde6f0 100%);
+  border-top: 2px solid #b9c4d2;
+  padding: 10px 16px 12px;
+  color: #1a2d42;
+  flex-shrink: 0;
+}
+
+.ljc-status-panel.compact {
+  padding: 8px 12px 10px;
+}
+
+.ljc-status-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4a6278;
+  margin-bottom: 8px;
+}
+
+.ljc-status-loading {
+  font-size: 13px;
+  color: #6a7889;
+}
+
+.ljc-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.ljc-status-panel.compact .ljc-status-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+
+@media (max-width: 900px) {
+  .ljc-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ljc-status-cell {
+  min-width: 0;
+}
+
+.ljc-status-cell.clickable {
+  cursor: pointer;
+}
+
+.ljc-status-cell.clickable:hover .val {
+  color: #0d47a1;
+  text-decoration: underline;
+}
+
+.ljc-status-cell .lbl {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6a7889;
+  margin-bottom: 3px;
+}
+
+.ljc-status-cell .val {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #1a2d42;
+  word-break: break-word;
+}
+
+.ljc-status-panel.compact .ljc-status-cell .val {
+  font-size: 12px;
+}
+
+.ljc-status-cell.warn .val {
+  color: #b45309;
+}
+
+.ljc-status-cell.warn .lbl {
+  color: #92400e;
+}

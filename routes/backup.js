@@ -2,17 +2,25 @@ import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { runBackup, listBackups, getBackupStatus } from '../lib/app-backup.js';
 import { getAppInfo } from '../lib/app-info.js';
+import { getDatabase, isPostgres } from '../config/database.js';
+import { getStatementEmailIngestStatus } from '../lib/statement-email-ingest.js';
 
 const router = express.Router();
 
 router.use(authMiddleware);
 
-/** GET /api/backup/status — version + latest backup (loan tracker sidebar pattern) */
+/** GET /api/backup/status — version + backup + email (loan tracker sidebar pattern) */
 router.get('/status', async (req, res) => {
   try {
+    const db = await getDatabase();
     res.json({
       app: getAppInfo(),
       backup: getBackupStatus(),
+      statementEmailIngest: await getStatementEmailIngestStatus(db),
+      database: {
+        type: isPostgres() ? 'postgres' : 'sqlite',
+        label: isPostgres() ? 'PostgreSQL (cloud)' : 'SQLite (local)',
+      },
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
