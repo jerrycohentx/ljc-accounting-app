@@ -51,10 +51,11 @@ router.get('/:id', entityAccessMiddleware, async (req, res) => {
     // Get balance
     const balance = await db.get(
       `SELECT 
-        COALESCE(SUM(debit), 0) as total_debit,
-        COALESCE(SUM(credit), 0) as total_credit
-       FROM general_ledger 
-       WHERE account_id = ? AND entity_id = ?`,
+        COALESCE(SUM(gl.debit), 0) as total_debit,
+        COALESCE(SUM(gl.credit), 0) as total_credit
+       FROM general_ledger gl
+       JOIN journal_entries je ON je.id = gl.journal_entry_id AND je.status = 'POSTED'
+       WHERE gl.account_id = ? AND gl.entity_id = ?`,
       [req.params.id, req.entityId]
     );
 

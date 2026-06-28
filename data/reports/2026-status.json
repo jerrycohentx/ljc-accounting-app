@@ -1,0 +1,162 @@
+{
+  "generatedAt": "2026-06-28T05:06:14.604Z",
+  "ofxFilesFound": [],
+  "entities": [
+    {
+      "entityId": "ent-ljc",
+      "name": "LJC Financial, LLC",
+      "period2025Closed": true,
+      "postedTransactions2026": 283,
+      "pendingDraftImports": 0,
+      "bankAccounts": [
+        {
+          "accountNumber": "1000",
+          "name": "Simmons Bank ckg-0260",
+          "currentBalance": 89977.1299999999,
+          "reconciliationTargets": [
+            {
+              "statementDate": "2026-02-01",
+              "endingBalance": 15880.28,
+              "label": "January 2026"
+            },
+            {
+              "statementDate": "2026-03-01",
+              "endingBalance": 9912.36,
+              "label": "February 2026"
+            },
+            {
+              "statementDate": "2026-03-31",
+              "endingBalance": 33074.61,
+              "label": "March 2026"
+            },
+            {
+              "statementDate": "2026-04-30",
+              "endingBalance": 79722.84,
+              "label": "April 2026"
+            },
+            {
+              "statementDate": "2026-05-31",
+              "endingBalance": 19977.13,
+              "label": "May 2026"
+            }
+          ]
+        },
+        {
+          "accountNumber": "1001",
+          "name": "Lone Star Bank ckg-7367",
+          "currentBalance": 3528.6,
+          "reconciliationTargets": [
+            {
+              "statementDate": "2026-01-31",
+              "endingBalance": 726.07,
+              "label": "January 2026"
+            },
+            {
+              "statementDate": "2026-02-28",
+              "endingBalance": 195073.68,
+              "label": "February 2026"
+            },
+            {
+              "statementDate": "2026-03-31",
+              "endingBalance": 180566.92,
+              "label": "March 2026"
+            },
+            {
+              "statementDate": "2026-04-30",
+              "endingBalance": 108556.88,
+              "label": "April 2026"
+            },
+            {
+              "statementDate": "2026-05-31",
+              "endingBalance": 3528.66,
+              "label": "May 2026"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "ent-justin",
+      "name": "Justin Financial LLC",
+      "period2025Closed": true,
+      "postedTransactions2026": 0,
+      "pendingDraftImports": 0,
+      "bankAccounts": [
+        {
+          "accountNumber": "1000",
+          "name": "Primary checking",
+          "currentBalance": 18632.32,
+          "reconciliationTargets": []
+        }
+      ]
+    },
+    {
+      "entityId": "ent-omc",
+      "name": "OMC Housing LLC",
+      "period2025Closed": true,
+      "postedTransactions2026": 0,
+      "pendingDraftImports": 0,
+      "bankAccounts": [
+        {
+          "accountNumber": "1000",
+          "name": "Primary checking",
+          "currentBalance": 144648.17,
+          "reconciliationTargets": []
+        }
+      ]
+    },
+    {
+      "entityId": "ent-gm",
+      "name": "Graceful Meadows Assisted Living LLC",
+      "period2025Closed": true,
+      "postedTransactions2026": 0,
+      "pendingDraftImports": 0,
+      "bankAccounts": [
+        {
+          "accountNumber": "1000",
+          "name": "Primary checking",
+          "currentBalance": -8.74,
+          "reconciliationTargets": []
+        }
+      ]
+    },
+    {
+      "entityId": "ent-qof",
+      "name": "LJC QOF LLC",
+      "period2025Closed": true,
+      "postedTransactions2026": 0,
+      "pendingDraftImports": 0,
+      "bankAccounts": [
+        {
+          "accountNumber": "1000",
+          "name": "Primary checking",
+          "currentBalance": null,
+          "reconciliationTargets": []
+        }
+      ]
+    },
+    {
+      "entityId": "ent-4jl",
+      "name": "4 J & L Partners, LTD",
+      "period2025Closed": true,
+      "postedTransactions2026": 0,
+      "pendingDraftImports": 0,
+      "bankAccounts": [
+        {
+          "accountNumber": "1000",
+          "name": "Primary checking",
+          "currentBalance": -4871.13,
+          "reconciliationTargets": []
+        }
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "id": "no_ofx",
+      "severity": "critical",
+      "message": "No OFX files in data/bank-imports/ — cannot import 2026 bank activity"
+    }
+  ],
+  "readyFor2026Ops": false
+}

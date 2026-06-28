@@ -1,27 +1,20 @@
 import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import { FULL_CHART_OF_ACCOUNTS } from './coa-full.js';
 
 export const ENTITIES = [
   { id: 'ent-ljc', name: 'LJC Financial, LLC', code: 'LJC', type: 'OPERATING' },
-  { id: 'ent-justin', name: 'Justin Cohen', code: 'JUSTIN', type: 'RELATED' },
-  { id: 'ent-omc', name: 'OMC', code: 'OMC', type: 'RELATED' },
-  { id: 'ent-gm', name: 'GM', code: 'GM', type: 'RELATED' },
+  { id: 'ent-justin', name: 'Justin Financial LLC', code: 'JUSTIN', type: 'RELATED' },
+  { id: 'ent-omc', name: 'OMC Housing LLC', code: 'OMC', type: 'RELATED' },
+  { id: 'ent-gm', name: 'Graceful Meadows Assisted Living LLC', code: 'GM', type: 'RELATED' },
+  { id: 'ent-qof', name: 'LJC QOF LLC', code: 'QOF', type: 'RELATED' },
+  { id: 'ent-4jl', name: '4 J & L Partners, LTD', code: '4JL', type: 'RELATED' },
 ];
 
-export const CHART_OF_ACCOUNTS = [
-  { entity: 'ent-ljc', number: '1000', name: 'Cash & Bank Accounts - Simmons', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1200', name: 'Accounts Receivable', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1300', name: 'Notes Receivable', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1310', name: 'Notes Receivable - Simmons DLOC', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1350', name: 'Holdbacks - Simmons Bank', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1400', name: 'Loan Receivable', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '2000', name: 'Accounts Payable', type: 'LIABILITY' },
-  { entity: 'ent-ljc', number: '2110', name: 'DLOC - Simmons Bank', type: 'LIABILITY' },
-  { entity: 'ent-ljc', number: '3000', name: "Owner's Equity", type: 'EQUITY' },
-  { entity: 'ent-ljc', number: '4000', name: 'Interest Income', type: 'REVENUE' },
-  { entity: 'ent-ljc', number: '5000', name: 'Interest Expense', type: 'EXPENSE' },
-  { entity: 'ent-ljc', number: '5100', name: 'Draw & Inspection Fees', type: 'EXPENSE' },
-];
+const ALL_ENTITY_IDS = ENTITIES.map((e) => e.id);
+
+/** @deprecated use FULL_CHART_OF_ACCOUNTS */
+export const CHART_OF_ACCOUNTS = FULL_CHART_OF_ACCOUNTS;
 
 async function upsertEntity(db, entity) {
   const existing = await db.get('SELECT id FROM entities WHERE id = ?', entity.id);
@@ -43,7 +36,7 @@ async function upsertUser(db, { id, email, password, fullName, role, entitiesAcc
 }
 
 async function seedChartOfAccounts(db) {
-  for (const acc of CHART_OF_ACCOUNTS) {
+  for (const acc of FULL_CHART_OF_ACCOUNTS) {
     const existing = await db.get(
       'SELECT id FROM accounts WHERE entity_id = ? AND account_number = ?',
       [acc.entity, acc.number]
@@ -68,7 +61,7 @@ export async function seedDatabaseContent(db) {
     password: 'demo123',
     fullName: 'Demo User',
     role: 'ACCOUNTANT',
-    entitiesAccess: ['ent-ljc', 'ent-justin', 'ent-omc', 'ent-gm'],
+    entitiesAccess: ALL_ENTITY_IDS,
   });
 
   const adminEmail = process.env.ADMIN_EMAIL || 'jerry@ljcfinancial.com';
@@ -79,7 +72,7 @@ export async function seedDatabaseContent(db) {
     password: adminPassword,
     fullName: 'Admin User',
     role: 'ADMIN',
-    entitiesAccess: ['ent-ljc', 'ent-justin', 'ent-omc', 'ent-gm'],
+    entitiesAccess: ALL_ENTITY_IDS,
   });
 
   await seedChartOfAccounts(db);

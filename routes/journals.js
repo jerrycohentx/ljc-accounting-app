@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import Decimal from 'decimal.js';
 import { getDatabase } from '../config/database.js';
 import { entityAccessMiddleware, requireRole } from '../middleware/auth.js';
+import { postJournalEntryToGl } from '../lib/post-journal.js';
+import { reverseJournalEntry } from '../lib/reverse-journal.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -226,54 +228,42 @@ router.post('/:id/approve', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOU
   }
 });
 
-// POST /api/entities/:entityId/journals/:id/post - Post JE to GL
-router.post('/:id/post', [entityAccessMiddleware, requireRole('ADMIN')], async (req, res) => {
+// POST /api/entities/:entityId/journals/:id/post - Post JE to GL (DRAFT auto-approved)
+router.post('/:id/post', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
   try {
     const db = await getDatabase();
-    const journal = await db.get(
-      'SELECT * FROM journal_entries WHERE id = ? AND entity_id = ?',
-      [req.params.id, req.entityId]
-    );
-
-    if (!journal) {
-      return res.status(404).json({ error: 'Journal entry not found' });
-    }
-
-    if (journal.status === 'POSTED') {
-      return res.status(409).json({ error: 'Journal entry already posted' });
-    }
-
-    if (journal.status !== 'APPROVED') {
-      return res.status(409).json({ error: 'Can only post approved entries' });
-    }
-
-    // Get lines
-    const lines = await db.all(
-      'SELECT * FROM journal_entry_lines WHERE journal_entry_id = ?',
-      req.params.id
-    );
-
-    // Create GL entries
-    for (const line of lines) {
-      const glId = `gl-${uuidv4()}`;
-      await db.run(
-        `INSERT INTO general_ledger 
-         (id, entity_id, account_id, journal_entry_id, debit, credit, posting_date, description, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-        [glId, req.entityId, line.account_id, req.params.id, 
-         line.debit || 0, line.credit || 0, journal.posting_date, 
-         `${journal.description} (${journal.je_number})`]
-      );
-    }
-
-    // Update journal status
-    await db.run(
-      'UPDATE journal_entries SET status = ?, posted_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      ['POSTED', req.params.id]
-    );
-
-    res.json({ message: 'Journal entry posted to GL' });
+    const result = await postJournalEntryToGl(db, {
+      journalId: req.params.id,
+      entityId: req.entityId,
+      userId: req.user.id,
+    });
+    res.json({ message: 'Journal entry posted to GL', ...result });
   } catch (error) {
+    if (error.message.includes('not found')) return res.status(404).json({ error: error.message });
+    if (error.message.includes('already posted')) return res.status(409).json({ error: error.message });
+    if (error.message.includes('closed period')) return res.status(409).json({ error: error.message });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/entities/:entityId/journals/:id/reverse - Reverse a posted JE
+router.post('/:id/reverse', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    const { reversalDate, memo } = req.body || {};
+    const db = await getDatabase();
+    const result = await reverseJournalEntry(db, {
+      journalId: req.params.id,
+      entityId: req.entityId,
+      userId: req.user.id,
+      reversalDate,
+      memo,
+    });
+    res.json({ message: 'Journal entry reversed', ...result });
+  } catch (error) {
+    if (error.message.includes('not found')) return res.status(404).json({ error: error.message });
+    if (/already been reversed|Only posted|Cannot reverse|closed period/i.test(error.message)) {
+      return res.status(409).json({ error: error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });

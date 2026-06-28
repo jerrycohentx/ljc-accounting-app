@@ -1,0 +1,53 @@
+Tax Year Financial Package — Graceful Meadows Assisted Living LLC
+Tax Year,2025
+Basis,Cash
+Tax Return Ready,YES
+
+PROFIT AND LOSS
+Account,Amount
+4000 Services Income,13682.17
+Total Revenue,13682.17
+5000 Operating Expenses,94964.53
+6000 Payroll Expense - Wages,94577
+Total Expense,189541.53
+Net Income,-175859.36
+
+BALANCE SHEET
+Section,Account,Amount
+Asset,1000 Cash & Bank Accounts,-8.74
+Asset,1210 Prepaid Expenses,7500
+Asset,1500 Buildings,35346.51
+Asset,1510 Furniture & Fixtures,17289.87
+Liability,2011 Credit Card - VISA,30874.9
+Liability,2100 Payroll Liabilities,-1965.11
+Liability,2200 Loans from Shareholders,380933.58
+Liability,2900 Due To - LJC Financial,370267.18
+Equity,3100 Retained Earnings,-173856.37
+Equity,3900 Opening Balance Equity,-370267.18
+Equity,Current Year Net Income,-175859.36
+Equity,Total Equity (incl. net income),-719982.91
+
+TRIAL BALANCE
+Account,Type,Debit,Credit
+1000 Cash & Bank Accounts,ASSET,0,8.74
+1210 Prepaid Expenses,ASSET,7500,0
+1500 Buildings,ASSET,35346.51,0
+1510 Furniture & Fixtures,ASSET,17289.87,0
+2011 Credit Card - VISA,LIABILITY,0,30874.9
+2100 Payroll Liabilities,LIABILITY,1965.11,0
+2200 Loans from Shareholders,LIABILITY,0,380933.58
+2900 Due To - LJC Financial,LIABILITY,0,370267.18
+3100 Retained Earnings,EQUITY,173856.37,0
+3900 Opening Balance Equity,EQUITY,370267.18,0
+4000 Services Income,REVENUE,0,13682.17
+5000 Operating Expenses,EXPENSE,94964.53,0
+6000 Payroll Expense - Wages,EXPENSE,94577,0
+Totals,,795766.57,795766.57
+
+READINESS CHECKS
+Trial balance debits equal credits,PASS
+Balance sheet assets equal liabilities + equity,PASS
+QBO source trial balance balanced,PASS
+Profit & loss reviewed (activity or zero),PASS
+Balance sheet has balances,PASS
+Payroll accounts included (Graceful Meadows),PASS

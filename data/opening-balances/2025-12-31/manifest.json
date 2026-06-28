@@ -1,0 +1,42 @@
+{
+  "asOfDate": "2025-12-31",
+  "description": "QBO trial balance rollups for Cohen Entities migration (cash basis per QBO export)",
+  "entities": {
+    "ent-ljc": {
+      "name": "LJC Financial, LLC",
+      "source": "2025_LJC_FINANCIAL__LLC_Trial_Balance_8c9b.csv",
+      "qboTotal": "14875048.53"
+    },
+    "ent-justin": {
+      "name": "Justin Financial LLC",
+      "source": "2025_JUSTIN_FINANCIAL_LLC_Trial_Balance_6cff.csv",
+      "qboTotal": "2881893.80"
+    },
+    "ent-omc": {
+      "name": "OMC Housing LLC",
+      "source": "2025_OMC_Housing_LLC_Trial_Balance_aef4.csv",
+      "qboTotal": "1201751.14"
+    },
+    "ent-gm": {
+      "name": "Graceful Meadows Assisted Living LLC",
+      "note": "Only Cohen entity with payroll — mapped to 6000 Wages and 2100 Payroll Liabilities",
+      "source": "2025_Graceful_Meadows_Assisted_Living_LLC_Trial_Balance_d183.csv",
+      "qboTotal": "464818.82"
+    },
+    "ent-qof": {
+      "name": "LJC QOF LLC",
+      "source": "2025_LJC_QOF_LLC_Trial_Balance_f6bb.csv",
+      "qboTotal": "10000.00"
+    },
+    "ent-4jl": {
+      "name": "4 J & L Partners, LTD",
+      "source": "2025_4_J___L_PARTNERS__LTD_Trial_Balance_1358.csv",
+      "qboTotal": "5873475.61"
+    }
+  },
+  "import": "node scripts/import-all-qbo-opening-balances.js 2025-12-31",
+  "rollup": "node scripts/rollup-qbo-trial-balances.js",
+  "verifyIntercompany": "node scripts/verify-intercompany-tieout.js 2025-12-31",
+  "intercompanyPairs": 7,
+  "intercompanyTieout": "data/opening-balances/2025-12-31/intercompany-tieout.json"
+}

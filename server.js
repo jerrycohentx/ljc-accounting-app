@@ -15,7 +15,16 @@ import reconciliationRoutes from './routes/reconciliation.js';
 import importRoutes from './routes/import.js';
 import bankReconciliationRoutes from './routes/reconciliation-bank.js';
 import plaidRoutes, { plaidWebhookHandler } from './routes/plaid.js';
+import receiptRoutes, { whatsappWebhookHandler } from './routes/receipts.js';
 import holdbackDrawRoutes from './routes/holdback-draws.js';
+import interestAccrualRoutes from './routes/interest-accrual.js';
+import accountingOpsRoutes from './routes/accounting-ops.js';
+import intercompanyRoutes from './routes/intercompany.js';
+import taxFinancialsRoutes, { entityTaxRouter } from './routes/tax-financials.js';
+import productionBootstrapRoutes from './routes/production-bootstrap.js';
+import lonestarCatchupRoutes from './routes/lonestar-catchup.js';
+import amexCatchupRoutes from './routes/amex-catchup.js';
+import simmonsOfxCatchupRoutes from './routes/simmons-ofx-catchup.js';
 import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
@@ -61,6 +70,15 @@ app.use('/auth', authRoutes);
 // Plaid webhook (no JWT — Plaid server calls this)
 app.post('/api/plaid/webhook', plaidWebhookHandler);
 
+// WhatsApp receipt-bot webhook (no JWT — secured by shared token)
+app.post('/api/receipts/webhook/whatsapp', whatsappWebhookHandler);
+
+// Production bootstrap (integration key — no JWT)
+app.use('/api/production-bootstrap', productionBootstrapRoutes);
+app.use('/api/lonestar-catchup', lonestarCatchupRoutes);
+app.use('/api/amex-catchup', amexCatchupRoutes);
+app.use('/api/simmons-ofx-catchup', simmonsOfxCatchupRoutes);
+
 // Protected routes
 app.use('/api', authMiddleware);
 
@@ -76,7 +94,10 @@ app.get('/api/entities', async (req, res) => {
 
 // Import, Plaid, holdback draws, and bank reconciliation routes (top level)
 app.use('/api/import', importRoutes);
+app.use('/api/intercompany', intercompanyRoutes);
+app.use('/api/tax-financials', taxFinancialsRoutes);
 app.use('/api/plaid', plaidRoutes);
+app.use('/api/receipts', receiptRoutes);
 app.use('/api/holdback-draws', holdbackDrawRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
 
@@ -85,7 +106,10 @@ app.use('/api/entities/:entityId/accounts', accountRoutes);
 app.use('/api/entities/:entityId/journals', journalRoutes);
 app.use('/api/entities/:entityId/ledger', ledgerRoutes);
 app.use('/api/entities/:entityId/reports', reportsRoutes);
+app.use('/api/entities/:entityId/interest-accrual', interestAccrualRoutes);
+app.use('/api/entities/:entityId/accounting', accountingOpsRoutes);
 app.use('/api/entities/:entityId/reconciliations', reconciliationRoutes);
+app.use('/api/entities/:entityId/tax-financials', entityTaxRouter);
 
 const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
 const frontendIndexPath = path.join(frontendDistPath, 'index.html');

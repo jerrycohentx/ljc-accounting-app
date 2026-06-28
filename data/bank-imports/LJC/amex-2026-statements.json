@@ -1,0 +1,3272 @@
+{
+  "generatedAt": "2026-06-28T05:15:23.038Z",
+  "statements": [
+    {
+      "file": "2026-01-09_0fb8.pdf",
+      "meta": {
+        "closingDate": "2026-01-09",
+        "newBalance": 80091.93,
+        "previousBalance": 84373.94,
+        "paymentsCredits": -16374.11,
+        "newCharges": 9998.63,
+        "fees": 0,
+        "interestCharged": 2093.47,
+        "accountLast4": "88007",
+        "cardName": "Amex Marriott Bonvoy Business 88007"
+      },
+      "transactionCount": 78,
+      "netChange": -4282.01,
+      "transactions": [
+        {
+          "date": "2025-12-10",
+          "amount": -2500,
+          "description": "ONLINE PAYMENT - THANK YOU",
+          "fitid": "amex-25cd51f63d2efc36471a8a27",
+          "isPayment": true
+        },
+        {
+          "date": "2025-12-14",
+          "amount": -3136,
+          "description": "ONLINE PAYMENT - THANK YOU",
+          "fitid": "amex-51a2c73e15acdf9778bd5d17",
+          "isPayment": true
+        },
+        {
+          "date": "2025-12-24",
+          "amount": -2500,
+          "description": "ONLINE PAYMENT - THANK YOU",
+          "fitid": "amex-b501386cd3ef5489c0f4203f",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-01",
+          "amount": -2500,
+          "description": "ONLINE PAYMENT - THANK YOU",
+          "fitid": "amex-80dad117723f0b8d73224946",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-07",
+          "amount": -3000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-8a7b382f0f97c4e5568a29b3",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-09",
+          "amount": -2500,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-e9b06d5ae6696379313bb63f",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-07",
+          "amount": -21.62,
+          "description": "Credit: THE HOME DEPOT",
+          "fitid": "amex-cf75328ece4135e9bc7c5c31",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-07",
+          "amount": -216.49,
+          "description": "Credit: THE HOME DEPOT",
+          "fitid": "amex-44958c638a6906b5b6eee3f1",
+          "isPayment": true
+        },
+        {
+          "date": "2025-12-09",
+          "amount": 104.67,
+          "description": "SURGERY CENTER OF VOLUSIA 00-080307951 PORT ORANGE FL 386-7608151",
+          "fitid": "amex-502b4bd66631d4898b986a74",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-09",
+          "amount": 10,
+          "description": "Mister Car Wash #0015 HOUSTON TX CAR WASH",
+          "fitid": "amex-f8ee14f93fc695776555902a",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-10",
+          "amount": 191.96,
+          "description": "KEEVER & WIESENTHAL HOUSTON TX 713-995-8200",
+          "fitid": "amex-134a6fe8282993f9ddaec066",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-10",
+          "amount": 20.55,
+          "description": "DALLAS WATER AUTOPAY DALLAS TX 2146511441",
+          "fitid": "amex-fb5776e18261b05844befa98",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-10",
+          "amount": 180,
+          "description": "CHABAD OF THE BRAZOS 926700097586100 COLLEGE STATI TX RABBI@JEWISHAGGIES.COM",
+          "fitid": "amex-3f965840c9cf3f2921ef496a",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-10",
+          "amount": 315.85,
+          "description": "COMCAST / XFINITY 800-266-2278 TX CABLE SVCS",
+          "fitid": "amex-79915fb9f1f15af5e1a4d261",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-10",
+          "amount": 27.72,
+          "description": "HOUSTON CHRONICLE CIRC HOUSTON TX 713-362-7211",
+          "fitid": "amex-02af56cf042c3d3c53968e34",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-11",
+          "amount": 180,
+          "description": "CHABAD OF SUGAR LAND 281-969-7191 TX 281-969-7191",
+          "fitid": "amex-829efcbedd98578eeacc9dd9",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-11",
+          "amount": 186.3,
+          "description": "Chabad-CHAI LEARNING CENT 718300000998 HOUSTON TX 281-5897188",
+          "fitid": "amex-ea44cab2cfaa3f187101c4d6",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-11",
+          "amount": 66.65,
+          "description": "COMCAST / XFINITY 800-266-2278 TX CABLE SVCS",
+          "fitid": "amex-d202391c54f272719a654528",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-12",
+          "amount": 40.22,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-9b5c7251d26af73cec4f02db",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-13",
+          "amount": 23.78,
+          "description": "CVS PHARMACY GALVESTON TX 8007467287 PHARMACIES",
+          "fitid": "amex-d881ae205d0ec90392b8252d",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-16",
+          "amount": 41.21,
+          "description": "WALGREENS ORMOND BEACH FL 8002892273",
+          "fitid": "amex-96caf1d6ea101216c167b750",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-16",
+          "amount": 25.92,
+          "description": "NORTHERN TOOL BURNSVILLE MN HARDWARE STORE",
+          "fitid": "amex-ce3a2745a006c26c8486a22b",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-17",
+          "amount": 329.07,
+          "description": "LAWNCARE* LAWNSTARTER AUSTIN TX +18668221766",
+          "fitid": "amex-9a8ddc23a52d22a99cbb0bc6",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-17",
+          "amount": 26.69,
+          "description": "HOMEDEPOT.COM 800-430-3376 GA 800-430-3376",
+          "fitid": "amex-d3e3249d7f7da9451a1058df",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-18",
+          "amount": 26.61,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-9979ae06e6b8a4ed46baffe0",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-18",
+          "amount": 93.65,
+          "description": "SAM'S CLUB 4769 4769 HOUSTON TX WHOLESALE CLUB",
+          "fitid": "amex-8c3377debead30f62a172dec",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-18",
+          "amount": 58.88,
+          "description": "STOR-IT SELF STORAGE # 2 7421676331878 ORMOND BEACH FL NANCY@VANACOREHOMES.COM",
+          "fitid": "amex-535b322227c05ca7a3deae9e",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-18",
+          "amount": 85.02,
+          "description": "OPTUM HOME DELIVERY IRVINE CA +18003563477",
+          "fitid": "amex-4b9343fa82fd19f4cb9e9dc8",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-20",
+          "amount": 359.15,
+          "description": "VERIZONWRLSSAPO VE 800-922-0204 FL VZWIRELESS",
+          "fitid": "amex-475542d644223530aca4e64a",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-21",
+          "amount": 6.4,
+          "description": "CALLRAIL INC 888-846-7769 GA SOFTWARE",
+          "fitid": "amex-31155242b822eadeff713e20",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-22",
+          "amount": 327.03,
+          "description": "COMCAST / XFINITY 800-266-2278 TX CABLE SVCS",
+          "fitid": "amex-9a16dc21551f5c0cd9d9271d",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-22",
+          "amount": 16,
+          "description": "FIRST AMERICAN FLOOD DAT AUSTIN TX 800-447-1772",
+          "fitid": "amex-11adf54c5cc345742d7ca3ac",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-23",
+          "amount": 1259.83,
+          "description": "Epay3*Ryan Specialty Group Chicago IL GOODS/SERVICES",
+          "fitid": "amex-98507779469167243c092d32",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-24",
+          "amount": 40.05,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-222bb17c8a1eb69fa4f4952d",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-24",
+          "amount": 767.59,
+          "description": "FIRST CONNECT INSUR... SAN FRANCISCO CA +16506006782",
+          "fitid": "amex-f5daff1282c2828e0f5dcccd",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-26",
+          "amount": 25.48,
+          "description": "THE HOME DEPOT GALVESTON TX 800-654-0688",
+          "fitid": "amex-8a01d32c5d4310a85b785e44",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-28",
+          "amount": 2.65,
+          "description": "WEB*BLUEHOST.COM 888-401-4678 UT 153072474 84606 BLUEHOST",
+          "fitid": "amex-e00dada427987020f01726f5",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-28",
+          "amount": 334.79,
+          "description": "JUST ENERGY 866-587-8674 TX 8237411 77056",
+          "fitid": "amex-eb7962af8058d800429c2d1c",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-30",
+          "amount": 29.95,
+          "description": "PAYPAL *ONLINENOTAR 4029357733 CA 4029357733",
+          "fitid": "amex-e508c0c206609338221b2fa9",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-30",
+          "amount": 38.14,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-66b0f5fa839748860aa86616",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-31",
+          "amount": 79.95,
+          "description": "INTUIT QUICKBOOKS 800-446-8848 CA CL.INTUIT.COM",
+          "fitid": "amex-91e7615444143726d2959354",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-31",
+          "amount": 329.07,
+          "description": "LAWNCARE* LAWNSTARTER AUSTIN TX +18668221766",
+          "fitid": "amex-743d314af5e5a614b62617b8",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-31",
+          "amount": 31.51,
+          "description": "WALGREENS ORMOND BEACH FL 8002892273",
+          "fitid": "amex-ba9e5543cba684d45afe3063",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-01",
+          "amount": 29.75,
+          "description": "IN *WIRED ELECTRICAL SERVICES INC. TOMBALL TX 223764-531 77377",
+          "fitid": "amex-27494c88f27d966082d6fbb9",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-01",
+          "amount": 500,
+          "description": "Chabad-CHAI LEARNING CENT 718300000998 HOUSTON TX 281-5897188",
+          "fitid": "amex-28ff4fa13110584590be95b2",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-02",
+          "amount": 158,
+          "description": "HIGHLAND SPECIALITY PHARM 650000010332 HATTIESBURG MS 6012686033",
+          "fitid": "amex-47bd466dcf92340eeab79153",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-02",
+          "amount": 58.88,
+          "description": "STOR-IT SELF STORAGE # 2 7421676331878 ORMOND BEACH FL NANCY@VANACOREHOMES.COM",
+          "fitid": "amex-5bf81371e91fddedac9b1e10",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-04",
+          "amount": 32.45,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-73c00ed2ac0dd7ecd8b9c18a",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-04",
+          "amount": 2.15,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-3962568d0c36a614510a28d3",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-04",
+          "amount": 9.99,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-904915489ec5d13776950473",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-04",
+          "amount": 37.19,
+          "description": "WEB*BLUEHOST.COM 888-401-4678 UT 53535475 84606 BLUEHOST",
+          "fitid": "amex-c1b02c450766b60694570c12",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-05",
+          "amount": 85,
+          "description": "COMPLETE HEALTH ORMAND BE 00-080403006 ORMOND BEACH FL 386-6770453",
+          "fitid": "amex-270887f28615839a94918a52",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-06",
+          "amount": 9.99,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-6d562b4709ffbec7fa4b408d",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-06",
+          "amount": 45.47,
+          "description": "HOMEDEPOT.COM 800-430-3376 GA 800-430-3376",
+          "fitid": "amex-06bf9c8dae6a442834c5fc1d",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-06",
+          "amount": 35.1,
+          "description": "RHYTHM OPS, LLC HOUSTON TX ELECTRIC",
+          "fitid": "amex-595fc3ac52eb520d18d0c424",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 66.96,
+          "description": "RELIANT ENERGY HOUSTON TX 7144706686 77005 ELECTRICITY",
+          "fitid": "amex-ac2db68ccfa9c9eeac82f41a",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 216.49,
+          "description": "HOMEDEPOT.COM 800-430-3376 GA 800-430-3376",
+          "fitid": "amex-472efc09476d26091cda141f",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 400.47,
+          "description": "THE HOME DEPOT HOUSTON TX 800-654-0688",
+          "fitid": "amex-f833af4bba76ab4b19e4f75b",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 23.73,
+          "description": "THE HOME DEPOT HOUSTON TX 800-654-0688",
+          "fitid": "amex-5f1e9906f422af77fb8ec7ce",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 31.96,
+          "description": "HOUSTON CHRONICLE CIRC HOUSTON TX 713-362-7211",
+          "fitid": "amex-991fb99f8cf1de0ecfa6ace3",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 46.53,
+          "description": "AMAZON MARKETPLACE NA PA AMZN.COM/BILL WA MERCHANDISE",
+          "fitid": "amex-a765fb98045d0ad279f318d2",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 1105,
+          "description": "DAVID B FISHER DDS 00-08044620683 BELLAIRE TX DENTIST/ORTHODONTIST",
+          "fitid": "amex-debf304a3ebdbff6eca13107",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-08",
+          "amount": 14.06,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-c115e147471999a0209de5eb",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-08",
+          "amount": 18.5,
+          "description": "JOHN'S XPRESS LUBE JOHN'S XPRESS L BELLAIRE TX AUTO SERVICE",
+          "fitid": "amex-7d2c2c1c6b3576472004d1f1",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-08",
+          "amount": 149.85,
+          "description": "WALGREENS ORMOND BEACH FL 8002892273",
+          "fitid": "amex-4b4bdcf7b5b066070964e4dd",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-08",
+          "amount": 76.25,
+          "description": "HARRIS VEHREG 1310100 HOUSTON TX 713-274-8280",
+          "fitid": "amex-0e8c1762e312e46ea3faf9bf",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-08",
+          "amount": 2,
+          "description": "TEXAS.GOV*SERVICEFEE T 1325500 AUSTIN TX 512-936-2644",
+          "fitid": "amex-8343b74f2482d81e7b65fb0d",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-09",
+          "amount": 840.06,
+          "description": "CHUBB*CHUBB PRS PHILADELPHIA PA 553483510 19106 INSURANCE BROKERS/UNDER",
+          "fitid": "amex-6ac0adc96879a56c16b942b3",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-09",
+          "amount": 82.4,
+          "description": "SLADE & BAKER VISION 068880022503027 HOUSTON TX 480 77027",
+          "fitid": "amex-19f34579152129edce9225f5",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-11",
+          "amount": 2.24,
+          "description": "CVS PHARMACY HOUSTON TX 8007467287",
+          "fitid": "amex-88035058a52bb84a74ccb927",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-11",
+          "amount": 17,
+          "description": "AMK VALET HOU METHODIST AMK VALET HOU HOUSTON TX 713-441-2000",
+          "fitid": "amex-7807d980f23a6515e3292aac",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-18",
+          "amount": 9,
+          "description": "METHODIST SCURLOCK S. PK 97685 HOUSTON TX 312-274-2000",
+          "fitid": "amex-f6482c97a7042920b635bf0f",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-19",
+          "amount": 6,
+          "description": "BAYLOR CAMBRIDGE MOB PKG HOUSTON TX 832-876-3748",
+          "fitid": "amex-05f210121d1eecf07228ef1c",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-30",
+          "amount": 6,
+          "description": "BAYLOR CAMBRIDGE MOB PKG HOUSTON TX 832-876-3748",
+          "fitid": "amex-69026ac6560e8a3f0ba8e359",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-06",
+          "amount": 94.07,
+          "description": "CVS PHARMACY HOUSTON TX 8007467287",
+          "fitid": "amex-50a99d25af9f86dca4723525",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 7,
+          "description": "METHODIST SCURLOCK S. PK 97685 HOUSTON TX 312-274-2000",
+          "fitid": "amex-dc1b9da85a752accfb1c4d91",
+          "isPayment": false
+        },
+        {
+          "date": "2025-12-16",
+          "amount": 96.75,
+          "description": "CITY OF SUGAR LAND COMMU SUGAR LAND TX 281-275-2750",
+          "fitid": "amex-a9aa074b1270cd629703b90c",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-09",
+          "amount": 2093.47,
+          "description": "Interest Charge on Purchases",
+          "fitid": "amex-d51495e5aa717517bb837c8a",
+          "isPayment": false
+        }
+      ],
+      "expectedNet": -4282.01,
+      "netVariance": 0,
+      "expectedClosing": 80091.93
+    },
+    {
+      "file": "2026-02-06_601f.pdf",
+      "meta": {
+        "closingDate": "2026-02-06",
+        "newBalance": 84511.49,
+        "previousBalance": 80091.93,
+        "paymentsCredits": -15552.22,
+        "newCharges": 18066.7,
+        "fees": 0,
+        "interestCharged": 1905.08,
+        "accountLast4": "88007",
+        "cardName": "Amex Marriott Bonvoy Business 88007"
+      },
+      "transactionCount": 69,
+      "netChange": 4419.56,
+      "transactions": [
+        {
+          "date": "2026-01-11",
+          "amount": -2500,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-72fa6f3d3ac54262e3595031",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-15",
+          "amount": -2500,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-a669f5e0c4566921b605cd52",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-21",
+          "amount": -2500,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-b8c68cced537226a76c8f371",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-26",
+          "amount": -3000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-508d3d506e4e144b2ff7ef36",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-29",
+          "amount": -2500,
+          "description": "ONLINE PAYMENT - THANK YOU",
+          "fitid": "amex-b1080f0378826990f2ee308c",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-31",
+          "amount": -2500,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-1d5f31329ab0906423c9e5d2",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-10",
+          "amount": -24.89,
+          "description": "Credit: AMAZON MARKETPLACE NA PA",
+          "fitid": "amex-d784c033d56faf45d757cc7f",
+          "isPayment": true
+        },
+        {
+          "date": "2026-02-02",
+          "amount": -24,
+          "description": "Credit: FAIRCHILDS VINEGAR 000000001",
+          "fitid": "amex-f4255d8fb6c27e805cf62c22",
+          "isPayment": true
+        },
+        {
+          "date": "2026-02-04",
+          "amount": -3.33,
+          "description": "Credit: CVS PHARMACY",
+          "fitid": "amex-a6bdadd9008aaac94e5072b7",
+          "isPayment": true
+        },
+        {
+          "date": "2026-01-09",
+          "amount": 8.65,
+          "description": "AMAZON MARKETPLACE NA PA AMZN.COM/BILL WA MERCHANDISE",
+          "fitid": "amex-f87925fbd4fb4d3dbe9dae5d",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-09",
+          "amount": 191,
+          "description": "LISTER PLUMBING GALVESTON TX 409-765-6833",
+          "fitid": "amex-81492f5ff166883bedbe2155",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-10",
+          "amount": 1020.48,
+          "description": "Epay3*Delta General Agency Cor Houston TX GOODS/SERVICES",
+          "fitid": "amex-f41771961e9275f1db1f2b59",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-10",
+          "amount": 713.96,
+          "description": "FLBLUE* ACA JACKSONVILLE FL +18003522583",
+          "fitid": "amex-252d6586ddcf589ba2d602c2",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-10",
+          "amount": 9.03,
+          "description": "THE HOME DEPOT HOUSTON TX 800-654-0688",
+          "fitid": "amex-15d1691265c92433fa1b139e",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-10",
+          "amount": 365.1,
+          "description": "COMCAST / XFINITY 800-266-2278 TX CABLE SVCS",
+          "fitid": "amex-0741444804b06309f5e20df1",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-11",
+          "amount": 75.29,
+          "description": "3939 SOUTHWEST FWY 57543428403 HOUSTON TX 7138508646",
+          "fitid": "amex-cac109d28efaaa3d6d779dac",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-11",
+          "amount": 66.65,
+          "description": "COMCAST / XFINITY 800-266-2278 TX CABLE SVCS",
+          "fitid": "amex-b0b05c089742259ccd2918e1",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-12",
+          "amount": 49.36,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-e2a2c25b45c389b51975a8d9",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-12",
+          "amount": 29.2,
+          "description": "THE HOME DEPOT HOUSTON TX 800-654-0688",
+          "fitid": "amex-68bf12b360c7458acc57a01e",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-13",
+          "amount": 1867.74,
+          "description": "ALICIA M.... HOUSTON TX +18888582546",
+          "fitid": "amex-0572da95eb697efeba2c20c4",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-13",
+          "amount": 15.84,
+          "description": "DALLAS WATER AUTOPAY DALLAS TX 2146511441",
+          "fitid": "amex-ca09c070c3cb913ff39fb54e",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-13",
+          "amount": 33,
+          "description": "TX DPS DL OFFICE 1140505 AUSTIN TX 512-424-2600",
+          "fitid": "amex-de42b9f238b1dfe9795d9200",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-14",
+          "amount": 1080.48,
+          "description": "ALICIA M.... HOUSTON TX +18888582546",
+          "fitid": "amex-ba2d20f8560804be81367d17",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-14",
+          "amount": 329.07,
+          "description": "LAWNCARE* LAWNSTARTER AUSTIN TX +18668221766",
+          "fitid": "amex-278f3a8efd9167785f4fbea6",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-14",
+          "amount": 39.05,
+          "description": "WALGREENS ORMOND BEACH FL NONE 32174 PHARMACIES",
+          "fitid": "amex-6e63e877c428935ceb3aca87",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-16",
+          "amount": 29.32,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-328ea897e6e5ec74cad0f54b",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-16",
+          "amount": 131.14,
+          "description": "TEXAS ENDOCRINOLOGY GROUP 00-080326908 HOUSTON TX DOCTOR & PHYSICIAN",
+          "fitid": "amex-abaf797244b9eae66e92ef58",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-17",
+          "amount": 7,
+          "description": "METHODIST SCURLOCK S. PK 97685 HOUSTON TX 312-274-2000",
+          "fitid": "amex-1a04cab643cd8f0b3d9c94a0",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-20",
+          "amount": 338.98,
+          "description": "VERIZONWRLSSAPO VE 800-922-0204 FL VZWIRELESS",
+          "fitid": "amex-aefb21bb10420baa64737b5f",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-20",
+          "amount": 10.52,
+          "description": "WALGREENS HOUSTON TX NONE 77005 PHARMACIES",
+          "fitid": "amex-0fc3c8c2bc515c901d76262d",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-21",
+          "amount": 366.22,
+          "description": "Epay3*Ryan Specialty Group Chicago IL GOODS/SERVICES",
+          "fitid": "amex-08de4b7faf0a4e1e497c62e4",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-21",
+          "amount": 108.24,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-c3d009dd7b627a18e97bfe51",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-21",
+          "amount": 10,
+          "description": "CVS PHARMACY HOUSTON TX 8007467287",
+          "fitid": "amex-90a55bbe0be2d437db2d36bb",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-21",
+          "amount": 1105,
+          "description": "DAVID B FISHER DDS 00-08044620683 BELLAIRE TX DENTIST/ORTHODONTIST",
+          "fitid": "amex-2f070b36f4751e6046c80884",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-21",
+          "amount": 32,
+          "description": "FIRST AMERICAN FLOOD DAT AUSTIN TX 800-447-1772",
+          "fitid": "amex-f84dab28eafcdc1eead12d58",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-22",
+          "amount": 38.7,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-a31209df50322d55533ca6f6",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-22",
+          "amount": 182.22,
+          "description": "WALGREENS ORMOND BEACH FL NONE 32174 PHARMACIES",
+          "fitid": "amex-2a2112ac1bfaa41ea13ebe6e",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-22",
+          "amount": 356.87,
+          "description": "COMCAST / XFINITY 800-266-2278 TX CABLE SVCS",
+          "fitid": "amex-dedb9591b01d4a8aab2536ff",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-23",
+          "amount": 745,
+          "description": "KIAVI.COM SAN FRANCISCO CA +18444154663",
+          "fitid": "amex-5e10470c0fbf5a50d1b9aaf5",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-24",
+          "amount": 767.59,
+          "description": "FIRST CONNECT INSUR... SAN FRANCISCO CA +16506006782",
+          "fitid": "amex-54d99c0a4e5d1d8264680ce9",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-24",
+          "amount": 24,
+          "description": "FAIRCHILDS VINEGAR 000000001 FRUITLAND ID 2084524701",
+          "fitid": "amex-982e09d695941ce1e2b739f8",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-28",
+          "amount": 243.07,
+          "description": "ATGPAY* COVINGTON WOO KING OF PRUSSIA PA +16108256900",
+          "fitid": "amex-fa0c1628a5650f3a359190c7",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-28",
+          "amount": 158,
+          "description": "HIGHLAND SPECIALITY PHARM 650000010332 HATTIESBURG MS 6012686033",
+          "fitid": "amex-bcca7d7146af40578ce16162",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-28",
+          "amount": 2.65,
+          "description": "WEB*BLUEHOST.COM 888-401-4678 UT 153072474 84606 BLUEHOST HOSTING SERVICES",
+          "fitid": "amex-fe983d985d8a243aa42e1eba",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-28",
+          "amount": 126.62,
+          "description": "D J*WSJ 800-568-7625 NJ SUBSRIPTION",
+          "fitid": "amex-9be37230d32dd8fb609751c2",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-29",
+          "amount": 280.07,
+          "description": "Epay3*US Assure Insurance Serv Chicago IL GOODS/SERVICES",
+          "fitid": "amex-5363abede747c55f95c8ad3d",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-29",
+          "amount": 1129.05,
+          "description": "OBSIDIAN ADMITTED 461682001733658 FORT WORTH TX SSINDHWANI@WELLINGTONINSG",
+          "fitid": "amex-2e9c9f941ff81f9eeefa9d29",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-29",
+          "amount": 26.85,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-a96c412c0935aebde16917da",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-29",
+          "amount": 38.23,
+          "description": "CVS PHARMACY HOUSTON TX 8007467287",
+          "fitid": "amex-c55ec783c0c92bda202ad3f6",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-30",
+          "amount": 155.09,
+          "description": "JUST ENERGY 866-587-8674 TX 8237411 77056",
+          "fitid": "amex-3f673492394edc239333d7db",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-31",
+          "amount": 79.95,
+          "description": "INTUIT QUICKBOOKS 800-446-8848 CA CL.INTUIT.COM",
+          "fitid": "amex-392b194ae612a57498ee5f23",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-31",
+          "amount": 9,
+          "description": "METHODIST SCURLOCK S. PK 97685 HOUSTON TX 312-274-2000",
+          "fitid": "amex-0cde93ca0c713e8a0bf8aeb8",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-31",
+          "amount": 1024,
+          "description": "GOV*HCTAX HOUSTON TX 5F11C223-5348-41277002 ACCOUNT NUMBER: 0810110000 TRANSACTION FEES",
+          "fitid": "amex-6ddad2241276d4b20abe0e67",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-31",
+          "amount": 2048,
+          "description": "GOV*HCTAX HOUSTON TX 5F11C223-5348-41277002 ACCOUNT NUMBER: 0470860000 TRANSACTION FEES",
+          "fitid": "amex-a2a155e7bee9c5cb5e0e6d2c",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-01",
+          "amount": 29.75,
+          "description": "IN *WIRED ELECTRICAL SERVICES INC. TOMBALL TX 172739-380 77377",
+          "fitid": "amex-13e11c889c0bb0872c20db75",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-01",
+          "amount": 329.07,
+          "description": "LAWNCARE* LAWNSTARTER AUSTIN TX +18668221766",
+          "fitid": "amex-227c06c09e0483e661d491b5",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-01",
+          "amount": 500,
+          "description": "Chabad-CHAI LEARNING CENT 718300000998 HOUSTON TX 281-5897188",
+          "fitid": "amex-1f2f4eae4bcfadb697aca89b",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-02",
+          "amount": 19.95,
+          "description": "PAYPAL *ONLINENOTAR 4029357733 CA 4029357733",
+          "fitid": "amex-3d3be49cb631cf68a669bffe",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-04",
+          "amount": 52.33,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-f3b0eba136f0f965fda1c930",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-04",
+          "amount": 26.34,
+          "description": "CVS PHARMACY HOUSTON TX 8007467287 PHARMACIES",
+          "fitid": "amex-0837387bc3682ee1472a67de",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-06",
+          "amount": 9.99,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-322c4c4489727747ed1af523",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-13",
+          "amount": 625,
+          "description": "DAVID B FISHER DDS 00-08044620683 BELLAIRE TX DENTIST/ORTHODONTIST",
+          "fitid": "amex-6815bd76bd086b1766aed502",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-23",
+          "amount": 283,
+          "description": "HMSPG ORTHO 00-08043451262 HOUSTON TX DOCTOR & PHYSICIAN",
+          "fitid": "amex-f047d51865400d17c1e6051c",
+          "isPayment": false
+        },
+        {
+          "date": "2026-01-29",
+          "amount": 6.33,
+          "description": "CVS PHARMACY HOUSTON TX 8007467287 PHARMACIES",
+          "fitid": "amex-8a16fa78661474181429186b",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-02",
+          "amount": 6,
+          "description": "BAYLOR CAMBRIDGE MOB PKG HOUSTON TX 832-876-3748",
+          "fitid": "amex-67ebb65869dc187dfcb46aa4",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-04",
+          "amount": 7,
+          "description": "METHODIST SCURLOCK S. PK 97685 HOUSTON TX 312-274-2000",
+          "fitid": "amex-caaa50fae2cd5ff13e82646c",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-01",
+          "amount": 610.01,
+          "description": "FLOOR AND DECOR 242 C2P 242 HOUSTON TX 877-675-0002",
+          "fitid": "amex-de214760050e4081ddfa4001",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-02",
+          "amount": 94.65,
+          "description": "THE HOME DEPOT HOUSTON TX 800-654-0688",
+          "fitid": "amex-3ba34784529803c4930eaa57",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-06",
+          "amount": 1905.08,
+          "description": "Interest Charge on Purchases",
+          "fitid": "amex-06b1501b53e29dc8a063487b",
+          "isPayment": false
+        }
+      ],
+      "expectedNet": 4419.56,
+      "netVariance": 0,
+      "expectedClosing": 84511.49
+    },
+    {
+      "file": "2026-03-09_6b56.pdf",
+      "meta": {
+        "closingDate": "2026-03-09",
+        "newBalance": 84369.45,
+        "previousBalance": 84511.49,
+        "paymentsCredits": -28000,
+        "newCharges": 25687.78,
+        "fees": 0,
+        "interestCharged": 2170.18,
+        "accountLast4": "88007",
+        "cardName": "Amex Marriott Bonvoy Business 88007"
+      },
+      "transactionCount": 84,
+      "netChange": -142.04,
+      "transactions": [
+        {
+          "date": "2026-02-09",
+          "amount": -3000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-5cb6b742f52938b0a9f2db3d",
+          "isPayment": true
+        },
+        {
+          "date": "2026-02-10",
+          "amount": -5000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-adbc39bf51b1095040a15798",
+          "isPayment": true
+        },
+        {
+          "date": "2026-02-25",
+          "amount": -7500,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-2c02016d0da84bf8823031d9",
+          "isPayment": true
+        },
+        {
+          "date": "2026-03-01",
+          "amount": -5000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "fitid": "amex-d55090172b92ff5ab633df0a",
+          "isPayment": true
+        },
+        {
+          "date": "2026-03-08",
+          "amount": -7500,
+          "description": "ONLINE PAYMENT - THANK YOU",
+          "fitid": "amex-8f531344037c62014b34edbf",
+          "isPayment": true
+        },
+        {
+          "date": "2026-02-08",
+          "amount": 14.06,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-77997476c8424614f4b917c5",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-09",
+          "amount": 1204.24,
+          "description": "ALICIA M.... HOUSTON TX +18888582546",
+          "fitid": "amex-b83e86c85ccc41283b6a5979",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-09",
+          "amount": 2958.48,
+          "description": "ALICIA M.... HOUSTON TX +18888582546",
+          "fitid": "amex-bdcbe4a105f5cd9591f64216",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-09",
+          "amount": 840.06,
+          "description": "CHUBB*CHUBB PRS PHILADELPHIA PA 565661985 19106 INSURANCE BROKERS/UNDER",
+          "fitid": "amex-67bae3171a153a2fcdc1bfc6",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-10",
+          "amount": 280.02,
+          "description": "COMCAST / XFINITY 800-266-2278 TX CABLE SVCS",
+          "fitid": "amex-3d84687fe1c4457bbbdf692d",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-10",
+          "amount": 38.17,
+          "description": "RHYTHM OPS, LLC HOUSTON TX ELECTRIC",
+          "fitid": "amex-f88d3b4c593058c2852cb5a6",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-10",
+          "amount": 97.42,
+          "description": "ALERT ALARMS 1 GALVESTON TX 409-763-3877",
+          "fitid": "amex-e3a5bd44261097bb6b315680",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-11",
+          "amount": 55.48,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-ea82e8edbdd6d6726c4ffa7a",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-11",
+          "amount": 329.07,
+          "description": "LAWNCARE* LAWNSTARTER AUSTIN TX +18668221766",
+          "fitid": "amex-07f4ef61f9452ae0fb55af64",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-11",
+          "amount": 66.65,
+          "description": "COMCAST / XFINITY 800-266-2278 TX CABLE SVCS",
+          "fitid": "amex-daffb01c38cc65634f85a70b",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-12",
+          "amount": 31.25,
+          "description": "OPTUM HOME DELIVERY IRVINE CA +18003563477",
+          "fitid": "amex-0643103c0645a2f652c5a88c",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-12",
+          "amount": 21.34,
+          "description": "CVS PHARMACY HOUSTON TX 8007467287",
+          "fitid": "amex-97cda71a3717c4772acd3c57",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-12",
+          "amount": 14.45,
+          "description": "CVS PHARMACY HOUSTON TX 8007467287 PHARMACIES",
+          "fitid": "amex-72db7c0ed65d82ff8f3f4f2d",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-12",
+          "amount": 58.88,
+          "description": "STOR-IT SELF STORAGE # 2 7421676331878 ORMOND BEACH FL NANCY@VANACOREHOMES.COM",
+          "fitid": "amex-d99d2792187491c07e8ba3f9",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-13",
+          "amount": 610,
+          "description": "PETER SISTO Houston TX squareup.com/receipts",
+          "fitid": "amex-0b1045256286ef3605f23e5e",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-13",
+          "amount": 15.84,
+          "description": "DALLAS WATER AUTOPAY DALLAS TX 2146511441",
+          "fitid": "amex-94284a6db368989dced75d49",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-14",
+          "amount": 160.49,
+          "description": "WALGREENS ORMOND BEACH FL 8002892273",
+          "fitid": "amex-adc042d723d4f90e43c97a21",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-14",
+          "amount": 31.96,
+          "description": "HOUSTON CHRONICLE CIRC HOUSTON TX 713-362-7211",
+          "fitid": "amex-1567fff9e46a6584f7bd8914",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-14",
+          "amount": 6.27,
+          "description": "PRIVIA GULF COAST IMAGING 00-080295978 ARLINGTON VA DOCTOR & PHYSICIAN",
+          "fitid": "amex-63e4c7f9e8100af7279e7184",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-16",
+          "amount": 186.33,
+          "description": "OPTUM HOME DELIVERY IRVINE CA +18003563477",
+          "fitid": "amex-c306be25acf9dd7871f186d7",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-16",
+          "amount": 20,
+          "description": "MHHS TMC STERLING GARAGE MHHS TMC STER HOUSTON TX 6411 FANNIN ST",
+          "fitid": "amex-556ea82026e5023d899f2084",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-17",
+          "amount": 62.07,
+          "description": "RELIANT ENERGY HOUSTON TX 7146425011 77005 ELECTRICITY",
+          "fitid": "amex-8e7ff2a82a8ad6f56d08080a",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-17",
+          "amount": 15.16,
+          "description": "LAZ PARKING M11354 HOUSTON TX 713-791-6161",
+          "fitid": "amex-3a6e2f303fee7b914da25630",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-17",
+          "amount": 14.07,
+          "description": "LAZ PARKING M11354 HOUSTON TX 713-791-6161",
+          "fitid": "amex-5baf355fe1fc2df42cdaa1dc",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-18",
+          "amount": 53.71,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-959a1ec31186ac79a42c05f3",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-18",
+          "amount": 17,
+          "description": "MHHS TMC CULLEN VALET MHHS TMC CULLEN HOUSTON TX 6411 FANNIN ST",
+          "fitid": "amex-a930044a8e8508cc51c95c20",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-18",
+          "amount": 20.03,
+          "description": "CVS PHARMACY HOUSTON TX 8007467287",
+          "fitid": "amex-e0e40052367cc0246eb22629",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-19",
+          "amount": 7,
+          "description": "METHODIST SCURLOCK S. PK 97685 HOUSTON TX 312-274-2000",
+          "fitid": "amex-37790a2310713333e7eb5ca8",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-19",
+          "amount": 523.5,
+          "description": "SAMSCLUB.COM#6279 6279 TEMPLE TX 888-746-7726",
+          "fitid": "amex-9efb473cb2a6470def7dff84",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-20",
+          "amount": 358.98,
+          "description": "VERIZONWRLSSAPO VE 800-922-0204 FL VZWIRELESS",
+          "fitid": "amex-1a30bbdb57c9c16de8292c5b",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-21",
+          "amount": 367.1,
+          "description": "Epay3*Ryan Specialty Group Chicago IL GOODS/SERVICES",
+          "fitid": "amex-2d05f1d8236b52e9d52c93d1",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-22",
+          "amount": 356.87,
+          "description": "COMCAST / XFINITY 800-266-2278 TX CABLE SVCS",
+          "fitid": "amex-0540c5695b28ff337f5cec7b",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-22",
+          "amount": 10.81,
+          "description": "PAYPAL *MICROSOFT 8006427676 WA 8006427676",
+          "fitid": "amex-0004fca284bc884675160dac",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-23",
+          "amount": 6,
+          "description": "BAYLOR CAMBRIDGE MOB PKG HOUSTON TX 832-876-3748",
+          "fitid": "amex-21fb8121f0f1cf18196649b4",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-24",
+          "amount": 377.1,
+          "description": "OBSIDIAN ADMITTED 461682001733658 FORT WORTH TX SSINDHWANI@WELLINGTONINSG",
+          "fitid": "amex-be33e71d8ca1659911a5d97b",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-24",
+          "amount": 767.59,
+          "description": "FIRST CONNECT INSUR... SAN FRANCISCO CA +16506006782",
+          "fitid": "amex-7482fbe32a8ebe00433e5aee",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-24",
+          "amount": 21.63,
+          "description": "MICRO CENTER 155 HOUSTON TX 7139408500",
+          "fitid": "amex-6e650e746536f4e77d453d72",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-24",
+          "amount": 151.96,
+          "description": "WALGREENS ORMOND BEACH FL 8002892273",
+          "fitid": "amex-6a48644588d71e1cf48ab423",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-24",
+          "amount": 149,
+          "description": "CENTERWELL PHARMACY OH CENTERWELL PHAR SPRINGDALE OH 800-379-0092",
+          "fitid": "amex-2b6cd82301efa7abb78ef94a",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-24",
+          "amount": 67.5,
+          "description": "LONE STAR GLASS INC. HOUSTON TX 713-661-0091",
+          "fitid": "amex-d40f8bbc7acae124ef4ca53f",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-25",
+          "amount": 369.12,
+          "description": "MB OF HOUSTON GREENW HOUSTON TX 1296497AN522-S20277027",
+          "fitid": "amex-f7b1bcc9a8d0a493b65b6068",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-25",
+          "amount": 3.18,
+          "description": "WEB*BLUEHOST.COM 888-401-4678 UT 153072474 84606 BLUEHOST HOSTING SERVICES",
+          "fitid": "amex-81d637aab4d3da63c9208808",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-28",
+          "amount": 2557.25,
+          "description": "PMT*FT BEND CO TAX OFFICE 000099917 RICHMOND TX 2813413710",
+          "fitid": "amex-78543a319fcacd3b3575034c",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-28",
+          "amount": 449.99,
+          "description": "SP AQUA POOL SUPPLY SCOTTSDALE AZ +18884840864",
+          "fitid": "amex-91c224f3adaba9001bfabebb",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-01",
+          "amount": 29.75,
+          "description": "IN *WIRED ELECTRICAL SERVICES INC. TOMBALL TX 227630-529 77377",
+          "fitid": "amex-a8778efc9e7ab06ccad7e170",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-01",
+          "amount": 79.95,
+          "description": "INTUIT QUICKBOOKS 800-446-8848 CA CL.INTUIT.COM",
+          "fitid": "amex-608ad0a805a681e1b1b60811",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-01",
+          "amount": 500,
+          "description": "Chabad-CHAI LEARNING CENT 718300000998 HOUSTON TX 281-5897188",
+          "fitid": "amex-ec650c8e51f562fb6435e995",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-01",
+          "amount": 67.55,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-0fbcd91e9f5089502a357d11",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-01",
+          "amount": 1765.14,
+          "description": "GOV*HCTAX HOUSTON TX 5F11C223-5348-41277002 ACCOUNT NUMBER: 1416460010 TRANSACTION FEES",
+          "fitid": "amex-071196aa3a93026673efbb39",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-01",
+          "amount": 1420.27,
+          "description": "GOV*HCTAX HOUSTON TX 5F11C223-5348-41277002 ACCOUNT NUMBER: 0700280060 TRANSACTION FEES",
+          "fitid": "amex-865e8f53fcd59a398474d969",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-01",
+          "amount": 1291.67,
+          "description": "GOV*HCTAX HOUSTON TX 5F11C223-5348-41277002 ACCOUNT NUMBER: 1123310000 TRANSACTION FEES",
+          "fitid": "amex-d65fe8de7e57813fdeecdde6",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-01",
+          "amount": 80,
+          "description": "HCTRA EZ TAG REBILL HOUSTON TX 546258577 77005 BUSINESS SERVICES",
+          "fitid": "amex-5fbea2b369c8f3cfc1d41836",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-02",
+          "amount": 53.37,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-a2fda6dac518a5bbb9346282",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-02",
+          "amount": 50,
+          "description": "THE SHUL OF BELLAIRE BELLAIRE TX 713-839-8887",
+          "fitid": "amex-73b9379e067f82629deda60a",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-02",
+          "amount": 38.91,
+          "description": "HOMEDEPOT.COM 800-430-3376 GA 800-430-3376",
+          "fitid": "amex-8da7d04588b1ddadc3bfb1c2",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-02",
+          "amount": 52.97,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-458dd02f7d2f4c7027f5b3e8",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-02",
+          "amount": 2.15,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-d3d0c61bb29fa402875e0fe7",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-03",
+          "amount": 108.24,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-ef466c1b3408a62099a0c083",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-03",
+          "amount": 9,
+          "description": "METHODIST SCURLOCK S. PK 97685 HOUSTON TX 312-274-2000",
+          "fitid": "amex-c5dfd08b5c96cf2b5a70ff15",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-03",
+          "amount": 2500.95,
+          "description": "PDS*APPLIED BUSINESS SOFT 000000649 LONG BEACH CA 2603031142282288 77005",
+          "fitid": "amex-025657cbb2c8389cfe5b83e8",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-04",
+          "amount": 899.34,
+          "description": "ATGPAY* COVINGTON WOO KING OF PRUSSIA PA +16108256900",
+          "fitid": "amex-ae953500f60eb01640871a4e",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-04",
+          "amount": 1110.33,
+          "description": "INTUIT QUICKBOOKS 800-446-8848 CA CL.INTUIT.COM",
+          "fitid": "amex-1a56cf8539d4ac6b979d9aca",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-04",
+          "amount": 9.99,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-30ca586f935990436cdfbff5",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-04",
+          "amount": 345.14,
+          "description": "JUST ENERGY 866-587-8674 TX 8237411 77056",
+          "fitid": "amex-6cb80b0d168c2837dfa54bcc",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-05",
+          "amount": 34.22,
+          "description": "SAM'S CLUB FUEL 4769 4769 HOUSTON TX AUTO FUEL DISPENSER",
+          "fitid": "amex-8f909e2793fc0e2cb49f2e0e",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-05",
+          "amount": 37,
+          "description": "MISTER CAR WASH HOUSTON TX CAR WASH",
+          "fitid": "amex-60999380fa0111fb94bf6eb3",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-06",
+          "amount": 9.99,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-4f600fd42fb49fa7f123fc10",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-06",
+          "amount": 9,
+          "description": "METHODIST SCURLOCK S. PK 97685 HOUSTON TX 312-274-2000",
+          "fitid": "amex-fa01391f4c9170b1e682dece",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-06",
+          "amount": 3.24,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-b8273e0ef4f70c8d44973ec8",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-06",
+          "amount": 21.64,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-facfbb2631a1e285c9391b7b",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-08",
+          "amount": 14.06,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-6c95842220482e1e78500c40",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-08",
+          "amount": 46.52,
+          "description": "APPLE.COM/BILL INTERNET CHARGE CA RECORD STORE",
+          "fitid": "amex-cc7304d106791aba2085a87a",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-08",
+          "amount": 189,
+          "description": "PLUMBING SYSTEM PROS HOUSTON TX 713-714-7132",
+          "fitid": "amex-68deb46eda8ab74309d635f0",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-09",
+          "amount": 81.11,
+          "description": "RELIANT ENERGY HOUSTON TX 4001209429 77005 ELECTRICITY",
+          "fitid": "amex-302f2e0a3360de050b1e461a",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-09",
+          "amount": 840.06,
+          "description": "CHUBB*CHUBB PRS PHILADELPHIA PA 578075242 19106 INSURANCE BROKERS/UNDER",
+          "fitid": "amex-d070bbddab06549c46f579a0",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-07",
+          "amount": 2.15,
+          "description": "PAYPAL *APPLE.COM/BILL 8002752273 CA 8002752273",
+          "fitid": "amex-cfcdb27de29b09dbd79f0782",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-07",
+          "amount": 9.99,
+          "description": "PAYPAL *APPLE.COM/BILL 8002752273 CA 8002752273",
+          "fitid": "amex-148cc37142d201fcff4daf0d",
+          "isPayment": false
+        },
+        {
+          "date": "2026-02-26",
+          "amount": 208,
+          "description": "DAVID B FISHER DDS 00-08044620683 BELLAIRE TX DENTIST/ORTHODONTIST",
+          "fitid": "amex-84883ea5db96d0ef4d8c65aa",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-09",
+          "amount": 2170.18,
+          "description": "Interest Charge on Purchases",
+          "fitid": "amex-626053cbe9b2b7f1db2af3be",
+          "isPayment": false
+        }
+      ],
+      "expectedNet": -142.04,
+      "netVariance": 0,
+      "expectedClosing": 84369.45
+    },
+    {
+      "file": "April_2833.csv",
+      "meta": {
+        "closingDate": "2026-04-08",
+        "previousBalance": 84369.45,
+        "newBalance": 84148.66,
+        "accountLast4": "88007",
+        "cardName": "Amex Marriott Bonvoy Business 88007",
+        "source": "csv"
+      },
+      "transactionCount": 63,
+      "netChange": -220.79,
+      "transactions": [
+        {
+          "date": "2026-04-08",
+          "amount": 14.06,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320260980738704394",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-08",
+          "amount": 2057.13,
+          "description": "Interest Charge on Purchases",
+          "category": "Fees & Adjustments-Fees & Adjustments",
+          "fitid": "amex-ref-160409060000391828",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-08",
+          "amount": 34.17,
+          "description": "RELIANT ENERGY      HOUSTON             TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320260980742849510",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-07",
+          "amount": 785.83,
+          "description": "IN *TEXAS PROUD POOLKEMAH               TX",
+          "category": "Business Services-Contracting Services",
+          "fitid": "amex-ref-320260970706574975",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-07",
+          "amount": -10000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320260970702375471",
+          "isPayment": true
+        },
+        {
+          "date": "2026-04-06",
+          "amount": 9.99,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320260960683993964",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-06",
+          "amount": 5319.24,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320260970725043262",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-04",
+          "amount": 310.65,
+          "description": "WEB*BLUEHOST.COM    888-401-4678        UT",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320260950671436179",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-03",
+          "amount": 21.65,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320260940627711997",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-02",
+          "amount": 74.79,
+          "description": "INTUIT QUICKBOOKS   800-446-8848        CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320260920559666638",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-01",
+          "amount": 500,
+          "description": "Chabad-CHAI LEARNINGHOUSTON             TX",
+          "category": "Other-Charities",
+          "fitid": "amex-ref-320260920556918433",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-01",
+          "amount": 1291.67,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320260920577603092",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-01",
+          "amount": 1420.27,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320260920582460127",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-01",
+          "amount": 1765.13,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320260920582473516",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-01",
+          "amount": 29.75,
+          "description": "IN *WIRED ELECTRICALTOMBALL             TX",
+          "category": "Business Services-Contracting Services",
+          "fitid": "amex-ref-320260910528085062",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-01",
+          "amount": 277.3,
+          "description": "JUST ENERGY         866-587-8674        TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320260920573780234",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-31",
+          "amount": 127.92,
+          "description": "INTUIT QUICKBOOKS   800-446-8848        CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320260900511003708",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-31",
+          "amount": 424.72,
+          "description": "OBSIDIAN ADMITTED 46FORT WORTH          TX",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320260900499675750",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-31",
+          "amount": 119.14,
+          "description": "OPTUM HOME DELIVERY IRVINE              CA",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320260910544501356",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-30",
+          "amount": 447.72,
+          "description": "WPENGINE.COM        AUSTIN              TX",
+          "category": "Business Services-Employment Agencies",
+          "fitid": "amex-ref-320260890478961938",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-28",
+          "amount": 3.18,
+          "description": "WEB*BLUEHOST.COM    888-401-4678        UT",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320260880465290951",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-25",
+          "amount": 149,
+          "description": "CENTERWELL PHARMACY SPRINGDALE          OH",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320260850374830476",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-25",
+          "amount": 806,
+          "description": "DAVID B FISHER DDS 0BELLAIRE            TX",
+          "category": "Business Services-Health Care Services",
+          "fitid": "amex-ref-320260850368503075",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-25",
+          "amount": -5000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320260840322177297",
+          "isPayment": true
+        },
+        {
+          "date": "2026-03-24",
+          "amount": 767.59,
+          "description": "FIRST CONNECT INSUR.SAN FRANCISCO       CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320260830319772750",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-24",
+          "amount": 96.33,
+          "description": "NEUROSURGICAL GROUP HOUSTON             TX",
+          "category": "Business Services-Health Care Services",
+          "fitid": "amex-ref-320260840324737201",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-23",
+          "amount": 3239.99,
+          "description": "CHEF MART RESTAURANTHOUSTON             TX",
+          "category": "Business Services-Office Supplies",
+          "fitid": "amex-ref-320260830317523306",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-23",
+          "amount": 160.17,
+          "description": "CITY OF MISSOURI CITROSENBERG           TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320260830311770318",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-23",
+          "amount": 213.2,
+          "description": "CLAUDE.AI SUBSCRIPTISAN FRANCISCO       CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320260820274178413",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-23",
+          "amount": 32.18,
+          "description": "CVS PHARMACY        HOUSTON             TX",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320260830314129400",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-23",
+          "amount": -5000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320260820266435660",
+          "isPayment": true
+        },
+        {
+          "date": "2026-03-23",
+          "amount": 4.81,
+          "description": "SIE FEE 650000009629SCOTTSDALE          AZ",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320260830311769070",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-22",
+          "amount": 108.24,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320260810243301916",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-22",
+          "amount": 351.22,
+          "description": "COMCAST / XFINITY   800-266-2278        TX",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320260810250312411",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-22",
+          "amount": 10.81,
+          "description": "PAYPAL *MICROSOFT   8006427676          WA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320260820287816561",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-21",
+          "amount": 361.93,
+          "description": "Epay3*Ryan SpecialtyChicago             IL",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320260790180110677",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-20",
+          "amount": 2.7,
+          "description": "MCDONALD'S M2170 000GALVESTON           TX",
+          "category": "Restaurant-Bar & Café",
+          "fitid": "amex-ref-320260800232431547",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-20",
+          "amount": 12,
+          "description": "METHODIST SCURLOCK SHOUSTON             TX",
+          "category": "Transportation-Parking Charges",
+          "fitid": "amex-ref-320260790196386302",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-20",
+          "amount": 76.48,
+          "description": "SAM'S CLUB FUEL 4769HOUSTON             TX",
+          "category": "Transportation-Fuel",
+          "fitid": "amex-ref-320260790187521129",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-20",
+          "amount": 358.98,
+          "description": "VERIZONWRLSSAPO VE  800-922-0204        FL",
+          "category": "Communications-Mobile Telecom",
+          "fitid": "amex-ref-320260790198310110",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-19",
+          "amount": 474.19,
+          "description": "IN *WIRED ELECTRICALTOMBALL             TX",
+          "category": "Business Services-Contracting Services",
+          "fitid": "amex-ref-320260780153688710",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-18",
+          "amount": 162.74,
+          "description": "HOUSTON WATER DEPT  713-371-1400        TX",
+          "category": "Other-Government Services",
+          "fitid": "amex-ref-320260770146554798",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-18",
+          "amount": 275,
+          "description": "HUFFSTETLER & COMPANHouston             TX",
+          "category": "Business Services-Other Services",
+          "fitid": "amex-ref-320260770129124073",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-18",
+          "amount": 3.74,
+          "description": "PSVJ   *JPMC FEE    800-420-1663        NC",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320260770146265692",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-17",
+          "amount": 9.28,
+          "description": "CVS PHARMACY        HOUSTON             TX",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320260770135259910",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-17",
+          "amount": 15.84,
+          "description": "DALLAS WATER AUTOPAYDALLAS              TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320260760103232952",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-17",
+          "amount": -2500,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320260760091775400",
+          "isPayment": true
+        },
+        {
+          "date": "2026-03-16",
+          "amount": 2910,
+          "description": "ALICIA M....        HOUSTON             TX",
+          "category": "Business Services-Legal Services",
+          "fitid": "amex-ref-320260750067139091",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-16",
+          "amount": 27.19,
+          "description": "WALGREENS           ORMOND BEACH        FL",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320260760107145816",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-14",
+          "amount": 31.96,
+          "description": "HOUSTON CHRONICLE CIHOUSTON             TX",
+          "category": "Merchandise & Supplies-Mail Order",
+          "fitid": "amex-ref-320260740055361342",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-14",
+          "amount": 45.2,
+          "description": "WALGREENS           ORMOND BEACH        FL",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320260740050346040",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-13",
+          "amount": 33.69,
+          "description": "RHYTHM OPS, LLC     HOUSTON             TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320260730025980755",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-12",
+          "amount": 325.86,
+          "description": "INTUIT QUICKBOOKS   800-446-8848        CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320260710952964595",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-12",
+          "amount": 58.88,
+          "description": "STOR-IT SELF STORAGEORMOND BEACH        FL",
+          "category": "Transportation-Other Transportation",
+          "fitid": "amex-ref-320260720000048096",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-12",
+          "amount": 72.25,
+          "description": "WALGREENS           ORMOND BEACH        FL",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320260720992626617",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-11",
+          "amount": 66.65,
+          "description": "COMCAST / XFINITY   800-266-2278        TX",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320260700933145790",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-11",
+          "amount": 7.9,
+          "description": "CVS PHARMACY        HOUSTON             TX",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320260710964833789",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-11",
+          "amount": 447.9,
+          "description": "Epay3*US Assure InsuChicago             IL",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320260690893471405",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-11",
+          "amount": -5000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320260700919406953",
+          "isPayment": true
+        },
+        {
+          "date": "2026-03-11",
+          "amount": 46.54,
+          "description": "SAM'S CLUB FUEL 4769HOUSTON             TX",
+          "category": "Transportation-Fuel",
+          "fitid": "amex-ref-320260700926889743",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-10",
+          "amount": 306.11,
+          "description": "COMCAST / XFINITY   800-266-2278        TX",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320260690898802725",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-10",
+          "amount": 47.97,
+          "description": "INTUIT QUICKBOOKS   800-446-8848        CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320260690899490289",
+          "isPayment": false
+        },
+        {
+          "date": "2026-03-09",
+          "amount": 124.38,
+          "description": "OPTUM HOME DELIVERY IRVINE              CA",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320260690909305675",
+          "isPayment": false
+        }
+      ],
+      "expectedNet": -220.79,
+      "netVariance": 0
+    },
+    {
+      "file": "May_a08e.csv",
+      "meta": {
+        "closingDate": "2026-05-08",
+        "previousBalance": 84148.66,
+        "newBalance": 82982.56,
+        "accountLast4": "88007",
+        "cardName": "Amex Marriott Bonvoy Business 88007",
+        "source": "csv"
+      },
+      "transactionCount": 65,
+      "netChange": -1166.1,
+      "transactions": [
+        {
+          "date": "2026-05-08",
+          "amount": 14.06,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261280629722526",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-08",
+          "amount": 2094.45,
+          "description": "Interest Charge on Purchases",
+          "category": "Fees & Adjustments-Fees & Adjustments",
+          "fitid": "amex-ref-160509060000690430",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-06",
+          "amount": 5.4,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261260569057693",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-06",
+          "amount": 9.99,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261260570057192",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-05",
+          "amount": -5000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320261250532116350",
+          "isPayment": true
+        },
+        {
+          "date": "2026-05-05",
+          "amount": 91.34,
+          "description": "SAM'S CLUB FUEL 4769HOUSTON             TX",
+          "category": "Transportation-Fuel",
+          "fitid": "amex-ref-320261250540938231",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-01",
+          "amount": 500,
+          "description": "Chabad-CHAI LEARNINGHOUSTON             TX",
+          "category": "Other-Charities",
+          "fitid": "amex-ref-320261220445214151",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-01",
+          "amount": 1291.67,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261220467640364",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-01",
+          "amount": 1420.27,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261220467638658",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-01",
+          "amount": 1765.13,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261220467627838",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-01",
+          "amount": 29.75,
+          "description": "IN *WIRED ELECTRICALTOMBALL             TX",
+          "category": "Business Services-Contracting Services",
+          "fitid": "amex-ref-320261210409424132",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-01",
+          "amount": 306.03,
+          "description": "JUST ENERGY         866-587-8674        TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320261220465095665",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-01",
+          "amount": 424.72,
+          "description": "OBSIDIAN ADMITTED 46FORT WORTH          TX",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261210410430790",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-30",
+          "amount": 1195,
+          "description": "FEMA NFIP FLOOD INSUKALISPELL           MT",
+          "category": "Other-Government Services",
+          "fitid": "amex-ref-320261210431100085",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-29",
+          "amount": 10,
+          "description": "GOOGLE *CLOUD ZNVN34 G.CO/HELPPAY#      CA",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261190360376657",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-28",
+          "amount": 126.62,
+          "description": "D J*WSJ             800-568-7625        NJ",
+          "category": "Merchandise & Supplies-Mail Order",
+          "fitid": "amex-ref-320261190368029224",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-27",
+          "amount": -5000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320261170291807201",
+          "isPayment": true
+        },
+        {
+          "date": "2026-04-27",
+          "amount": 114.77,
+          "description": "OPTUM HOME DELIVERY IRVINE              CA",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261190367579925",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-27",
+          "amount": 3.18,
+          "description": "WEB*BLUEHOST.COM    888-401-4678        UT",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261180342700646",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-26",
+          "amount": 21.65,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261160268828297",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-25",
+          "amount": 10.66,
+          "description": "ANTHROPIC           SAN FRANCISCO       CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261150236442675",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-25",
+          "amount": 695,
+          "description": "APPRAISAL LINKS 5455Matawan             NJ",
+          "category": "Merchandise & Supplies-General Retail",
+          "fitid": "amex-ref-320261150235143065",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-25",
+          "amount": 151.36,
+          "description": "Epay3*Amwins Group  Charlotte           NC",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261140204872656",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-24",
+          "amount": 2451.07,
+          "description": "Epay3*Amwins Group  Charlotte           NC",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261130175069206",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-24",
+          "amount": 767.59,
+          "description": "FIRST CONNECT INSUR.SAN FRANCISCO       CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261140211149337",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-24",
+          "amount": 54.53,
+          "description": "RESIDENTIALELEVATORSTALLAHASSEE         FL",
+          "category": "Business Services-Contracting Services",
+          "fitid": "amex-ref-320261140210321726",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-24",
+          "amount": 27.19,
+          "description": "THE HOME DEPOT      HOUSTON             TX",
+          "category": "Merchandise & Supplies-Hardware Supplies",
+          "fitid": "amex-ref-320261150236939608",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-23",
+          "amount": 47.97,
+          "description": "ANTHROPIC           SAN FRANCISCO       CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261130181496905",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-23",
+          "amount": 21.32,
+          "description": "CURSOR, AI POWERED ISAN FRANCISCO       NY",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261130182044226",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-23",
+          "amount": 48,
+          "description": "FIRST AMERICAN FLOODAUSTIN              TX",
+          "category": "Business Services-Professional Services",
+          "fitid": "amex-ref-320261140223951275",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-23",
+          "amount": -5000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320261130172022402",
+          "isPayment": true
+        },
+        {
+          "date": "2026-04-23",
+          "amount": 10,
+          "description": "OPTUM HOME DELIVERY IRVINE              CA",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261140223383207",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-22",
+          "amount": 351.2,
+          "description": "COMCAST / XFINITY   800-266-2278        TX",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320261120155494900",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-21",
+          "amount": 367.1,
+          "description": "Epay3*Ryan SpecialtyChicago             IL",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261100089150682",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-21",
+          "amount": 10.81,
+          "description": "PAYPAL *MICROSOFT   8006427676          WA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261130197924359",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-21",
+          "amount": 2,
+          "description": "TEXAS SECRETARY OF SAUSTIN              TX",
+          "category": "Other-Government Services",
+          "fitid": "amex-ref-320261120166424002",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-20",
+          "amount": 6,
+          "description": "BAYLOR CAMBRIDGE MOBHOUSTON             TX",
+          "category": "Transportation-Parking Charges",
+          "fitid": "amex-ref-320261110130079606",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-20",
+          "amount": 158,
+          "description": "HIGHLAND SPECIALITY HATTIESBURG         MS",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261110138022688",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-20",
+          "amount": 4909.19,
+          "description": "OBIEINSURANCE       CHICAGO             IL",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261110138854068",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-20",
+          "amount": -10000,
+          "description": "ONLINE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320261100086042761",
+          "isPayment": true
+        },
+        {
+          "date": "2026-04-20",
+          "amount": 19.95,
+          "description": "PAYPAL *ONLINENOTAR 4029357733          CA",
+          "category": "Business Services-Legal Services",
+          "fitid": "amex-ref-320261110137537564",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-20",
+          "amount": 358.53,
+          "description": "VERIZONWRLSSAPO VE  800-922-0204        FL",
+          "category": "Communications-Mobile Telecom",
+          "fitid": "amex-ref-320261100107598995",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-19",
+          "amount": 329.63,
+          "description": "INTUIT *TURBOTAX    800-446-8848        CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261090059371163",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-19",
+          "amount": 14.44,
+          "description": "INTUIT QUICKBOOKS   800-446-8848        CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261090067626941",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-19",
+          "amount": 256.26,
+          "description": "INTUIT QUICKBOOKS   800-446-8848        CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261090067632656",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-17",
+          "amount": 240,
+          "description": "IN *INSPECTION PERFESPRING              TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261070000248088",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-16",
+          "amount": 243.56,
+          "description": "GALVESTON PEST      LA MARQUE           TX",
+          "category": "Business Services-Other Services",
+          "fitid": "amex-ref-320261060968508009",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-16",
+          "amount": 28.06,
+          "description": "HOUSTON WATER DEPT  713-371-1400        TX",
+          "category": "Other-Government Services",
+          "fitid": "amex-ref-320261060993529689",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-16",
+          "amount": 0.65,
+          "description": "PSVJ   *JPMC FEE    800-420-1663        NC",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320261060993529530",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-16",
+          "amount": 409.21,
+          "description": "SIRIUS XM RADIO INC.888-635-5144        NY",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320261060980423837",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-15",
+          "amount": 15.84,
+          "description": "DALLAS WATER AUTOPAYDALLAS              TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320261050941022418",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-15",
+          "amount": 64.4,
+          "description": "SP NEBOLOGY.COM     CARSON CITY         NV",
+          "category": "Merchandise & Supplies-General Retail",
+          "fitid": "amex-ref-320261050940901103",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-14",
+          "amount": 21.7,
+          "description": "WALGREENS           ORMOND BEACH        FL",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261050951921050",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-13",
+          "amount": 3.92,
+          "description": "RELIANT ENERGY      HOUSTON             TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320261030889410834",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-13",
+          "amount": 89.79,
+          "description": "WALGREENS           ORMOND BEACH        FL",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261040923937983",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-12",
+          "amount": 102.33,
+          "description": "CARBONITE CONSUMER",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261030896048903",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-12",
+          "amount": 58.88,
+          "description": "STOR-IT SELF STORAGEORMOND BEACH        FL",
+          "category": "Transportation-Other Transportation",
+          "fitid": "amex-ref-320261030903096637",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-11",
+          "amount": 47.97,
+          "description": "ANTHROPIC           SAN FRANCISCO       CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261010821640087",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-11",
+          "amount": 66.65,
+          "description": "COMCAST / XFINITY   800-266-2278        TX",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320261010833449874",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-11",
+          "amount": 31.96,
+          "description": "HOUSTON CHRONICLE CIHOUSTON             TX",
+          "category": "Merchandise & Supplies-Mail Order",
+          "fitid": "amex-ref-320261020866868460",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-11",
+          "amount": 33.24,
+          "description": "RHYTHM OPS, LLC     HOUSTON             TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320261020867135399",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-10",
+          "amount": 306.11,
+          "description": "COMCAST / XFINITY   800-266-2278        TX",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320261000803490284",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-10",
+          "amount": 735.02,
+          "description": "THE HOME DEPOT      HOUSTON             TX",
+          "category": "Merchandise & Supplies-Hardware Supplies",
+          "fitid": "amex-ref-320261010823739400",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-10",
+          "amount": 2.72,
+          "description": "USPS KIOSK 481383955HOUSTON             TX",
+          "category": "Business Services-Mailing & Shipping",
+          "fitid": "amex-ref-320261010841097610",
+          "isPayment": false
+        },
+        {
+          "date": "2026-04-09",
+          "amount": 840.06,
+          "description": "CHUBB*CHUBB PRS     PHILADELPHIA        PA",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320260990780000680",
+          "isPayment": false
+        }
+      ],
+      "expectedNet": -1166.1,
+      "netVariance": 0
+    },
+    {
+      "file": "June_3a0d.csv",
+      "meta": {
+        "closingDate": "2026-06-08",
+        "previousBalance": 82982.56,
+        "newBalance": 83162.65,
+        "accountLast4": "88007",
+        "cardName": "Amex Marriott Bonvoy Business 88007",
+        "source": "csv"
+      },
+      "transactionCount": 64,
+      "netChange": 180.09,
+      "transactions": [
+        {
+          "date": "2026-06-08",
+          "amount": 14.06,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261590565799405",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-08",
+          "amount": 2132.83,
+          "description": "Interest Charge on Purchases",
+          "category": "Fees & Adjustments-Fees & Adjustments",
+          "fitid": "amex-ref-160609060000385362",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-08",
+          "amount": 125,
+          "description": "RENEWAL MEMBERSHIP FEE",
+          "category": "Fees & Adjustments-Fees & Adjustments",
+          "fitid": "amex-ref-320261593559998809",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-06",
+          "amount": 9.99,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261570506538475",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-06",
+          "amount": 31.96,
+          "description": "HOUSTON CHRONICLE CIHOUSTON             TX",
+          "category": "Merchandise & Supplies-Mail Order",
+          "fitid": "amex-ref-320261580549917019",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-04",
+          "amount": 120.07,
+          "description": "PAYPAL *LOWES.COM   8448964938          NC",
+          "category": "Merchandise & Supplies-General Retail",
+          "fitid": "amex-ref-320261560491296743",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-03",
+          "amount": 12,
+          "description": "99576 - OQUINN MEDICHOUSTON             TX",
+          "category": "Transportation-Parking Charges",
+          "fitid": "amex-ref-320261550463857572",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-03",
+          "amount": 345.31,
+          "description": "LAWNCARE* LAWNSTARTEAUSTIN              TX",
+          "category": "Business Services-Professional Services",
+          "fitid": "amex-ref-320261540420559654",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-03",
+          "amount": 9.28,
+          "description": "PAYPAL *LOWES.COM   8448964938          NC",
+          "category": "Merchandise & Supplies-General Retail",
+          "fitid": "amex-ref-320261550462861988",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-03",
+          "amount": 57.55,
+          "description": "PAYPAL *LOWES.COM   8448964938          NC",
+          "category": "Merchandise & Supplies-General Retail",
+          "fitid": "amex-ref-320261550462859895",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-02",
+          "amount": -15000,
+          "description": "ONLINE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320261530373578802",
+          "isPayment": true
+        },
+        {
+          "date": "2026-06-01",
+          "amount": 500,
+          "description": "Chabad-CHAI LEARNINGHOUSTON             TX",
+          "category": "Other-Charities",
+          "fitid": "amex-ref-320261530376254770",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-01",
+          "amount": 1291.67,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261530400200621",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-01",
+          "amount": 1420.27,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261530400184345",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-01",
+          "amount": 1765.13,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261530400224924",
+          "isPayment": false
+        },
+        {
+          "date": "2026-06-01",
+          "amount": 29.75,
+          "description": "IN *WIRED ELECTRICALTOMBALL             TX",
+          "category": "Business Services-Contracting Services",
+          "fitid": "amex-ref-320261520347604930",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-31",
+          "amount": 1536,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261520368314832",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-31",
+          "amount": 1536,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261520370052765",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-31",
+          "amount": 1536,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261520370054304",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-31",
+          "amount": 1615.95,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261520370039588",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-31",
+          "amount": 1617.42,
+          "description": "GOV*HCTAX           HOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261520368301779",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-31",
+          "amount": 319.55,
+          "description": "JUST ENERGY         866-587-8674        TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320261520363413682",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-30",
+          "amount": 48.69,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261500292208368",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-30",
+          "amount": 100.69,
+          "description": "PERMIT PAYMENTS     832-394-9007        TX",
+          "category": "Other-Government Services",
+          "fitid": "amex-ref-320261510338886658",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-30",
+          "amount": 2.32,
+          "description": "PSVJ   *JPMC FEE    800-420-1663        NC",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320261510338886167",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-29",
+          "amount": 448.16,
+          "description": "Epay3*US Assure InsuChicago             IL",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261480227053748",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-29",
+          "amount": 119.14,
+          "description": "OPTUM HOME DELIVERY IRVINE              CA",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261520364772446",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-28",
+          "amount": -713.96,
+          "description": "FLBLUE* ACA         JACKSONVILLE        FL",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261490279049354",
+          "isPayment": true
+        },
+        {
+          "date": "2026-05-28",
+          "amount": 7,
+          "description": "METHODIST - OPC 9947HOUSTON             TX",
+          "category": "Transportation-Parking Charges",
+          "fitid": "amex-ref-320261480245110071",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-28",
+          "amount": 3.18,
+          "description": "WEB*BLUEHOST.COM    888-401-4678        UT",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261490281082759",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-26",
+          "amount": 54.09,
+          "description": "CVS PHARMACY        HOUSTON             TX",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261470213697718",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-26",
+          "amount": 16,
+          "description": "FIRST AMERICAN FLOODAUSTIN              TX",
+          "category": "Business Services-Professional Services",
+          "fitid": "amex-ref-320261470213708205",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-24",
+          "amount": 767.59,
+          "description": "FIRST CONNECT INSUR.SAN FRANCISCO       CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261440117510172",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-24",
+          "amount": 17.29,
+          "description": "THE HOME DEPOT      GALVESTON           TX",
+          "category": "Merchandise & Supplies-Hardware Supplies",
+          "fitid": "amex-ref-320261450141589650",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-23",
+          "amount": 10.8,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261430087734765",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-23",
+          "amount": 21.32,
+          "description": "CURSOR, AI POWERED ISAN FRANCISCO       NY",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261430088401165",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-22",
+          "amount": 351.2,
+          "description": "COMCAST / XFINITY   800-266-2278        TX",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320261420060258825",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-22",
+          "amount": 10.81,
+          "description": "PAYPAL *MICROSOFT   8006427676          WA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261430106717460",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-21",
+          "amount": 367.1,
+          "description": "Epay3*Ryan SpecialtyChicago             IL",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261400989653368",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-21",
+          "amount": 32.09,
+          "description": "HOMEDEPOT.COM 8119  800-430-3376        GA",
+          "category": "Merchandise & Supplies-Hardware Supplies",
+          "fitid": "amex-ref-320261420052629282",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-20",
+          "amount": 22.2,
+          "description": "CVS PHARMACY        HOUSTON             TX",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261410034407427",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-19",
+          "amount": 43.29,
+          "description": "BEST BUY            HOUSTON             TX",
+          "category": "Merchandise & Supplies-Electronics Stores",
+          "fitid": "amex-ref-320261390958497866",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-19",
+          "amount": 10.66,
+          "description": "INTUIT QUICKBOOKS   800-446-8848        CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261390969618093",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-19",
+          "amount": 148.58,
+          "description": "INTUIT QUICKBOOKS   800-446-8848        CA",
+          "category": "Merchandise & Supplies-Computer Supplies",
+          "fitid": "amex-ref-320261390969634707",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-19",
+          "amount": 424.72,
+          "description": "OBSIDIAN ADMITTED 46FORT WORTH          TX",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261390957671260",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-19",
+          "amount": 59.64,
+          "description": "RHYTHM OPS, LLC     HOUSTON             TX",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320261400005924800",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-18",
+          "amount": 1677.88,
+          "description": "HOWARD SAFE AND LOCKHOUSTON             TX",
+          "category": "Other-Miscellaneous",
+          "fitid": "amex-ref-320261390957084004",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-18",
+          "amount": -5000,
+          "description": "MOBILE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320261380924961647",
+          "isPayment": true
+        },
+        {
+          "date": "2026-05-15",
+          "amount": 28.83,
+          "description": "HOUSTON WATER DEPT  713-371-1400        TX",
+          "category": "Other-Government Services",
+          "fitid": "amex-ref-320261360888805035",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-15",
+          "amount": 0.66,
+          "description": "PSVJ   *JPMC FEE    800-420-1663        NC",
+          "category": "Other-Utilities",
+          "fitid": "amex-ref-320261360888805621",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-15",
+          "amount": 196,
+          "description": "USPS PO BOXES ONLINE800-344-7779        DC",
+          "category": "Business Services-Mailing & Shipping",
+          "fitid": "amex-ref-320261350835904495",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-14",
+          "amount": -12000,
+          "description": "ONLINE PAYMENT - THANK YOU",
+          "category": "",
+          "fitid": "amex-ref-320261340802212448",
+          "isPayment": true
+        },
+        {
+          "date": "2026-05-14",
+          "amount": 10230,
+          "description": "PAYPAL *IRSHELPMICH 7137213321          TX",
+          "category": "Business Services-Banking Services",
+          "fitid": "amex-ref-320261350855801964",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-14",
+          "amount": 119.06,
+          "description": "SP AURA AIR US      SUNNYVALE           CA",
+          "category": "Merchandise & Supplies-Furnishing",
+          "fitid": "amex-ref-320261350858842216",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-14",
+          "amount": 42.92,
+          "description": "WALGREENS           ORMOND BEACH        FL",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261350848485343",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-12",
+          "amount": 58.88,
+          "description": "STOR-IT SELF STORAGEORMOND BEACH        FL",
+          "category": "Transportation-Other Transportation",
+          "fitid": "amex-ref-320261330795362296",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-11",
+          "amount": 66.65,
+          "description": "COMCAST / XFINITY   800-266-2278        TX",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320261310727856733",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-10",
+          "amount": 97.42,
+          "description": "ALERT ALARMS 1      GALVESTON           TX",
+          "category": "Business Services-Professional Services",
+          "fitid": "amex-ref-320261310738586552",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-10",
+          "amount": 306.06,
+          "description": "COMCAST / XFINITY   800-266-2278        TX",
+          "category": "Communications-Cable & Internet Comm",
+          "fitid": "amex-ref-320261300693450858",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-10",
+          "amount": 9.02,
+          "description": "OPTUM HOME DELIVERY IRVINE              CA",
+          "category": "Merchandise & Supplies-Pharmacies",
+          "fitid": "amex-ref-320261310725403030",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-10",
+          "amount": 70.9,
+          "description": "SP WELLBEL INC      MIAMI BEACH         FL",
+          "category": "Merchandise & Supplies-Groceries",
+          "fitid": "amex-ref-320261300711221671",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-09",
+          "amount": 5.4,
+          "description": "APPLE.COM/BILL      INTERNET CHARGE     CA",
+          "category": "Merchandise & Supplies-Internet Purchase",
+          "fitid": "amex-ref-320261290661889500",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-09",
+          "amount": 840.06,
+          "description": "CHUBB*CHUBB PRS     PHILADELPHIA        PA",
+          "category": "Business Services-Insurance Services",
+          "fitid": "amex-ref-320261290674107141",
+          "isPayment": false
+        },
+        {
+          "date": "2026-05-09",
+          "amount": 31.96,
+          "description": "HOUSTON CHRONICLE CIHOUSTON             TX",
+          "category": "Merchandise & Supplies-Mail Order",
+          "fitid": "amex-ref-320261300701830255",
+          "isPayment": false
+        }
+      ],
+      "expectedNet": 180.09,
+      "netVariance": 0
+    }
+  ]
+}
