@@ -1,0 +1,276 @@
+{
+  "asOfDate": "2025-12-31",
+  "tieReport": [
+    {
+      "id": "ljc-gm",
+      "label": "LJC ↔ Graceful Meadows",
+      "tied": "370267.18",
+      "qboA": "370267.18",
+      "qboB": null,
+      "rolledA": "370267.18",
+      "rolledB": null,
+      "sideA": {
+        "entity": "ent-ljc",
+        "account": "1900",
+        "before": "370267.18",
+        "after": "370267.18"
+      },
+      "sideB": {
+        "entity": "ent-gm",
+        "account": "2900",
+        "before": "0.00",
+        "after": "370267.18"
+      },
+      "status": "tied"
+    },
+    {
+      "id": "ljc-justin-receivable",
+      "label": "LJC due from Justin ↔ Justin due to LJC (IC)",
+      "tied": "798180.76",
+      "qboA": "798180.76",
+      "qboB": null,
+      "rolledA": "798180.76",
+      "rolledB": null,
+      "sideA": {
+        "entity": "ent-ljc",
+        "account": "1901",
+        "before": "798180.76",
+        "after": "798180.76"
+      },
+      "sideB": {
+        "entity": "ent-justin",
+        "account": "2901",
+        "before": "0.00",
+        "after": "798180.76"
+      },
+      "status": "tied"
+    },
+    {
+      "id": "ljc-justin-payable",
+      "label": "LJC due to Justin ↔ Justin due from LJC (IC)",
+      "tied": "187638.17",
+      "qboA": null,
+      "qboB": "187638.17",
+      "rolledA": null,
+      "rolledB": "187638.17",
+      "sideA": {
+        "entity": "ent-ljc",
+        "account": "2901",
+        "before": "0.00",
+        "after": "187638.17"
+      },
+      "sideB": {
+        "entity": "ent-justin",
+        "account": "1900",
+        "before": "187638.17",
+        "after": "187638.17"
+      },
+      "status": "tied"
+    },
+    {
+      "id": "ljc-omc",
+      "label": "LJC due to OMC ↔ OMC due from LJC",
+      "tied": "22496.91",
+      "qboA": "22196.71",
+      "qboB": "22496.91",
+      "rolledA": null,
+      "rolledB": "22496.91",
+      "sideA": {
+        "entity": "ent-ljc",
+        "account": "2902",
+        "before": "0.00",
+        "after": "22496.91"
+      },
+      "sideB": {
+        "entity": "ent-omc",
+        "account": "1900",
+        "before": "22496.91",
+        "after": "22496.91"
+      },
+      "status": "qbo_variance_resolved"
+    },
+    {
+      "id": "ljc-qof",
+      "label": "LJC due from QOF ↔ QOF due to LJC",
+      "tied": "411546.08",
+      "qboA": "411546.08",
+      "qboB": "10000.00",
+      "rolledA": "411546.08",
+      "rolledB": "10000.00",
+      "sideA": {
+        "entity": "ent-ljc",
+        "account": "1903",
+        "before": "411546.08",
+        "after": "411546.08"
+      },
+      "sideB": {
+        "entity": "ent-qof",
+        "account": "2900",
+        "before": "10000.00",
+        "after": "411546.08"
+      },
+      "status": "qbo_variance_resolved"
+    },
+    {
+      "id": "ljc-4jl",
+      "label": "LJC due to 4J&L ↔ 4J&L due from LJC",
+      "tied": "3333146.60",
+      "qboA": null,
+      "qboB": "3333146.60",
+      "rolledA": null,
+      "rolledB": "3333146.60",
+      "sideA": {
+        "entity": "ent-ljc",
+        "account": "2910",
+        "before": "0.00",
+        "after": "3333146.60"
+      },
+      "sideB": {
+        "entity": "ent-4jl",
+        "account": "1900",
+        "before": "3333146.60",
+        "after": "3333146.60"
+      },
+      "status": "tied"
+    },
+    {
+      "id": "justin-4jl",
+      "label": "Justin due to 4J&L ↔ 4J&L due from Justin",
+      "tied": "643522.69",
+      "qboA": "643522.69",
+      "qboB": null,
+      "rolledA": "643522.69",
+      "rolledB": null,
+      "sideA": {
+        "entity": "ent-justin",
+        "account": "2910",
+        "before": "643522.69",
+        "after": "643522.69"
+      },
+      "sideB": {
+        "entity": "ent-4jl",
+        "account": "1901",
+        "before": "0.00",
+        "after": "643522.69"
+      },
+      "status": "tied"
+    }
+  ],
+  "verification": {
+    "allTied": true,
+    "pairs": [
+      {
+        "id": "ljc-gm",
+        "label": "LJC ↔ Graceful Meadows",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "1900",
+          "balance": "370267.18"
+        },
+        "sideB": {
+          "entity": "ent-gm",
+          "account": "2900",
+          "balance": "370267.18"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-justin-receivable",
+        "label": "LJC due from Justin ↔ Justin due to LJC (IC)",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "1901",
+          "balance": "798180.76"
+        },
+        "sideB": {
+          "entity": "ent-justin",
+          "account": "2901",
+          "balance": "798180.76"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-justin-payable",
+        "label": "LJC due to Justin ↔ Justin due from LJC (IC)",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "2901",
+          "balance": "187638.17"
+        },
+        "sideB": {
+          "entity": "ent-justin",
+          "account": "1900",
+          "balance": "187638.17"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-omc",
+        "label": "LJC due to OMC ↔ OMC due from LJC",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "2902",
+          "balance": "22496.91"
+        },
+        "sideB": {
+          "entity": "ent-omc",
+          "account": "1900",
+          "balance": "22496.91"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-qof",
+        "label": "LJC due from QOF ↔ QOF due to LJC",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "1903",
+          "balance": "411546.08"
+        },
+        "sideB": {
+          "entity": "ent-qof",
+          "account": "2900",
+          "balance": "411546.08"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-4jl",
+        "label": "LJC due to 4J&L ↔ 4J&L due from LJC",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "2910",
+          "balance": "3333146.60"
+        },
+        "sideB": {
+          "entity": "ent-4jl",
+          "account": "1900",
+          "balance": "3333146.60"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "justin-4jl",
+        "label": "Justin due to 4J&L ↔ 4J&L due from Justin",
+        "sideA": {
+          "entity": "ent-justin",
+          "account": "2910",
+          "balance": "643522.69"
+        },
+        "sideB": {
+          "entity": "ent-4jl",
+          "account": "1901",
+          "balance": "643522.69"
+        },
+        "variance": "0.00",
+        "tied": true
+      }
+    ]
+  }
+}

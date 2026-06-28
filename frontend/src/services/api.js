@@ -54,7 +54,8 @@ export const journalAPI = {
   create: (entityId, data) => client.post(`/api/entities/${entityId}/journals`, data),
   update: (entityId, id, data) => client.put(`/api/entities/${entityId}/journals/${id}`, data),
   approve: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/approve`),
-  post: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/post`)
+  post: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/post`),
+  reverse: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/reverse`, data)
 };
 
 export const reportAPI = {
@@ -71,6 +72,24 @@ export const reportAPI = {
 export const bankReconAPI = {
   worksheet: (entityId, accountId, statementDate) => client.get('/api/reconciliation/bank/worksheet', { params: { entityId, accountId, statementDate } }),
   reconcile: (data) => client.post('/api/reconciliation/bank/reconcile', data)
+};
+
+export const taxAPI = {
+  allEntities: (taxYear) => client.get(`/api/tax-financials/${taxYear}`),
+  entity: (entityId, taxYear) => client.get(`/api/entities/${entityId}/tax-financials/${taxYear}`),
+  exportAllUrl: (taxYear) => `/api/tax-financials/${taxYear}/export.csv`,
+  exportEntityUrl: (entityId, taxYear) => `/api/entities/${entityId}/tax-financials/${taxYear}/export.csv`,
+  async downloadCsv(url, filename) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  },
 };
 
 export default client;
@@ -102,6 +121,50 @@ export const importAPI = {
     client.patch(`/api/import/pending/${fitid}`, { entityId, offsetAccountId }),
   postSelected: (entityId, jeIds) => client.post('/api/import/post-selected', { entityId, jeIds }),
   reject: (entityId, fitids) => client.post('/api/import/reject', { entityId, fitids }),
+};
+
+export const receiptAPI = {
+  providers: () => client.get('/api/receipts/providers'),
+  listConnections: (entityId) => client.get('/api/receipts/connections', { params: { entityId } }),
+  connect: (data) => client.post('/api/receipts/connections', data),
+  disconnect: (id) => client.delete(`/api/receipts/connections/${id}`),
+  scan: (entityId, connectionId) => client.post('/api/receipts/scan', { entityId, connectionId }),
+  upload: (data) => client.post('/api/receipts/upload', data),
+  list: (entityId, status) => client.get('/api/receipts', { params: { entityId, status } }),
+  stats: (entityId) => client.get('/api/receipts/stats', { params: { entityId } }),
+  get: (id) => client.get(`/api/receipts/${id}`),
+  update: (id, data) => client.patch(`/api/receipts/${id}`, data),
+  approve: (id) => client.post(`/api/receipts/${id}/approve`),
+  reject: (id) => client.delete(`/api/receipts/${id}`),
+  post: (id) => client.post(`/api/receipts/${id}/post`),
+  sync: (id, connectionId) => client.post(`/api/receipts/${id}/sync`, { connectionId }),
+  exportUrl: (entityId, status) => {
+    const params = new URLSearchParams();
+    if (entityId) params.set('entityId', entityId);
+    if (status) params.set('status', status);
+    return `/api/receipts/export?${params.toString()}`;
+  },
+};
+
+export const interestAPI = {
+  preview: (entityId, asOfDate) =>
+    client.get(`/api/entities/${entityId}/interest-accrual/preview`, { params: { asOfDate } }),
+  post: (entityId, asOfDate) =>
+    client.post(`/api/entities/${entityId}/interest-accrual/post`, { asOfDate }),
+};
+
+export const accountingAPI = {
+  listPeriods: (entityId) => client.get(`/api/entities/${entityId}/accounting/periods`),
+  closePeriod: (entityId, data) => client.post(`/api/entities/${entityId}/accounting/periods/close`, data),
+  reopenPeriod: (entityId, data) => client.post(`/api/entities/${entityId}/accounting/periods/reopen`, data),
+  previewOpeningBalances: (entityId, data) =>
+    client.post(`/api/entities/${entityId}/accounting/opening-balances/preview`, data),
+  postOpeningBalances: (entityId, data) =>
+    client.post(`/api/entities/${entityId}/accounting/opening-balances`, data),
+  previewYearEnd: (entityId, asOfDate) =>
+    client.get(`/api/entities/${entityId}/accounting/year-end/preview`, { params: { asOfDate } }),
+  postYearEnd: (entityId, data) =>
+    client.post(`/api/entities/${entityId}/accounting/year-end/close`, data),
 };
 
 export const gmailAPI = {

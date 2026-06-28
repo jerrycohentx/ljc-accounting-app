@@ -1,0 +1,1655 @@
+{
+  "taxYear": 2025,
+  "generatedAt": "2026-06-28T04:38:36.138Z",
+  "accountingBasis": "Cash",
+  "allTaxReturnReady": true,
+  "intercompany": {
+    "allTied": true,
+    "pairs": [
+      {
+        "id": "ljc-gm",
+        "label": "LJC ↔ Graceful Meadows",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "1900",
+          "balance": "370267.18"
+        },
+        "sideB": {
+          "entity": "ent-gm",
+          "account": "2900",
+          "balance": "370267.18"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-justin-receivable",
+        "label": "LJC due from Justin ↔ Justin due to LJC (IC)",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "1901",
+          "balance": "798180.76"
+        },
+        "sideB": {
+          "entity": "ent-justin",
+          "account": "2901",
+          "balance": "798180.76"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-justin-payable",
+        "label": "LJC due to Justin ↔ Justin due from LJC (IC)",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "2901",
+          "balance": "187638.17"
+        },
+        "sideB": {
+          "entity": "ent-justin",
+          "account": "1900",
+          "balance": "187638.17"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-omc",
+        "label": "LJC due to OMC ↔ OMC due from LJC",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "2902",
+          "balance": "22496.91"
+        },
+        "sideB": {
+          "entity": "ent-omc",
+          "account": "1900",
+          "balance": "22496.91"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-qof",
+        "label": "LJC due from QOF ↔ QOF due to LJC",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "1903",
+          "balance": "411546.08"
+        },
+        "sideB": {
+          "entity": "ent-qof",
+          "account": "2900",
+          "balance": "411546.08"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "ljc-4jl",
+        "label": "LJC due to 4J&L ↔ 4J&L due from LJC",
+        "sideA": {
+          "entity": "ent-ljc",
+          "account": "2910",
+          "balance": "3333146.60"
+        },
+        "sideB": {
+          "entity": "ent-4jl",
+          "account": "1900",
+          "balance": "3333146.60"
+        },
+        "variance": "0.00",
+        "tied": true
+      },
+      {
+        "id": "justin-4jl",
+        "label": "Justin due to 4J&L ↔ 4J&L due from Justin",
+        "sideA": {
+          "entity": "ent-justin",
+          "account": "2910",
+          "balance": "643522.69"
+        },
+        "sideB": {
+          "entity": "ent-4jl",
+          "account": "1901",
+          "balance": "643522.69"
+        },
+        "variance": "0.00",
+        "tied": true
+      }
+    ]
+  },
+  "entities": [
+    {
+      "entityId": "ent-ljc",
+      "entityName": "LJC Financial, LLC",
+      "taxYear": 2025,
+      "accountingBasis": "Cash",
+      "period": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      },
+      "asOfDate": "2025-12-31",
+      "incomeStatement": {
+        "period": {
+          "startDate": "2025-01-01",
+          "endDate": "2025-12-31"
+        },
+        "revenues": [
+          {
+            "accountNumber": "4000",
+            "accountName": "Interest Income",
+            "amount": 418262.04
+          },
+          {
+            "accountNumber": "4100",
+            "accountName": "Rental Income",
+            "amount": 376245.87
+          }
+        ],
+        "totalRevenue": 794507.91,
+        "expenses": [
+          {
+            "accountNumber": "5000",
+            "accountName": "Interest Expense",
+            "amount": 738194.74
+          },
+          {
+            "accountNumber": "5100",
+            "accountName": "Draw & Inspection Fees",
+            "amount": -9526.14
+          },
+          {
+            "accountNumber": "5200",
+            "accountName": "Bank Service Charges",
+            "amount": 5449.79
+          },
+          {
+            "accountNumber": "5300",
+            "accountName": "Insurance Expense",
+            "amount": 72173.9
+          },
+          {
+            "accountNumber": "5500",
+            "accountName": "Utilities",
+            "amount": 4588.22
+          },
+          {
+            "accountNumber": "5600",
+            "accountName": "Professional Fees",
+            "amount": 81175.46
+          },
+          {
+            "accountNumber": "5700",
+            "accountName": "Office & Software",
+            "amount": 21275.1
+          },
+          {
+            "accountNumber": "5800",
+            "accountName": "Chargebacks & Reversals",
+            "amount": -38
+          }
+        ],
+        "totalExpense": 913293.07,
+        "netIncome": -118785.16
+      },
+      "balanceSheet": {
+        "asOfDate": "2025-12-31",
+        "assets": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts - Simmons",
+            "amount": 225200.19
+          },
+          {
+            "accountNumber": "1001",
+            "accountName": "Cash - Lone Star Bank",
+            "amount": -193.15
+          },
+          {
+            "accountNumber": "1010",
+            "accountName": "Cash - Simmons Sub-Accounts (4177/4790/7036)",
+            "amount": 210960.76
+          },
+          {
+            "accountNumber": "1100",
+            "accountName": "Undeposited Funds",
+            "amount": 9866.88
+          },
+          {
+            "accountNumber": "1200",
+            "accountName": "Accounts Receivable",
+            "amount": 84146.39
+          },
+          {
+            "accountNumber": "1300",
+            "accountName": "Notes Receivable",
+            "amount": 886750
+          },
+          {
+            "accountNumber": "1310",
+            "accountName": "Notes Receivable - Simmons DLOC",
+            "amount": 2675839
+          },
+          {
+            "accountNumber": "1350",
+            "accountName": "Holdbacks - Simmons Bank",
+            "amount": -234370.69
+          },
+          {
+            "accountNumber": "1410",
+            "accountName": "Mortgage / Servicing Escrow",
+            "amount": -11150.18
+          },
+          {
+            "accountNumber": "1500",
+            "accountName": "REO / Property Held for Sale",
+            "amount": 5152701.14
+          },
+          {
+            "accountNumber": "1900",
+            "accountName": "Due From - GM",
+            "amount": 370267.18
+          },
+          {
+            "accountNumber": "1901",
+            "accountName": "Due From - Justin Cohen",
+            "amount": 798180.76
+          },
+          {
+            "accountNumber": "1903",
+            "accountName": "Due From - LJC QOF",
+            "amount": 411546.08
+          },
+          {
+            "accountNumber": "1999",
+            "accountName": "Other Assets (Opening Rollup)",
+            "amount": -1098753.78
+          }
+        ],
+        "totalAssets": 9480990.58,
+        "liabilities": [
+          {
+            "accountNumber": "2000",
+            "accountName": "Accounts Payable",
+            "amount": 406
+          },
+          {
+            "accountNumber": "2010",
+            "accountName": "Credit Card - American Express",
+            "amount": 158318.51
+          },
+          {
+            "accountNumber": "2110",
+            "accountName": "DLOC - Simmons Bank",
+            "amount": 4676217
+          },
+          {
+            "accountNumber": "2901",
+            "accountName": "Due To - Justin Cohen",
+            "amount": 187638.17
+          },
+          {
+            "accountNumber": "2902",
+            "accountName": "Due To - OMC",
+            "amount": 22496.91
+          },
+          {
+            "accountNumber": "2910",
+            "accountName": "Due To - 4J&L Partners",
+            "amount": 3333146.6
+          },
+          {
+            "accountNumber": "2999",
+            "accountName": "Other Liabilities (Opening Rollup)",
+            "amount": 4977737.74
+          }
+        ],
+        "totalLiabilities": 13355960.93,
+        "equity": [
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings",
+            "amount": -450100.22
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "amount": -3306084.97
+          }
+        ],
+        "totalEquity": -3756185.19,
+        "totalLiabilitiesAndEquity": 9599775.74,
+        "balanceSheetBalanced": true,
+        "currentYearNetIncome": -118785.16,
+        "totalEquityWithNetIncome": -3874970.35,
+        "totalLiabilitiesAndEquityWithNetIncome": 9480990.58
+      },
+      "trialBalance": {
+        "asOfDate": "2025-12-31",
+        "entries": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts - Simmons",
+            "accountType": "ASSET",
+            "debit": 225200.19,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1001",
+            "accountName": "Cash - Lone Star Bank",
+            "accountType": "ASSET",
+            "debit": 0,
+            "credit": 193.15
+          },
+          {
+            "accountNumber": "1010",
+            "accountName": "Cash - Simmons Sub-Accounts (4177/4790/7036)",
+            "accountType": "ASSET",
+            "debit": 210960.76,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1100",
+            "accountName": "Undeposited Funds",
+            "accountType": "ASSET",
+            "debit": 9866.88,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1200",
+            "accountName": "Accounts Receivable",
+            "accountType": "ASSET",
+            "debit": 84146.39,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1300",
+            "accountName": "Notes Receivable",
+            "accountType": "ASSET",
+            "debit": 886750,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1310",
+            "accountName": "Notes Receivable - Simmons DLOC",
+            "accountType": "ASSET",
+            "debit": 2675839,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1350",
+            "accountName": "Holdbacks - Simmons Bank",
+            "accountType": "ASSET",
+            "debit": 0,
+            "credit": 234370.69
+          },
+          {
+            "accountNumber": "1410",
+            "accountName": "Mortgage / Servicing Escrow",
+            "accountType": "ASSET",
+            "debit": 0,
+            "credit": 11150.18
+          },
+          {
+            "accountNumber": "1500",
+            "accountName": "REO / Property Held for Sale",
+            "accountType": "ASSET",
+            "debit": 5152701.14,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1900",
+            "accountName": "Due From - GM",
+            "accountType": "ASSET",
+            "debit": 370267.18,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1901",
+            "accountName": "Due From - Justin Cohen",
+            "accountType": "ASSET",
+            "debit": 798180.76,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1903",
+            "accountName": "Due From - LJC QOF",
+            "accountType": "ASSET",
+            "debit": 411546.08,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1999",
+            "accountName": "Other Assets (Opening Rollup)",
+            "accountType": "ASSET",
+            "debit": 0,
+            "credit": 1098753.78
+          },
+          {
+            "accountNumber": "2000",
+            "accountName": "Accounts Payable",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 406
+          },
+          {
+            "accountNumber": "2010",
+            "accountName": "Credit Card - American Express",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 158318.51
+          },
+          {
+            "accountNumber": "2110",
+            "accountName": "DLOC - Simmons Bank",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 4676217
+          },
+          {
+            "accountNumber": "2901",
+            "accountName": "Due To - Justin Cohen",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 187638.17
+          },
+          {
+            "accountNumber": "2902",
+            "accountName": "Due To - OMC",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 22496.91
+          },
+          {
+            "accountNumber": "2910",
+            "accountName": "Due To - 4J&L Partners",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 3333146.6
+          },
+          {
+            "accountNumber": "2999",
+            "accountName": "Other Liabilities (Opening Rollup)",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 4977737.74
+          },
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings",
+            "accountType": "EQUITY",
+            "debit": 450100.22,
+            "credit": 0
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 3306084.97,
+            "credit": 0
+          },
+          {
+            "accountNumber": "4000",
+            "accountName": "Interest Income",
+            "accountType": "REVENUE",
+            "debit": 0,
+            "credit": 418262.04
+          },
+          {
+            "accountNumber": "4100",
+            "accountName": "Rental Income",
+            "accountType": "REVENUE",
+            "debit": 0,
+            "credit": 376245.87
+          },
+          {
+            "accountNumber": "5000",
+            "accountName": "Interest Expense",
+            "accountType": "EXPENSE",
+            "debit": 738194.74,
+            "credit": 0
+          },
+          {
+            "accountNumber": "5100",
+            "accountName": "Draw & Inspection Fees",
+            "accountType": "EXPENSE",
+            "debit": 0,
+            "credit": 9526.14
+          },
+          {
+            "accountNumber": "5200",
+            "accountName": "Bank Service Charges",
+            "accountType": "EXPENSE",
+            "debit": 5449.79,
+            "credit": 0
+          },
+          {
+            "accountNumber": "5300",
+            "accountName": "Insurance Expense",
+            "accountType": "EXPENSE",
+            "debit": 72173.9,
+            "credit": 0
+          },
+          {
+            "accountNumber": "5500",
+            "accountName": "Utilities",
+            "accountType": "EXPENSE",
+            "debit": 4588.22,
+            "credit": 0
+          },
+          {
+            "accountNumber": "5600",
+            "accountName": "Professional Fees",
+            "accountType": "EXPENSE",
+            "debit": 81175.46,
+            "credit": 0
+          },
+          {
+            "accountNumber": "5700",
+            "accountName": "Office & Software",
+            "accountType": "EXPENSE",
+            "debit": 21275.1,
+            "credit": 0
+          },
+          {
+            "accountNumber": "5800",
+            "accountName": "Chargebacks & Reversals",
+            "accountType": "EXPENSE",
+            "debit": 0,
+            "credit": 38
+          }
+        ],
+        "totals": {
+          "debit": 15504500.78,
+          "credit": 15504500.78
+        },
+        "isBalanced": true
+      },
+      "payrollSummary": null,
+      "qboSourceValidation": {
+        "sourceFile": "2025_LJC_FINANCIAL__LLC_Trial_Balance_8c9b.csv",
+        "totalDebit": "14875048.53",
+        "totalCredit": "14875048.53",
+        "balanced": true,
+        "basis": "Cash (per QBO export footer)"
+      },
+      "readiness": {
+        "allPass": true,
+        "checks": [
+          {
+            "id": "tb_balanced",
+            "pass": true,
+            "label": "Trial balance debits equal credits"
+          },
+          {
+            "id": "bs_balanced",
+            "pass": true,
+            "label": "Balance sheet assets equal liabilities + equity"
+          },
+          {
+            "id": "qbo_source",
+            "pass": true,
+            "label": "QBO source trial balance balanced"
+          },
+          {
+            "id": "has_pl",
+            "pass": true,
+            "label": "Profit & loss reviewed (activity or zero)"
+          },
+          {
+            "id": "has_bs",
+            "pass": true,
+            "label": "Balance sheet has balances"
+          }
+        ]
+      },
+      "taxReturnReady": true,
+      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+    },
+    {
+      "entityId": "ent-justin",
+      "entityName": "Justin Financial LLC",
+      "taxYear": 2025,
+      "accountingBasis": "Cash",
+      "period": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      },
+      "asOfDate": "2025-12-31",
+      "incomeStatement": {
+        "period": {
+          "startDate": "2025-01-01",
+          "endDate": "2025-12-31"
+        },
+        "revenues": [],
+        "totalRevenue": 0,
+        "expenses": [
+          {
+            "accountNumber": "5000",
+            "accountName": "Operating Expenses",
+            "amount": 18115.51
+          }
+        ],
+        "totalExpense": 18115.51,
+        "netIncome": -18115.51
+      },
+      "balanceSheet": {
+        "asOfDate": "2025-12-31",
+        "assets": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts",
+            "amount": 18632.32
+          },
+          {
+            "accountNumber": "1350",
+            "accountName": "Rehab Holdbacks",
+            "amount": 85000
+          },
+          {
+            "accountNumber": "1500",
+            "accountName": "Real Estate Owned",
+            "amount": 1317297.95
+          },
+          {
+            "accountNumber": "1900",
+            "accountName": "Due From - LJC Financial",
+            "amount": 187638.17
+          }
+        ],
+        "totalAssets": 1608568.44,
+        "liabilities": [
+          {
+            "accountNumber": "2000",
+            "accountName": "Accounts Payable",
+            "amount": 525763.44
+          },
+          {
+            "accountNumber": "2900",
+            "accountName": "Notes Payable - LJC Financial (Loans)",
+            "amount": 1689386
+          },
+          {
+            "accountNumber": "2901",
+            "accountName": "Due To - LJC Financial (Intercompany)",
+            "amount": 798180.76
+          },
+          {
+            "accountNumber": "2910",
+            "accountName": "Due To - 4J&L Partners",
+            "amount": 643522.69
+          }
+        ],
+        "totalLiabilities": 3656852.89,
+        "equity": [
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings",
+            "amount": -994488.18
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "amount": -1035680.76
+          }
+        ],
+        "totalEquity": -2030168.94,
+        "totalLiabilitiesAndEquity": 1626683.95,
+        "balanceSheetBalanced": true,
+        "currentYearNetIncome": -18115.51,
+        "totalEquityWithNetIncome": -2048284.45,
+        "totalLiabilitiesAndEquityWithNetIncome": 1608568.44
+      },
+      "trialBalance": {
+        "asOfDate": "2025-12-31",
+        "entries": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts",
+            "accountType": "ASSET",
+            "debit": 18632.32,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1350",
+            "accountName": "Rehab Holdbacks",
+            "accountType": "ASSET",
+            "debit": 85000,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1500",
+            "accountName": "Real Estate Owned",
+            "accountType": "ASSET",
+            "debit": 1317297.95,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1900",
+            "accountName": "Due From - LJC Financial",
+            "accountType": "ASSET",
+            "debit": 187638.17,
+            "credit": 0
+          },
+          {
+            "accountNumber": "2000",
+            "accountName": "Accounts Payable",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 525763.44
+          },
+          {
+            "accountNumber": "2900",
+            "accountName": "Notes Payable - LJC Financial (Loans)",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 1689386
+          },
+          {
+            "accountNumber": "2901",
+            "accountName": "Due To - LJC Financial (Intercompany)",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 798180.76
+          },
+          {
+            "accountNumber": "2910",
+            "accountName": "Due To - 4J&L Partners",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 643522.69
+          },
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings",
+            "accountType": "EQUITY",
+            "debit": 994488.18,
+            "credit": 0
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 1035680.76,
+            "credit": 0
+          },
+          {
+            "accountNumber": "5000",
+            "accountName": "Operating Expenses",
+            "accountType": "EXPENSE",
+            "debit": 18115.51,
+            "credit": 0
+          }
+        ],
+        "totals": {
+          "debit": 3656852.89,
+          "credit": 3656852.89
+        },
+        "isBalanced": true
+      },
+      "payrollSummary": null,
+      "qboSourceValidation": {
+        "sourceFile": "2025_JUSTIN_FINANCIAL_LLC_Trial_Balance_6cff.csv",
+        "totalDebit": "2881893.80",
+        "totalCredit": "2881893.80",
+        "balanced": true,
+        "basis": "Cash (per QBO export footer)"
+      },
+      "readiness": {
+        "allPass": true,
+        "checks": [
+          {
+            "id": "tb_balanced",
+            "pass": true,
+            "label": "Trial balance debits equal credits"
+          },
+          {
+            "id": "bs_balanced",
+            "pass": true,
+            "label": "Balance sheet assets equal liabilities + equity"
+          },
+          {
+            "id": "qbo_source",
+            "pass": true,
+            "label": "QBO source trial balance balanced"
+          },
+          {
+            "id": "has_pl",
+            "pass": true,
+            "label": "Profit & loss reviewed (activity or zero)"
+          },
+          {
+            "id": "has_bs",
+            "pass": true,
+            "label": "Balance sheet has balances"
+          }
+        ]
+      },
+      "taxReturnReady": true,
+      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+    },
+    {
+      "entityId": "ent-omc",
+      "entityName": "OMC Housing LLC",
+      "taxYear": 2025,
+      "accountingBasis": "Cash",
+      "period": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      },
+      "asOfDate": "2025-12-31",
+      "incomeStatement": {
+        "period": {
+          "startDate": "2025-01-01",
+          "endDate": "2025-12-31"
+        },
+        "revenues": [
+          {
+            "accountNumber": "4000",
+            "accountName": "Other Income",
+            "amount": 211122.41
+          }
+        ],
+        "totalRevenue": 211122.41,
+        "expenses": [
+          {
+            "accountNumber": "5000",
+            "accountName": "Operating Expenses",
+            "amount": 119638.78
+          }
+        ],
+        "totalExpense": 119638.78,
+        "netIncome": 91483.63
+      },
+      "balanceSheet": {
+        "asOfDate": "2025-12-31",
+        "assets": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts",
+            "amount": 144648.17
+          },
+          {
+            "accountNumber": "1200",
+            "accountName": "Accounts Receivable",
+            "amount": 12952.35
+          },
+          {
+            "accountNumber": "1300",
+            "accountName": "Notes Receivable",
+            "amount": 175000
+          },
+          {
+            "accountNumber": "1350",
+            "accountName": "Deposits & Holdbacks",
+            "amount": 7453.03
+          },
+          {
+            "accountNumber": "1500",
+            "accountName": "Real Estate Owned",
+            "amount": 177635.63
+          },
+          {
+            "accountNumber": "1900",
+            "accountName": "Due From - LJC Financial",
+            "amount": 22496.91
+          }
+        ],
+        "totalAssets": 540186.09,
+        "liabilities": [
+          {
+            "accountNumber": "2011",
+            "accountName": "Credit Card - Chase",
+            "amount": -1763.69
+          },
+          {
+            "accountNumber": "2110",
+            "accountName": "Notes Payable - Banks",
+            "amount": 263317.71
+          }
+        ],
+        "totalLiabilities": 261554.02,
+        "equity": [
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings",
+            "amount": 104160.09
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "amount": 82988.35
+          }
+        ],
+        "totalEquity": 187148.44,
+        "totalLiabilitiesAndEquity": 448702.46,
+        "balanceSheetBalanced": true,
+        "currentYearNetIncome": 91483.63,
+        "totalEquityWithNetIncome": 278632.07,
+        "totalLiabilitiesAndEquityWithNetIncome": 540186.09
+      },
+      "trialBalance": {
+        "asOfDate": "2025-12-31",
+        "entries": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts",
+            "accountType": "ASSET",
+            "debit": 144648.17,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1200",
+            "accountName": "Accounts Receivable",
+            "accountType": "ASSET",
+            "debit": 12952.35,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1300",
+            "accountName": "Notes Receivable",
+            "accountType": "ASSET",
+            "debit": 175000,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1350",
+            "accountName": "Deposits & Holdbacks",
+            "accountType": "ASSET",
+            "debit": 7453.03,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1500",
+            "accountName": "Real Estate Owned",
+            "accountType": "ASSET",
+            "debit": 177635.63,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1900",
+            "accountName": "Due From - LJC Financial",
+            "accountType": "ASSET",
+            "debit": 22496.91,
+            "credit": 0
+          },
+          {
+            "accountNumber": "2011",
+            "accountName": "Credit Card - Chase",
+            "accountType": "LIABILITY",
+            "debit": 1763.69,
+            "credit": 0
+          },
+          {
+            "accountNumber": "2110",
+            "accountName": "Notes Payable - Banks",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 263317.71
+          },
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings",
+            "accountType": "EQUITY",
+            "debit": 0,
+            "credit": 104160.09
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 0,
+            "credit": 82988.35
+          },
+          {
+            "accountNumber": "4000",
+            "accountName": "Other Income",
+            "accountType": "REVENUE",
+            "debit": 0,
+            "credit": 211122.41
+          },
+          {
+            "accountNumber": "5000",
+            "accountName": "Operating Expenses",
+            "accountType": "EXPENSE",
+            "debit": 119638.78,
+            "credit": 0
+          }
+        ],
+        "totals": {
+          "debit": 661588.56,
+          "credit": 661588.56
+        },
+        "isBalanced": true
+      },
+      "payrollSummary": null,
+      "qboSourceValidation": {
+        "sourceFile": "2025_OMC_Housing_LLC_Trial_Balance_aef4.csv",
+        "totalDebit": "1201751.14",
+        "totalCredit": "1201751.14",
+        "balanced": true,
+        "basis": "Cash (per QBO export footer)"
+      },
+      "readiness": {
+        "allPass": true,
+        "checks": [
+          {
+            "id": "tb_balanced",
+            "pass": true,
+            "label": "Trial balance debits equal credits"
+          },
+          {
+            "id": "bs_balanced",
+            "pass": true,
+            "label": "Balance sheet assets equal liabilities + equity"
+          },
+          {
+            "id": "qbo_source",
+            "pass": true,
+            "label": "QBO source trial balance balanced"
+          },
+          {
+            "id": "has_pl",
+            "pass": true,
+            "label": "Profit & loss reviewed (activity or zero)"
+          },
+          {
+            "id": "has_bs",
+            "pass": true,
+            "label": "Balance sheet has balances"
+          }
+        ]
+      },
+      "taxReturnReady": true,
+      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+    },
+    {
+      "entityId": "ent-gm",
+      "entityName": "Graceful Meadows Assisted Living LLC",
+      "taxYear": 2025,
+      "accountingBasis": "Cash",
+      "period": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      },
+      "asOfDate": "2025-12-31",
+      "incomeStatement": {
+        "period": {
+          "startDate": "2025-01-01",
+          "endDate": "2025-12-31"
+        },
+        "revenues": [
+          {
+            "accountNumber": "4000",
+            "accountName": "Services Income",
+            "amount": 13682.17
+          }
+        ],
+        "totalRevenue": 13682.17,
+        "expenses": [
+          {
+            "accountNumber": "5000",
+            "accountName": "Operating Expenses",
+            "amount": 94964.53
+          },
+          {
+            "accountNumber": "6000",
+            "accountName": "Payroll Expense - Wages",
+            "amount": 94577
+          }
+        ],
+        "totalExpense": 189541.53,
+        "netIncome": -175859.36
+      },
+      "balanceSheet": {
+        "asOfDate": "2025-12-31",
+        "assets": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts",
+            "amount": -8.74
+          },
+          {
+            "accountNumber": "1210",
+            "accountName": "Prepaid Expenses",
+            "amount": 7500
+          },
+          {
+            "accountNumber": "1500",
+            "accountName": "Buildings",
+            "amount": 35346.51
+          },
+          {
+            "accountNumber": "1510",
+            "accountName": "Furniture & Fixtures",
+            "amount": 17289.87
+          }
+        ],
+        "totalAssets": 60127.64,
+        "liabilities": [
+          {
+            "accountNumber": "2011",
+            "accountName": "Credit Card - VISA",
+            "amount": 30874.9
+          },
+          {
+            "accountNumber": "2100",
+            "accountName": "Payroll Liabilities",
+            "amount": -1965.11
+          },
+          {
+            "accountNumber": "2200",
+            "accountName": "Loans from Shareholders",
+            "amount": 380933.58
+          },
+          {
+            "accountNumber": "2900",
+            "accountName": "Due To - LJC Financial",
+            "amount": 370267.18
+          }
+        ],
+        "totalLiabilities": 780110.55,
+        "equity": [
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings",
+            "amount": -173856.37
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "amount": -370267.18
+          }
+        ],
+        "totalEquity": -544123.55,
+        "totalLiabilitiesAndEquity": 235987,
+        "balanceSheetBalanced": true,
+        "currentYearNetIncome": -175859.36,
+        "totalEquityWithNetIncome": -719982.91,
+        "totalLiabilitiesAndEquityWithNetIncome": 60127.64
+      },
+      "trialBalance": {
+        "asOfDate": "2025-12-31",
+        "entries": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts",
+            "accountType": "ASSET",
+            "debit": 0,
+            "credit": 8.74
+          },
+          {
+            "accountNumber": "1210",
+            "accountName": "Prepaid Expenses",
+            "accountType": "ASSET",
+            "debit": 7500,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1500",
+            "accountName": "Buildings",
+            "accountType": "ASSET",
+            "debit": 35346.51,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1510",
+            "accountName": "Furniture & Fixtures",
+            "accountType": "ASSET",
+            "debit": 17289.87,
+            "credit": 0
+          },
+          {
+            "accountNumber": "2011",
+            "accountName": "Credit Card - VISA",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 30874.9
+          },
+          {
+            "accountNumber": "2100",
+            "accountName": "Payroll Liabilities",
+            "accountType": "LIABILITY",
+            "debit": 1965.11,
+            "credit": 0
+          },
+          {
+            "accountNumber": "2200",
+            "accountName": "Loans from Shareholders",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 380933.58
+          },
+          {
+            "accountNumber": "2900",
+            "accountName": "Due To - LJC Financial",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 370267.18
+          },
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings",
+            "accountType": "EQUITY",
+            "debit": 173856.37,
+            "credit": 0
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 370267.18,
+            "credit": 0
+          },
+          {
+            "accountNumber": "4000",
+            "accountName": "Services Income",
+            "accountType": "REVENUE",
+            "debit": 0,
+            "credit": 13682.17
+          },
+          {
+            "accountNumber": "5000",
+            "accountName": "Operating Expenses",
+            "accountType": "EXPENSE",
+            "debit": 94964.53,
+            "credit": 0
+          },
+          {
+            "accountNumber": "6000",
+            "accountName": "Payroll Expense - Wages",
+            "accountType": "EXPENSE",
+            "debit": 94577,
+            "credit": 0
+          }
+        ],
+        "totals": {
+          "debit": 795766.57,
+          "credit": 795766.57
+        },
+        "isBalanced": true
+      },
+      "payrollSummary": [
+        {
+          "accountNumber": "2100",
+          "accountName": "Payroll Liabilities",
+          "amount": 1965.11
+        },
+        {
+          "accountNumber": "6000",
+          "accountName": "Payroll Expense - Wages",
+          "amount": 94577
+        }
+      ],
+      "qboSourceValidation": {
+        "sourceFile": "2025_Graceful_Meadows_Assisted_Living_LLC_Trial_Balance_d183.csv",
+        "totalDebit": "464818.82",
+        "totalCredit": "464818.82",
+        "balanced": true,
+        "basis": "Cash (per QBO export footer)"
+      },
+      "readiness": {
+        "allPass": true,
+        "checks": [
+          {
+            "id": "tb_balanced",
+            "pass": true,
+            "label": "Trial balance debits equal credits"
+          },
+          {
+            "id": "bs_balanced",
+            "pass": true,
+            "label": "Balance sheet assets equal liabilities + equity"
+          },
+          {
+            "id": "qbo_source",
+            "pass": true,
+            "label": "QBO source trial balance balanced"
+          },
+          {
+            "id": "has_pl",
+            "pass": true,
+            "label": "Profit & loss reviewed (activity or zero)"
+          },
+          {
+            "id": "has_bs",
+            "pass": true,
+            "label": "Balance sheet has balances"
+          },
+          {
+            "id": "payroll",
+            "pass": true,
+            "label": "Payroll accounts included (Graceful Meadows)"
+          }
+        ]
+      },
+      "taxReturnReady": true,
+      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+    },
+    {
+      "entityId": "ent-qof",
+      "entityName": "LJC QOF LLC",
+      "taxYear": 2025,
+      "accountingBasis": "Cash",
+      "period": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      },
+      "asOfDate": "2025-12-31",
+      "incomeStatement": {
+        "period": {
+          "startDate": "2025-01-01",
+          "endDate": "2025-12-31"
+        },
+        "revenues": [],
+        "totalRevenue": 0,
+        "expenses": [],
+        "totalExpense": 0,
+        "netIncome": 0
+      },
+      "balanceSheet": {
+        "asOfDate": "2025-12-31",
+        "assets": [
+          {
+            "accountNumber": "1500",
+            "accountName": "Property Investments",
+            "amount": 10000
+          }
+        ],
+        "totalAssets": 10000,
+        "liabilities": [
+          {
+            "accountNumber": "2900",
+            "accountName": "Due To - LJC Financial",
+            "amount": 411546.08
+          }
+        ],
+        "totalLiabilities": 411546.08,
+        "equity": [
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "amount": -401546.08
+          }
+        ],
+        "totalEquity": -401546.08,
+        "totalLiabilitiesAndEquity": 10000,
+        "balanceSheetBalanced": true,
+        "currentYearNetIncome": 0,
+        "totalEquityWithNetIncome": -401546.08,
+        "totalLiabilitiesAndEquityWithNetIncome": 10000
+      },
+      "trialBalance": {
+        "asOfDate": "2025-12-31",
+        "entries": [
+          {
+            "accountNumber": "1500",
+            "accountName": "Property Investments",
+            "accountType": "ASSET",
+            "debit": 10000,
+            "credit": 0
+          },
+          {
+            "accountNumber": "2900",
+            "accountName": "Due To - LJC Financial",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 411546.08
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 401546.08,
+            "credit": 0
+          }
+        ],
+        "totals": {
+          "debit": 411546.08,
+          "credit": 411546.08
+        },
+        "isBalanced": true
+      },
+      "payrollSummary": null,
+      "qboSourceValidation": {
+        "sourceFile": "2025_LJC_QOF_LLC_Trial_Balance_f6bb.csv",
+        "totalDebit": "10000.00",
+        "totalCredit": "10000.00",
+        "balanced": true,
+        "basis": "Cash (per QBO export footer)"
+      },
+      "readiness": {
+        "allPass": true,
+        "checks": [
+          {
+            "id": "tb_balanced",
+            "pass": true,
+            "label": "Trial balance debits equal credits"
+          },
+          {
+            "id": "bs_balanced",
+            "pass": true,
+            "label": "Balance sheet assets equal liabilities + equity"
+          },
+          {
+            "id": "qbo_source",
+            "pass": true,
+            "label": "QBO source trial balance balanced"
+          },
+          {
+            "id": "has_pl",
+            "pass": true,
+            "label": "Profit & loss reviewed (activity or zero)"
+          },
+          {
+            "id": "has_bs",
+            "pass": true,
+            "label": "Balance sheet has balances"
+          }
+        ]
+      },
+      "taxReturnReady": true,
+      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+    },
+    {
+      "entityId": "ent-4jl",
+      "entityName": "4 J & L Partners, LTD",
+      "taxYear": 2025,
+      "accountingBasis": "Cash",
+      "period": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31"
+      },
+      "asOfDate": "2025-12-31",
+      "incomeStatement": {
+        "period": {
+          "startDate": "2025-01-01",
+          "endDate": "2025-12-31"
+        },
+        "revenues": [
+          {
+            "accountNumber": "4000",
+            "accountName": "Rental Income",
+            "amount": 350164.46
+          }
+        ],
+        "totalRevenue": 350164.46,
+        "expenses": [
+          {
+            "accountNumber": "5000",
+            "accountName": "Operating Expenses",
+            "amount": 52260.25
+          }
+        ],
+        "totalExpense": 52260.25,
+        "netIncome": 297904.21
+      },
+      "balanceSheet": {
+        "asOfDate": "2025-12-31",
+        "assets": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts",
+            "amount": -4871.13
+          },
+          {
+            "accountNumber": "1410",
+            "accountName": "Escrows & Reserves",
+            "amount": 478307.88
+          },
+          {
+            "accountNumber": "1900",
+            "accountName": "Due From - LJC Financial",
+            "amount": 3333146.6
+          },
+          {
+            "accountNumber": "1901",
+            "accountName": "Due From - Justin Financial",
+            "amount": 643522.69
+          },
+          {
+            "accountNumber": "1999",
+            "accountName": "Other Assets (Opening Rollup)",
+            "amount": 574035.45
+          }
+        ],
+        "totalAssets": 5024141.49,
+        "liabilities": [],
+        "totalLiabilities": 0,
+        "equity": [
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings / Partner Equity",
+            "amount": 4082714.59
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "amount": 643522.69
+          }
+        ],
+        "totalEquity": 4726237.28,
+        "totalLiabilitiesAndEquity": 4726237.28,
+        "balanceSheetBalanced": true,
+        "currentYearNetIncome": 297904.21,
+        "totalEquityWithNetIncome": 5024141.49,
+        "totalLiabilitiesAndEquityWithNetIncome": 5024141.49
+      },
+      "trialBalance": {
+        "asOfDate": "2025-12-31",
+        "entries": [
+          {
+            "accountNumber": "1000",
+            "accountName": "Cash & Bank Accounts",
+            "accountType": "ASSET",
+            "debit": 0,
+            "credit": 4871.13
+          },
+          {
+            "accountNumber": "1410",
+            "accountName": "Escrows & Reserves",
+            "accountType": "ASSET",
+            "debit": 478307.88,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1900",
+            "accountName": "Due From - LJC Financial",
+            "accountType": "ASSET",
+            "debit": 3333146.6,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1901",
+            "accountName": "Due From - Justin Financial",
+            "accountType": "ASSET",
+            "debit": 643522.69,
+            "credit": 0
+          },
+          {
+            "accountNumber": "1999",
+            "accountName": "Other Assets (Opening Rollup)",
+            "accountType": "ASSET",
+            "debit": 574035.45,
+            "credit": 0
+          },
+          {
+            "accountNumber": "3100",
+            "accountName": "Retained Earnings / Partner Equity",
+            "accountType": "EQUITY",
+            "debit": 0,
+            "credit": 4082714.59
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 0,
+            "credit": 643522.69
+          },
+          {
+            "accountNumber": "4000",
+            "accountName": "Rental Income",
+            "accountType": "REVENUE",
+            "debit": 0,
+            "credit": 350164.46
+          },
+          {
+            "accountNumber": "5000",
+            "accountName": "Operating Expenses",
+            "accountType": "EXPENSE",
+            "debit": 52260.25,
+            "credit": 0
+          }
+        ],
+        "totals": {
+          "debit": 5081272.87,
+          "credit": 5081272.87
+        },
+        "isBalanced": true
+      },
+      "payrollSummary": null,
+      "qboSourceValidation": {
+        "sourceFile": "2025_4_J___L_PARTNERS__LTD_Trial_Balance_1358.csv",
+        "totalDebit": "5873475.61",
+        "totalCredit": "5873475.61",
+        "balanced": true,
+        "basis": "Cash (per QBO export footer)"
+      },
+      "readiness": {
+        "allPass": true,
+        "checks": [
+          {
+            "id": "tb_balanced",
+            "pass": true,
+            "label": "Trial balance debits equal credits"
+          },
+          {
+            "id": "bs_balanced",
+            "pass": true,
+            "label": "Balance sheet assets equal liabilities + equity"
+          },
+          {
+            "id": "qbo_source",
+            "pass": true,
+            "label": "QBO source trial balance balanced"
+          },
+          {
+            "id": "has_pl",
+            "pass": true,
+            "label": "Profit & loss reviewed (activity or zero)"
+          },
+          {
+            "id": "has_bs",
+            "pass": true,
+            "label": "Balance sheet has balances"
+          }
+        ]
+      },
+      "taxReturnReady": true,
+      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+Tax Year Financial Package — LJC QOF LLC
+Tax Year,2025
+Basis,Cash
+Tax Return Ready,YES
+
+PROFIT AND LOSS
+Account,Amount
+Total Revenue,0
+Total Expense,0
+Net Income,0
+
+BALANCE SHEET
+Section,Account,Amount
+Asset,1500 Property Investments,10000
+Liability,2900 Due To - LJC Financial,411546.08
+Equity,3900 Opening Balance Equity,-401546.08
+Equity,Current Year Net Income,0
+Equity,Total Equity (incl. net income),-401546.08
+
+TRIAL BALANCE
+Account,Type,Debit,Credit
+1500 Property Investments,ASSET,10000,0
+2900 Due To - LJC Financial,LIABILITY,0,411546.08
+3900 Opening Balance Equity,EQUITY,401546.08,0
+Totals,,411546.08,411546.08
+
+READINESS CHECKS
+Trial balance debits equal credits,PASS
+Balance sheet assets equal liabilities + equity,PASS
+QBO source trial balance balanced,PASS
+Profit & loss reviewed (activity or zero),PASS
+Balance sheet has balances,PASS

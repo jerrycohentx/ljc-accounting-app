@@ -30,7 +30,7 @@ export default function QBDHome() {
   const ar = g(/Accounts-Receivable|Notes-Receivable/);
 
   const COMPANY = [['📋', 'Chart of Accounts', () => nav('/accounts')], ['📦', 'Items & Services', null], ['🧾', 'Order Checks', null], ['📅', 'Calendar', null]];
-  const BANKING = [['🏦', 'Bank Feeds', () => nav('/bank-feeds')], ['💰', 'Record Deposits', () => nav('/make-deposits')], ['✓', 'Reconcile', () => nav('/reconcile')], ['✍️', 'Write Checks', () => nav('/write-checks')], ['💳', 'Credit Card Charges', null], ['📒', 'Use Register', () => nav('/accounts')]];
+  const BANKING = [['🏦', 'Bank Feeds', () => nav('/bank-feeds')], ['📥', 'Receipt Inbox', () => nav('/receipts')], ['💰', 'Record Deposits', () => nav('/make-deposits')], ['✓', 'Reconcile', () => nav('/reconcile')], ['✍️', 'Write Checks', () => nav('/write-checks')], ['💳', 'Credit Card Charges', null], ['📒', 'Use Register', () => nav('/accounts')]];
 
   const abRow = (a) => (
     <div key={a.id} className="ab" onClick={() => nav('/register/' + a.id)}>

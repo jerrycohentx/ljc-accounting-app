@@ -14,9 +14,10 @@
 
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import Decimal from 'decimal.js';
 import { getDatabase } from '../config/database.js';
 import { parseOFX, validateTransactions, deduplicateTransactions } from '../lib/ofx-parser.js';
+import { commitBankImportTransactions, updateImportOffsetAccount } from '../lib/import-commit.js';
+import { postJournalEntryToGl } from '../lib/post-journal.js';
 
 const router = express.Router();
 
@@ -155,160 +156,21 @@ router.get('/status/:importId', async (req, res) => {
  */
 router.post('/transactions', async (req, res) => {
   try {
-    const { importId, accountMappings = {} } = req.body;
-
-    if (!importId) {
-      return res.status(400).json({ error: 'Import ID required' });
-    }
+    const { importId } = req.body;
+    if (!importId) return res.status(400).json({ error: 'Import ID required' });
 
     const session = importSessions.get(importId);
-    if (!session) {
-      return res.status(404).json({ error: 'Import session not found' });
-    }
+    if (!session) return res.status(404).json({ error: 'Import session not found' });
 
     const db = await getDatabase();
-    const userId = req.user.id; // From auth middleware
+    const { createdJECount } = await commitBankImportTransactions(db, {
+      entityId: session.entityId,
+      transactions: session.transactions,
+      importId,
+      userId: req.user.id,
+      sourceLabel: 'OFX Import',
+    });
 
-    // Get entity and account info
-    const entity = await db.get('SELECT * FROM entities WHERE id = ?', session.entityId);
-    if (!entity) {
-      return res.status(404).json({ error: 'Entity not found' });
-    }
-
-    // Get bank account for this entity
-    const bankAccount = await db.get(
-      'SELECT * FROM accounts WHERE entity_id = ? AND account_number = ?',
-      [session.entityId, '1000']
-    );
-    if (!bankAccount) {
-      return res.status(404).json({ error: 'Bank account not found for entity' });
-    }
-
-    // Get or create Undeposited Funds account
-    let undepositedAccount = await db.get(
-      'SELECT * FROM accounts WHERE entity_id = ? AND account_number = ?',
-      [session.entityId, '1100']
-    );
-    if (!undepositedAccount) {
-      const accId = `acc-${uuidv4()}`;
-      await db.run(
-        `INSERT INTO accounts (
-          id, entity_id, account_number, account_name, account_type, normal_balance, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        [accId, session.entityId, '1100', 'Undeposited Funds', 'ASSET', 'DEBIT']
-      );
-      undepositedAccount = { id: accId };
-    }
-
-    // Process each transaction
-    const importedTransactions = [];
-    let createdJECount = 0;
-
-    for (const txn of session.transactions) {
-      try {
-        const jeId = `je-${uuidv4()}`;
-        const jeNumber = `IMP-${Date.now()}-${uuidv4().substring(0, 8)}`;
-        const glId1 = `gl-${uuidv4()}`;
-        const glId2 = `gl-${uuidv4()}`;
-
-        // Determine if this is a deposit or withdrawal
-        const isDeposit = txn.isCredit;
-        const amount = Math.abs(txn.amount);
-
-        // For deposits: debit bank, credit undeposited funds
-        // For withdrawals: credit bank, debit undeposited funds (or expense account)
-        const debitAmount = isDeposit ? amount : 0;
-        const creditAmount = !isDeposit ? amount : 0;
-
-        // Create journal entry (DRAFT status)
-        await db.run(
-          `INSERT INTO journal_entries (
-            id, entity_id, je_number, description, posting_date, status,
-            created_by, total_debit, total_credit, memo
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            jeId,
-            session.entityId,
-            jeNumber,
-            `Bank Import: ${txn.description}`,
-            txn.date,
-            'DRAFT',
-            userId,
-            debitAmount,
-            creditAmount,
-            `OFX Import - FITID: ${txn.fitid}`
-          ]
-        );
-
-        // Create GL entries
-        // Line 1: Bank account
-        await db.run(
-          `INSERT INTO general_ledger (
-            id, entity_id, account_id, journal_entry_id, debit, credit,
-            posting_date, description
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            glId1,
-            session.entityId,
-            bankAccount.id,
-            jeId,
-            debitAmount,
-            creditAmount,
-            txn.date,
-            `Bank: ${txn.description}`
-          ]
-        );
-
-        // Line 2: Undeposited Funds (offset)
-        await db.run(
-          `INSERT INTO general_ledger (
-            id, entity_id, account_id, journal_entry_id, debit, credit,
-            posting_date, description
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            glId2,
-            session.entityId,
-            undepositedAccount.id,
-            jeId,
-            creditAmount,
-            debitAmount,
-            txn.date,
-            `Pending: ${txn.description}`
-          ]
-        );
-
-        // Store transaction metadata for reconciliation
-        await db.run(
-          `INSERT OR REPLACE INTO import_transactions (
-            fitid, import_id, entity_id, account_id, journal_entry_id,
-            date, amount, description, status, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            txn.fitid,
-            importId,
-            session.entityId,
-            bankAccount.id,
-            jeId,
-            txn.date,
-            txn.amount,
-            txn.description,
-            'DRAFT',
-            new Date().toISOString()
-          ]
-        );
-
-        importedTransactions.push({
-          fitid: txn.fitid,
-          jeNumber,
-          status: 'DRAFT'
-        });
-        createdJECount++;
-      } catch (error) {
-        console.error(`Error importing transaction ${txn.fitid}:`, error);
-      }
-    }
-
-    // Update import session
     session.status = 'COMPLETED';
     session.importedCount = createdJECount;
     session.completedAt = new Date().toISOString();
@@ -318,15 +180,124 @@ router.post('/transactions', async (req, res) => {
       status: 'COMPLETED',
       transactionsProcessed: createdJECount,
       journalEntriesCreated: createdJECount,
-      message: `Successfully imported ${createdJECount} transactions as draft journal entries`,
-      nextSteps: 'Review and reconcile transactions, then post to general ledger'
+      message: `Imported ${createdJECount} transactions — review in Bank Feeds before posting.`,
     });
   } catch (error) {
     console.error('Transaction import error:', error);
-    return res.status(500).json({
-      error: 'Failed to import transactions',
-      details: error.message
+    return res.status(500).json({ error: 'Failed to import transactions', details: error.message });
+  }
+});
+
+/** Bank Feeds review queue — DRAFT imports awaiting categorization/post. */
+router.get('/pending', async (req, res) => {
+  try {
+    const { entityId } = req.query;
+    if (!entityId) return res.status(400).json({ error: 'entityId required' });
+
+    const db = await getDatabase();
+    const rows = await db.all(
+      `SELECT it.fitid, it.date, it.amount, it.description, it.journal_entry_id AS jeId,
+              it.offset_account_id AS offsetAccountId, je.je_number AS jeNumber
+       FROM import_transactions it
+       JOIN journal_entries je ON je.id = it.journal_entry_id
+       WHERE it.entity_id = ? AND it.status = 'DRAFT' AND je.status = 'DRAFT'
+       ORDER BY it.date DESC, it.created_at DESC`,
+      entityId
+    );
+
+    const pending = rows.map((r) => {
+      const amt = Math.abs(Number(r.amount));
+      const isDeposit = Number(r.amount) > 0;
+      return {
+        fitid: r.fitid,
+        jeId: r.jeId,
+        jeNumber: r.jeNumber,
+        date: r.date,
+        description: r.description,
+        payment: isDeposit ? null : amt.toFixed(2),
+        deposit: isDeposit ? amt.toFixed(2) : null,
+        offsetAccountId: r.offsetAccountId,
+      };
     });
+
+    res.json({ pending, count: pending.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.patch('/pending/:fitid', async (req, res) => {
+  try {
+    const { entityId, offsetAccountId } = req.body;
+    if (!entityId || !offsetAccountId) {
+      return res.status(400).json({ error: 'entityId and offsetAccountId required' });
+    }
+    const db = await getDatabase();
+    const result = await updateImportOffsetAccount(db, {
+      entityId,
+      fitid: req.params.fitid,
+      offsetAccountId,
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/post-selected', async (req, res) => {
+  try {
+    const { entityId, jeIds } = req.body;
+    if (!entityId || !jeIds?.length) {
+      return res.status(400).json({ error: 'entityId and jeIds[] required' });
+    }
+
+    const db = await getDatabase();
+    let posted = 0;
+    for (const jeId of jeIds) {
+      await postJournalEntryToGl(db, { journalId: jeId, entityId, userId: req.user.id });
+      await db.run(
+        "UPDATE import_transactions SET status = 'RECONCILED' WHERE journal_entry_id = ? AND entity_id = ?",
+        [jeId, entityId]
+      );
+      posted += 1;
+    }
+
+    res.json({
+      posted,
+      message: `${posted} transaction(s) added to the register.`,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message, details: error.message });
+  }
+});
+
+router.post('/reject', async (req, res) => {
+  try {
+    const { entityId, fitids } = req.body;
+    if (!entityId || !fitids?.length) {
+      return res.status(400).json({ error: 'entityId and fitids[] required' });
+    }
+
+    const db = await getDatabase();
+    let rejected = 0;
+    for (const fitid of fitids) {
+      const row = await db.get(
+        'SELECT journal_entry_id FROM import_transactions WHERE fitid = ? AND entity_id = ?',
+        [fitid, entityId]
+      );
+      if (!row) continue;
+      await db.run('DELETE FROM journal_entry_lines WHERE journal_entry_id = ?', row.journal_entry_id);
+      await db.run('DELETE FROM journal_entries WHERE id = ? AND status = ?', row.journal_entry_id, 'DRAFT');
+      await db.run(
+        "UPDATE import_transactions SET status = 'REJECTED' WHERE fitid = ? AND entity_id = ?",
+        [fitid, entityId]
+      );
+      rejected += 1;
+    }
+
+    res.json({ rejected, message: `${rejected} transaction(s) discarded.` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

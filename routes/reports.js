@@ -3,9 +3,13 @@ import Decimal from 'decimal.js';
 import { getDatabase } from '../config/database.js';
 import { entityAccessMiddleware } from '../middleware/auth.js';
 
+import { POSTED_GL_SUBQUERY, calculateAccountBalance } from '../lib/posted-gl.js';
+
 const router = express.Router({ mergeParams: true });
 
-// Helper: Get account tree with balances
+/** @deprecated use POSTED_GL_SUBQUERY from lib/posted-gl.js */
+const POSTED_GL = POSTED_GL_SUBQUERY;
+
 async function getAccountsWithBalances(db, entityId, asOfDate = null) {
   let query = `
     SELECT 
@@ -14,32 +18,21 @@ async function getAccountsWithBalances(db, entityId, asOfDate = null) {
       COALESCE(SUM(gl.debit), 0) as total_debit,
       COALESCE(SUM(gl.credit), 0) as total_credit
     FROM accounts a
-    LEFT JOIN general_ledger gl ON a.id = gl.account_id AND gl.entity_id = ?
+    LEFT JOIN (${POSTED_GL}) gl ON a.id = gl.account_id AND gl.entity_id = ?
     WHERE a.entity_id = ? AND a.is_active = 1
   `;
-  
   const params = [entityId, entityId];
-
   if (asOfDate) {
     query += ' AND (gl.posting_date IS NULL OR gl.posting_date <= ?)';
     params.push(asOfDate);
   }
-
   query += ` GROUP BY a.id ORDER BY a.account_number`;
-
-  return await db.all(query, params);
+  return db.all(query, params);
 }
 
 // Helper: Calculate account balance
 function calculateBalance(account) {
-  const debit = new Decimal(account.total_debit || 0);
-  const credit = new Decimal(account.total_credit || 0);
-  
-  if (account.normal_balance === 'DEBIT') {
-    return debit.minus(credit);
-  } else {
-    return credit.minus(debit);
-  }
+  return calculateAccountBalance(account);
 }
 
 // GET /api/entities/:entityId/reports/income-statement
@@ -61,7 +54,7 @@ router.get('/income-statement', entityAccessMiddleware, async (req, res) => {
         COALESCE(SUM(gl.debit), 0) as total_debit,
         COALESCE(SUM(gl.credit), 0) as total_credit
       FROM accounts a
-      LEFT JOIN general_ledger gl ON a.id = gl.account_id AND gl.entity_id = ?
+      LEFT JOIN (${POSTED_GL}) gl ON a.id = gl.account_id AND gl.entity_id = ?
       WHERE a.entity_id = ? AND a.is_active = 1
       AND a.account_type IN ('REVENUE', 'EXPENSE')
       AND (gl.posting_date IS NULL OR (gl.posting_date >= ? AND gl.posting_date <= ?))
@@ -296,11 +289,11 @@ router.get('/cash-flow', entityAccessMiddleware, async (req, res) => {
       `SELECT 
         COALESCE(SUM(gl.debit), 0) - COALESCE(SUM(gl.credit), 0) as net_change
        FROM accounts a
-       LEFT JOIN general_ledger gl ON a.id = gl.account_id
+       LEFT JOIN (${POSTED_GL}) gl ON a.id = gl.account_id AND gl.entity_id = ?
        WHERE a.entity_id = ? AND a.account_type = 'ASSET'
-       AND a.account_name LIKE '%Cash%'
+       AND a.account_number LIKE '100%'
        AND gl.posting_date >= ? AND gl.posting_date <= ?`,
-      [req.entityId, startDate, endDate]
+      [req.entityId, req.entityId, startDate, endDate]
     );
 
     res.json({
@@ -309,6 +302,49 @@ router.get('/cash-flow', entityAccessMiddleware, async (req, res) => {
       investingActivities: 0,
       financingActivities: 0,
       netCashFlow: (cashAccounts[0]?.net_change || 0)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/entities/:entityId/reports/trial-balance
+router.get('/trial-balance', entityAccessMiddleware, async (req, res) => {
+  try {
+    const { asOfDate } = req.query;
+    const reportDate = asOfDate || new Date().toISOString().split('T')[0];
+    const db = await getDatabase();
+    const accounts = await getAccountsWithBalances(db, req.entityId, reportDate);
+
+    let totalDebit = new Decimal(0);
+    let totalCredit = new Decimal(0);
+    const entries = accounts.map((acc) => {
+      const balance = calculateBalance(acc);
+      let tbDebit = new Decimal(0);
+      let tbCredit = new Decimal(0);
+      if (acc.normal_balance === 'DEBIT') {
+        tbDebit = balance.gte(0) ? balance : new Decimal(0);
+        tbCredit = balance.lt(0) ? balance.abs() : new Decimal(0);
+      } else {
+        tbCredit = balance.gte(0) ? balance : new Decimal(0);
+        tbDebit = balance.lt(0) ? balance.abs() : new Decimal(0);
+      }
+      totalDebit = totalDebit.plus(tbDebit);
+      totalCredit = totalCredit.plus(tbCredit);
+      return {
+        accountNumber: acc.account_number,
+        accountName: acc.account_name,
+        accountType: acc.account_type,
+        debit: tbDebit.toNumber(),
+        credit: tbCredit.toNumber(),
+      };
+    });
+
+    res.json({
+      asOfDate: reportDate,
+      entries,
+      totals: { debit: totalDebit.toNumber(), credit: totalCredit.toNumber() },
+      isBalanced: totalDebit.minus(totalCredit).abs().lt(0.01),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
