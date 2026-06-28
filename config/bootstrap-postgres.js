@@ -175,6 +175,31 @@ CREATE TABLE IF NOT EXISTS plaid_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_plaid_items_entity ON plaid_items(entity_id);
+
+CREATE TABLE IF NOT EXISTS bank_reconciliation_sessions (
+  id TEXT PRIMARY KEY,
+  entity_id TEXT NOT NULL REFERENCES entities(id),
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  statement_date DATE NOT NULL,
+  beginning_balance NUMERIC(19,2) NOT NULL,
+  ending_balance NUMERIC(19,2) NOT NULL,
+  cleared_net NUMERIC(19,2) DEFAULT 0,
+  difference NUMERIC(19,2) DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'OPEN' CHECK(status IN ('OPEN', 'CLOSED')),
+  notes TEXT,
+  created_by TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  closed_at TIMESTAMP,
+  UNIQUE(entity_id, account_id, statement_date)
+);
+
+CREATE TABLE IF NOT EXISTS bank_reconciliation_session_lines (
+  session_id TEXT NOT NULL REFERENCES bank_reconciliation_sessions(id) ON DELETE CASCADE,
+  gl_id TEXT NOT NULL REFERENCES general_ledger(id),
+  PRIMARY KEY (session_id, gl_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_brs_entity_acct_date ON bank_reconciliation_sessions(entity_id, account_id, statement_date);
 `;
 
 export async function bootstrapPostgres(db) {
@@ -182,6 +207,9 @@ export async function bootstrapPostgres(db) {
   await db.exec(SCHEMA);
   await db.run(
     'ALTER TABLE general_ledger ADD COLUMN IF NOT EXISTS reconciliation_status TEXT'
+  );
+  await db.run(
+    'ALTER TABLE general_ledger ADD COLUMN IF NOT EXISTS reconciliation_session_id TEXT'
   );
   await seedDatabaseContent(db);
   console.log('✓ PostgreSQL bootstrap complete (demo@ljcfinancial.com / demo123)');

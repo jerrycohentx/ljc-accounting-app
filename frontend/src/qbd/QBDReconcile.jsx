@@ -9,6 +9,11 @@ function flat(nodes, out) {
   return out;
 }
 
+function periodLabel(statementDate) {
+  if (!statementDate) return '';
+  return String(statementDate).slice(0, 7);
+}
+
 export default function QBDReconcile() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
@@ -29,13 +34,18 @@ export default function QBDReconcile() {
     }).catch(() => {});
   }, [entityId]);
 
-  const start = () => {
-    if (!accountId) { showToast && showToast('Pick an account'); return; }
+  const loadWorksheet = useCallback(() => {
+    if (!accountId) return Promise.resolve();
     setBusy(true);
-    bankReconAPI.worksheet(entityId, accountId, stmtDate)
+    return bankReconAPI.worksheet(entityId, accountId, stmtDate)
       .then((r) => { setData(r.data); setChecked({}); setStarted(true); })
       .catch((e) => showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message)))
       .finally(() => setBusy(false));
+  }, [entityId, accountId, stmtDate, showToast]);
+
+  const start = () => {
+    if (!accountId) { showToast && showToast('Pick an account'); return; }
+    loadWorksheet();
   };
 
   const toggle = (id) => setChecked((c) => ({ ...c, [id]: !c[id] }));
@@ -45,18 +55,33 @@ export default function QBDReconcile() {
   const clearedSigned = entries.filter((e) => checked[e.id]).reduce((s, e) => s + ((+e.debit || 0) - (+e.credit || 0)), 0);
   const clearedDep = entries.filter((e) => checked[e.id]).reduce((s, e) => s + (+e.debit || 0), 0);
   const clearedPay = entries.filter((e) => checked[e.id]).reduce((s, e) => s + (+e.credit || 0), 0);
-  const target = parseFloat(endBal || '0') || 0;
+  const target = parseFloat(endBal || data?.endingBalance || '0') || 0;
   const difference = Math.round((target - (beginning + clearedSigned)) * 100) / 100;
   const balanced = Math.abs(difference) < 0.005;
   const checkedIds = entries.filter((e) => checked[e.id]).map((e) => e.id);
 
+  const periodSession = data?.periodSession || data?.priorSession;
+  const needsReopen = periodSession && !periodSession.balanced;
+
+  const reopenPeriod = () => {
+    setBusy(true);
+    bankReconAPI.reopen({ entityId, accountId, statementDate: stmtDate })
+      .then(() => { showToast && showToast('Reconciliation reopened — cleared lines restored'); return loadWorksheet(); })
+      .catch((e) => showToast && showToast('Reopen failed: ' + (e.response?.data?.error || e.message)))
+      .finally(() => setBusy(false));
+  };
+
   const finish = () => {
-    if (!balanced) { showToast && showToast('Difference must be 0.00 to reconcile'); return; }
+    if (!balanced) { showToast && showToast('Difference must be $0.00 to close reconciliation'); return; }
     if (checkedIds.length === 0) { showToast && showToast('Mark the cleared transactions first'); return; }
     setBusy(true);
     bankReconAPI.reconcile({ entityId, accountId, glIds: checkedIds, statementDate: stmtDate, statementEndingBalance: target })
       .then(() => { showToast && showToast(`Reconciled ${checkedIds.length} transactions ✓`); setStarted(false); setData(null); setEndBal(''); })
-      .catch((e) => showToast && showToast('Reconcile failed: ' + (e.response?.data?.error || e.message)))
+      .catch((e) => {
+        const msg = e.response?.data?.error || e.message;
+        showToast && showToast(msg);
+        if (e.response?.status === 422) loadWorksheet();
+      })
       .finally(() => setBusy(false));
   };
 
@@ -77,11 +102,38 @@ export default function QBDReconcile() {
     );
   }
 
+  const sessionBanner = periodSession ? (
+    <div style={{
+      padding: '8px 12px',
+      marginBottom: 8,
+      borderRadius: 4,
+      background: periodSession.balanced ? '#eaf6ec' : '#fdecea',
+      color: periodSession.balanced ? '#2f6b3a' : '#b3261e',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      flexWrap: 'wrap',
+    }}>
+      <span>
+        {periodSession.balanced ? '✓' : '⚠'} Reconcile {periodLabel(periodSession.statementDate)} ({periodSession.status})
+        {periodSession.clearedCount != null ? ` — ${periodSession.clearedCount} cleared lines` : ''}
+        {!periodSession.balanced && periodSession.difference != null ? ` — difference ${fmt(periodSession.difference)}` : ''}
+      </span>
+      {periodSession.message && <span className="qbd-muted">{periodSession.message}</span>}
+      {needsReopen && (
+        <button className="qbd-btn" disabled={busy} onClick={reopenPeriod} style={{ marginLeft: 'auto' }}>
+          Reopen period
+        </button>
+      )}
+    </div>
+  ) : null;
+
   return (
     <div className="qbd-window">
       <div className="qbd-wtitle">✓ Reconcile — {data.account.account_number} · {data.account.account_name}
         <span className="x" onClick={() => { setStarted(false); setData(null); }}>✕</span>
       </div>
+      {sessionBanner}
       <div className="qbd-tools" style={{ gap: 18 }}>
         <button className="qbd-btn" onClick={() => { setStarted(false); setData(null); }}>← Change</button>
         <span><span className="qbd-muted">Beginning</span> <b>{fmt(beginning) || '0.00'}</b></span>
@@ -113,8 +165,9 @@ export default function QBDReconcile() {
       </div>
       <div className="qbd-foot">
         <span className="qbd-muted">{checkedIds.length} marked cleared</span>
+        {!balanced && <span className="qbd-muted" style={{ color: '#b3261e', marginLeft: 12 }}>Reconciliation stays open until difference is $0.00</span>}
         <span className="sp" />
-        <button className="qbd-btn" disabled={busy || !balanced} onClick={finish} style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dff3e2,#bfe6c8)' : undefined }}>Reconcile Now</button>
+        <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={finish} style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dff3e2,#bfe6c8)' : undefined }}>Reconcile Now</button>
       </div>
     </div>
   );

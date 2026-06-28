@@ -62,6 +62,33 @@ CREATE TABLE IF NOT EXISTS general_ledger (
 CREATE INDEX IF NOT EXISTS idx_gl_entity_date ON general_ledger(entity_id, posting_date);
 CREATE INDEX IF NOT EXISTS idx_gl_account_date ON general_ledger(account_id, posting_date);
 
+-- Bank reconciliation sessions (QuickBooks-style statement close)
+CREATE TABLE IF NOT EXISTS bank_reconciliation_sessions (
+  id TEXT PRIMARY KEY,
+  entity_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  statement_date DATE NOT NULL,
+  beginning_balance DECIMAL(19,2) NOT NULL,
+  ending_balance DECIMAL(19,2) NOT NULL,
+  cleared_net DECIMAL(19,2) DEFAULT 0,
+  difference DECIMAL(19,2) DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'OPEN' CHECK(status IN ('OPEN', 'CLOSED')),
+  notes TEXT,
+  created_by TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  closed_at TIMESTAMP,
+  UNIQUE(entity_id, account_id, statement_date)
+);
+
+CREATE TABLE IF NOT EXISTS bank_reconciliation_session_lines (
+  session_id TEXT NOT NULL,
+  gl_id TEXT NOT NULL,
+  PRIMARY KEY (session_id, gl_id),
+  FOREIGN KEY(session_id) REFERENCES bank_reconciliation_sessions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_brs_entity_acct_date ON bank_reconciliation_sessions(entity_id, account_id, statement_date);
+
 -- Journal Entries
 CREATE TABLE IF NOT EXISTS journal_entries (
   id TEXT PRIMARY KEY,

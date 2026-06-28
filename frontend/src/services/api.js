@@ -71,7 +71,8 @@ export const reportAPI = {
 
 export const bankReconAPI = {
   worksheet: (entityId, accountId, statementDate) => client.get('/api/reconciliation/bank/worksheet', { params: { entityId, accountId, statementDate } }),
-  reconcile: (data) => client.post('/api/reconciliation/bank/reconcile', data)
+  reconcile: (data) => client.post('/api/reconciliation/bank/reconcile', data),
+  reopen: (data) => client.post('/api/reconciliation/bank/reopen', data),
 };
 
 export const taxAPI = {

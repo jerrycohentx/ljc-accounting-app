@@ -18,6 +18,11 @@ import { v4 as uuidv4 } from 'uuid';
 import Decimal from 'decimal.js';
 import { tryVerifyDrawFromBankTxn } from '../lib/holdback-disbursement.js';
 import { getDatabase } from '../config/database.js';
+import {
+  buildWorksheet,
+  closeBankReconciliation,
+  reopenBankReconciliation,
+} from '../lib/bank-reconcile-session.js';
 
 const router = express.Router();
 
@@ -516,55 +521,45 @@ router.get('/worksheet', async (req, res) => {
     if (!entityId || !accountId) return res.status(400).json({ error: 'Entity ID and Account ID required' });
     const db = await getDatabase();
     const date = statementDate || new Date().toISOString().split('T')[0];
-
-    const account = await db.get(
-      `SELECT id, account_number, account_name, normal_balance FROM accounts WHERE id = ? AND entity_id = ?`,
-      [accountId, entityId]
-    );
-    if (!account) return res.status(404).json({ error: 'Account not found' });
-
-    // Beginning balance = total of already-reconciled transactions (signed)
-    const beg = await db.get(
-      `SELECT COALESCE(SUM(debit - credit), 0) as bal FROM general_ledger
-       WHERE entity_id = ? AND account_id = ? AND reconciliation_status IS NOT NULL`,
-      [entityId, accountId]
-    );
-
-    // Uncleared transactions up to the statement date
-    const entries = await db.all(
-      `SELECT gl.id, gl.posting_date, gl.debit, gl.credit, gl.description,
-              je.je_number, je.description as je_description
-       FROM general_ledger gl
-       JOIN journal_entries je ON gl.journal_entry_id = je.id
-       WHERE gl.entity_id = ? AND gl.account_id = ?
-         AND gl.reconciliation_status IS NULL
-         AND gl.posting_date <= ?
-       ORDER BY gl.posting_date ASC`,
-      [entityId, accountId, date]
-    );
-
-    return res.json({ account, statementDate: date, beginningBalance: beg?.bal || 0, entries: entries || [] });
+    const worksheet = await buildWorksheet(db, { entityId, accountId, statementDate: date });
+    return res.json(worksheet);
   } catch (error) {
     console.error('Reconcile worksheet error:', error);
     return res.status(500).json({ error: 'Failed to load reconcile worksheet', details: error.message });
   }
 });
 
-// POST /api/reconciliation/bank/reconcile — mark selected GL entries as reconciled
+// POST /api/reconciliation/bank/reconcile — close only when difference is zero
 router.post('/reconcile', async (req, res) => {
   try {
-    const { entityId, accountId, glIds, statementDate, statementEndingBalance } = req.body;
-    if (!entityId || !accountId || !Array.isArray(glIds) || glIds.length === 0) {
+    const { entityId, accountId, glIds, statementDate, statementEndingBalance, notes } = req.body;
+    if (!entityId || !accountId || !Array.isArray(glIds)) {
       return res.status(400).json({ error: 'entityId, accountId and glIds[] required' });
     }
     const db = await getDatabase();
     const recDate = statementDate || new Date().toISOString().split('T')[0];
-    const placeholders = glIds.map(() => '?').join(',');
-    await db.run(
-      `UPDATE general_ledger SET reconciliation_status = 'RECONCILED'
-       WHERE id IN (${placeholders}) AND entity_id = ? AND account_id = ?`,
-      [...glIds, entityId, accountId]
-    );
+
+    let result;
+    try {
+      result = await closeBankReconciliation(db, {
+        entityId,
+        accountId,
+        glIds,
+        statementDate: recDate,
+        statementEndingBalance,
+        userId: req.user?.id || 'usr-admin',
+        notes,
+      });
+    } catch (err) {
+      if (err.code === 'RECON_OUT_OF_BALANCE') {
+        return res.status(422).json({
+          error: err.message,
+          code: err.code,
+          ...err.details,
+        });
+      }
+      throw err;
+    }
 
     let verifiedDraws = [];
     if (statementDate) {
@@ -576,31 +571,43 @@ router.post('/reconcile', async (req, res) => {
       for (const txn of bankTxns || []) {
         const verified = await tryVerifyDrawFromBankTxn(db, {
           importTransaction: txn,
-          userId: req.user.id,
+          userId: req.user?.id,
           entityId,
         });
         if (verified) {
           verifiedDraws.push(verified.draw_id);
-          await db.run(
-            `UPDATE import_transactions SET status = 'RECONCILED' WHERE id = ?`,
-            txn.id
-          );
+          await db.run(`UPDATE import_transactions SET status = 'RECONCILED' WHERE id = ?`, txn.id);
         }
       }
     }
 
     return res.json({
-      reconciledCount: glIds.length,
+      ...result,
       statementDate: recDate,
-      statementEndingBalance: statementEndingBalance ?? null,
       holdbackVerified: verifiedDraws,
       message: verifiedDraws.length
-        ? `${glIds.length} transactions reconciled; ${verifiedDraws.length} holdback draw(s) verified`
-        : `${glIds.length} transactions reconciled`
+        ? `${result.reconciledCount} transactions reconciled; ${verifiedDraws.length} holdback draw(s) verified`
+        : `${result.reconciledCount} transactions reconciled — session closed`,
     });
   } catch (error) {
     console.error('Reconcile error:', error);
-    return res.status(500).json({ error: 'Failed to reconcile', details: error.message });
+    return res.status(500).json({ error: error.message || 'Failed to reconcile' });
+  }
+});
+
+// POST /api/reconciliation/bank/reopen — reopen an out-of-balance or incorrect period
+router.post('/reopen', async (req, res) => {
+  try {
+    const { entityId, accountId, statementDate } = req.body;
+    if (!entityId || !accountId || !statementDate) {
+      return res.status(400).json({ error: 'entityId, accountId and statementDate required' });
+    }
+    const db = await getDatabase();
+    const result = await reopenBankReconciliation(db, { entityId, accountId, statementDate });
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    console.error('Reopen recon error:', error);
+    return res.status(500).json({ error: error.message });
   }
 });
 
