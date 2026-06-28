@@ -4,6 +4,7 @@ import {
   getStatementEmailIngestStatus,
   runStatementEmailIngest,
 } from '../lib/statement-email-ingest.js';
+import { buildEmailIngestMessage } from '../lib/email-ingest-message.js';
 
 const router = express.Router();
 
@@ -38,7 +39,8 @@ router.post('/run', async (req, res) => {
       reason: 'manual',
       userId: req.user?.id || 'usr-admin',
     });
-    return res.json({ ok: true, ...result });
+    const message = buildEmailIngestMessage(result);
+    return res.json({ ok: true, message, ...result });
   } catch (error) {
     console.error('Manual email ingest error:', error);
     return res.status(500).json({ error: error.message || 'Email ingest failed' });

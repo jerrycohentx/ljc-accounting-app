@@ -137,6 +137,14 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
         <div className="qbd-backup-meta">
           <div><span className="lbl">Auto scan</span> every {ingest?.intervalHours || 6} hours</div>
           <div><span className="lbl">Last scan</span> {fmtWhen(ingest?.lastRunAt)}</div>
+          {ingest?.lonestarPortal && (
+            <div>
+              <span className="lbl">Lone Star portal</span>{' '}
+              {ingest.lonestarPortal.configured
+                ? `✓ login ${ingest.lonestarPortal.accountLast4 || '7367'}`
+                : '⚠ add LONESTAR_ONLINE_PASSWORD on Render'}
+            </div>
+          )}
         </div>
 
         <div className="qbd-modal-body" style={{ padding: '8px 12px' }}>
@@ -165,7 +173,9 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
                     <tr key={row.message_id}>
                       <td className="qbd-d">{fmtWhen(row.processed_at)}</td>
                       <td style={{ fontSize: 10 }}>{(row.subject || '').slice(0, 40)}</td>
-                      <td style={{ fontSize: 10 }}>{row.result_summary || row.status}</td>
+                      <td style={{ fontSize: 10, color: row.error_message ? '#b00020' : undefined }}>
+                        {row.error_message || row.result_summary || row.status}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

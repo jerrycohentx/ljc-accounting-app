@@ -9,6 +9,7 @@ import {
   pickStatementDownloadUrl,
 } from '../lib/lonestar-estatement-notify.js';
 import { periodAlreadyImported } from '../lib/lonestar-estatement-fetch.js';
+import { buildEmailIngestMessage } from '../lib/email-ingest-message.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -53,6 +54,14 @@ const urls = extractCandidateUrls({
 assert(pickStatementDownloadUrl(urls)?.includes('statement.pdf'), 'pick statement URL');
 
 assert(periodAlreadyImported('1001', '2026-01-31'), 'Jan 2026 Lone Star already in JSON');
+
+const msg = buildEmailIngestMessage({
+  messagesFetched: 2,
+  lonestarNoticesFound: 1,
+  lonestarPortalConfigured: false,
+  results: [],
+});
+assert(msg.includes('LONESTAR_ONLINE_PASSWORD'), 'ingest message hints password');
 
 const simmons = detectBankTarget({
   subject: 'Simmons Bank statement',
