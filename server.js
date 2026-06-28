@@ -15,12 +15,12 @@ import reconciliationRoutes from './routes/reconciliation.js';
 import importRoutes from './routes/import.js';
 import bankReconciliationRoutes from './routes/reconciliation-bank.js';
 import plaidRoutes, { plaidWebhookHandler } from './routes/plaid.js';
+import receiptRoutes, { whatsappWebhookHandler } from './routes/receipts.js';
 import holdbackDrawRoutes from './routes/holdback-draws.js';
 import interestAccrualRoutes from './routes/interest-accrual.js';
 import accountingOpsRoutes from './routes/accounting-ops.js';
 import intercompanyRoutes from './routes/intercompany.js';
 import taxFinancialsRoutes, { entityTaxRouter } from './routes/tax-financials.js';
-import receiptRoutes, { whatsappWebhookHandler } from './routes/receipts.js';
 import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
@@ -87,8 +87,8 @@ app.use('/api/import', importRoutes);
 app.use('/api/intercompany', intercompanyRoutes);
 app.use('/api/tax-financials', taxFinancialsRoutes);
 app.use('/api/plaid', plaidRoutes);
-app.use('/api/holdback-draws', holdbackDrawRoutes);
 app.use('/api/receipts', receiptRoutes);
+app.use('/api/holdback-draws', holdbackDrawRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
 
 // Entity-specific routes

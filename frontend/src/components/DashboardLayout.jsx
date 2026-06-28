@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon, AccountBalance, Receipt, Description,
-  BarChart, CheckCircle, Settings, Logout
+  BarChart, CheckCircle, Settings, Logout, ReceiptLong
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 240;
@@ -16,6 +16,7 @@ const menuItems = [
   { label: 'Chart of Accounts', icon: <AccountBalance />, path: '/accounts' },
   { label: 'General Ledger', icon: <Receipt />, path: '/ledger' },
   { label: 'Journal Entries', icon: <Description />, path: '/journal' },
+  { label: 'Receipt Inbox', icon: <ReceiptLong />, path: '/receipts' },
   { label: 'Reports', icon: <BarChart />, path: '/reports' },
   { label: 'Reconciliation', icon: <CheckCircle />, path: '/reconciliation' }
 ];
