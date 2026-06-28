@@ -74,6 +74,24 @@ export const bankReconAPI = {
   reconcile: (data) => client.post('/api/reconciliation/bank/reconcile', data)
 };
 
+export const taxAPI = {
+  allEntities: (taxYear) => client.get(`/api/tax-financials/${taxYear}`),
+  entity: (entityId, taxYear) => client.get(`/api/entities/${entityId}/tax-financials/${taxYear}`),
+  exportAllUrl: (taxYear) => `/api/tax-financials/${taxYear}/export.csv`,
+  exportEntityUrl: (entityId, taxYear) => `/api/entities/${entityId}/tax-financials/${taxYear}/export.csv`,
+  async downloadCsv(url, filename) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  },
+};
+
 export default client;
 
 export const plaidAPI = {

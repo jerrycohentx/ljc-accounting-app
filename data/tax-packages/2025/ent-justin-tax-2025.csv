@@ -1,0 +1,48 @@
+Tax Year Financial Package — Justin Financial LLC
+Tax Year,2025
+Basis,Cash
+Tax Return Ready,YES
+
+PROFIT AND LOSS
+Account,Amount
+Total Revenue,0
+5000 Operating Expenses,18115.51
+Total Expense,18115.51
+Net Income,-18115.51
+
+BALANCE SHEET
+Section,Account,Amount
+Asset,1000 Cash & Bank Accounts,18632.32
+Asset,1350 Rehab Holdbacks,85000
+Asset,1500 Real Estate Owned,1317297.95
+Asset,1900 Due From - LJC Financial,187638.17
+Liability,2000 Accounts Payable,525763.44
+Liability,2900 Notes Payable - LJC Financial (Loans),1689386
+Liability,2901 Due To - LJC Financial (Intercompany),798180.76
+Liability,2910 Due To - 4J&L Partners,643522.69
+Equity,3100 Retained Earnings,-994488.18
+Equity,3900 Opening Balance Equity,-1035680.76
+Equity,Current Year Net Income,-18115.51
+Equity,Total Equity (incl. net income),-2048284.45
+
+TRIAL BALANCE
+Account,Type,Debit,Credit
+1000 Cash & Bank Accounts,ASSET,18632.32,0
+1350 Rehab Holdbacks,ASSET,85000,0
+1500 Real Estate Owned,ASSET,1317297.95,0
+1900 Due From - LJC Financial,ASSET,187638.17,0
+2000 Accounts Payable,LIABILITY,0,525763.44
+2900 Notes Payable - LJC Financial (Loans),LIABILITY,0,1689386
+2901 Due To - LJC Financial (Intercompany),LIABILITY,0,798180.76
+2910 Due To - 4J&L Partners,LIABILITY,0,643522.69
+3100 Retained Earnings,EQUITY,994488.18,0
+3900 Opening Balance Equity,EQUITY,1035680.76,0
+5000 Operating Expenses,EXPENSE,18115.51,0
+Totals,,3656852.89,3656852.89
+
+READINESS CHECKS
+Trial balance debits equal credits,PASS
+Balance sheet assets equal liabilities + equity,PASS
+QBO source trial balance balanced,PASS
+Profit & loss reviewed (activity or zero),PASS
+Balance sheet has balances,PASS

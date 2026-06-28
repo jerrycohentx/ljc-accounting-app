@@ -1,0 +1,44 @@
+Tax Year Financial Package — 4 J & L Partners, LTD
+Tax Year,2025
+Basis,Cash
+Tax Return Ready,YES
+
+PROFIT AND LOSS
+Account,Amount
+4000 Rental Income,350164.46
+Total Revenue,350164.46
+5000 Operating Expenses,52260.25
+Total Expense,52260.25
+Net Income,297904.21
+
+BALANCE SHEET
+Section,Account,Amount
+Asset,1000 Cash & Bank Accounts,-4871.13
+Asset,1410 Escrows & Reserves,478307.88
+Asset,1900 Due From - LJC Financial,3333146.6
+Asset,1901 Due From - Justin Financial,643522.69
+Asset,1999 Other Assets (Opening Rollup),574035.45
+Equity,3100 Retained Earnings / Partner Equity,4082714.59
+Equity,3900 Opening Balance Equity,643522.69
+Equity,Current Year Net Income,297904.21
+Equity,Total Equity (incl. net income),5024141.49
+
+TRIAL BALANCE
+Account,Type,Debit,Credit
+1000 Cash & Bank Accounts,ASSET,0,4871.13
+1410 Escrows & Reserves,ASSET,478307.88,0
+1900 Due From - LJC Financial,ASSET,3333146.6,0
+1901 Due From - Justin Financial,ASSET,643522.69,0
+1999 Other Assets (Opening Rollup),ASSET,574035.45,0
+3100 Retained Earnings / Partner Equity,EQUITY,0,4082714.59
+3900 Opening Balance Equity,EQUITY,0,643522.69
+4000 Rental Income,REVENUE,0,350164.46
+5000 Operating Expenses,EXPENSE,52260.25,0
+Totals,,5081272.87,5081272.87
+
+READINESS CHECKS
+Trial balance debits equal credits,PASS
+Balance sheet assets equal liabilities + equity,PASS
+QBO source trial balance balanced,PASS
+Profit & loss reviewed (activity or zero),PASS
+Balance sheet has balances,PASS

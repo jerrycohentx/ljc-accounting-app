@@ -1,0 +1,92 @@
+Tax Year Financial Package — LJC Financial, LLC
+Tax Year,2025
+Basis,Cash
+Tax Return Ready,YES
+
+PROFIT AND LOSS
+Account,Amount
+4000 Interest Income,418262.04
+4100 Rental Income,376245.87
+Total Revenue,794507.91
+5000 Interest Expense,738194.74
+5100 Draw & Inspection Fees,-9526.14
+5200 Bank Service Charges,5449.79
+5300 Insurance Expense,72173.9
+5500 Utilities,4588.22
+5600 Professional Fees,81175.46
+5700 Office & Software,21275.1
+5800 Chargebacks & Reversals,-38
+Total Expense,913293.07
+Net Income,-118785.16
+
+BALANCE SHEET
+Section,Account,Amount
+Asset,1000 Cash & Bank Accounts - Simmons,225200.19
+Asset,1001 Cash - Lone Star Bank,-193.15
+Asset,1010 Cash - Simmons Sub-Accounts (4177/4790/7036),210960.76
+Asset,1100 Undeposited Funds,9866.88
+Asset,1200 Accounts Receivable,84146.39
+Asset,1300 Notes Receivable,886750
+Asset,1310 Notes Receivable - Simmons DLOC,2675839
+Asset,1350 Holdbacks - Simmons Bank,-234370.69
+Asset,1410 Mortgage / Servicing Escrow,-11150.18
+Asset,1500 REO / Property Held for Sale,5152701.14
+Asset,1900 Due From - GM,370267.18
+Asset,1901 Due From - Justin Cohen,798180.76
+Asset,1903 Due From - LJC QOF,411546.08
+Asset,1999 Other Assets (Opening Rollup),-1098753.78
+Liability,2000 Accounts Payable,406
+Liability,2010 Credit Card - American Express,158318.51
+Liability,2110 DLOC - Simmons Bank,4676217
+Liability,2901 Due To - Justin Cohen,187638.17
+Liability,2902 Due To - OMC,22496.91
+Liability,2910 Due To - 4J&L Partners,3333146.6
+Liability,2999 Other Liabilities (Opening Rollup),4977737.74
+Equity,3100 Retained Earnings,-450100.22
+Equity,3900 Opening Balance Equity,-3306084.97
+Equity,Current Year Net Income,-118785.16
+Equity,Total Equity (incl. net income),-3874970.35
+
+TRIAL BALANCE
+Account,Type,Debit,Credit
+1000 Cash & Bank Accounts - Simmons,ASSET,225200.19,0
+1001 Cash - Lone Star Bank,ASSET,0,193.15
+1010 Cash - Simmons Sub-Accounts (4177/4790/7036),ASSET,210960.76,0
+1100 Undeposited Funds,ASSET,9866.88,0
+1200 Accounts Receivable,ASSET,84146.39,0
+1300 Notes Receivable,ASSET,886750,0
+1310 Notes Receivable - Simmons DLOC,ASSET,2675839,0
+1350 Holdbacks - Simmons Bank,ASSET,0,234370.69
+1410 Mortgage / Servicing Escrow,ASSET,0,11150.18
+1500 REO / Property Held for Sale,ASSET,5152701.14,0
+1900 Due From - GM,ASSET,370267.18,0
+1901 Due From - Justin Cohen,ASSET,798180.76,0
+1903 Due From - LJC QOF,ASSET,411546.08,0
+1999 Other Assets (Opening Rollup),ASSET,0,1098753.78
+2000 Accounts Payable,LIABILITY,0,406
+2010 Credit Card - American Express,LIABILITY,0,158318.51
+2110 DLOC - Simmons Bank,LIABILITY,0,4676217
+2901 Due To - Justin Cohen,LIABILITY,0,187638.17
+2902 Due To - OMC,LIABILITY,0,22496.91
+2910 Due To - 4J&L Partners,LIABILITY,0,3333146.6
+2999 Other Liabilities (Opening Rollup),LIABILITY,0,4977737.74
+3100 Retained Earnings,EQUITY,450100.22,0
+3900 Opening Balance Equity,EQUITY,3306084.97,0
+4000 Interest Income,REVENUE,0,418262.04
+4100 Rental Income,REVENUE,0,376245.87
+5000 Interest Expense,EXPENSE,738194.74,0
+5100 Draw & Inspection Fees,EXPENSE,0,9526.14
+5200 Bank Service Charges,EXPENSE,5449.79,0
+5300 Insurance Expense,EXPENSE,72173.9,0
+5500 Utilities,EXPENSE,4588.22,0
+5600 Professional Fees,EXPENSE,81175.46,0
+5700 Office & Software,EXPENSE,21275.1,0
+5800 Chargebacks & Reversals,EXPENSE,0,38
+Totals,,15504500.78,15504500.78
+
+READINESS CHECKS
+Trial balance debits equal credits,PASS
+Balance sheet assets equal liabilities + equity,PASS
+QBO source trial balance balanced,PASS
+Profit & loss reviewed (activity or zero),PASS
+Balance sheet has balances,PASS

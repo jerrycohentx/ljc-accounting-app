@@ -1,0 +1,50 @@
+Tax Year Financial Package — OMC Housing LLC
+Tax Year,2025
+Basis,Cash
+Tax Return Ready,YES
+
+PROFIT AND LOSS
+Account,Amount
+4000 Other Income,211122.41
+Total Revenue,211122.41
+5000 Operating Expenses,119638.78
+Total Expense,119638.78
+Net Income,91483.63
+
+BALANCE SHEET
+Section,Account,Amount
+Asset,1000 Cash & Bank Accounts,144648.17
+Asset,1200 Accounts Receivable,12952.35
+Asset,1300 Notes Receivable,175000
+Asset,1350 Deposits & Holdbacks,7453.03
+Asset,1500 Real Estate Owned,177635.63
+Asset,1900 Due From - LJC Financial,22496.91
+Liability,2011 Credit Card - Chase,-1763.69
+Liability,2110 Notes Payable - Banks,263317.71
+Equity,3100 Retained Earnings,104160.09
+Equity,3900 Opening Balance Equity,82988.35
+Equity,Current Year Net Income,91483.63
+Equity,Total Equity (incl. net income),278632.07
+
+TRIAL BALANCE
+Account,Type,Debit,Credit
+1000 Cash & Bank Accounts,ASSET,144648.17,0
+1200 Accounts Receivable,ASSET,12952.35,0
+1300 Notes Receivable,ASSET,175000,0
+1350 Deposits & Holdbacks,ASSET,7453.03,0
+1500 Real Estate Owned,ASSET,177635.63,0
+1900 Due From - LJC Financial,ASSET,22496.91,0
+2011 Credit Card - Chase,LIABILITY,1763.69,0
+2110 Notes Payable - Banks,LIABILITY,0,263317.71
+3100 Retained Earnings,EQUITY,0,104160.09
+3900 Opening Balance Equity,EQUITY,0,82988.35
+4000 Other Income,REVENUE,0,211122.41
+5000 Operating Expenses,EXPENSE,119638.78,0
+Totals,,661588.56,661588.56
+
+READINESS CHECKS
+Trial balance debits equal credits,PASS
+Balance sheet assets equal liabilities + equity,PASS
+QBO source trial balance balanced,PASS
+Profit & loss reviewed (activity or zero),PASS
+Balance sheet has balances,PASS

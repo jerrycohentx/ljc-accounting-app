@@ -3,13 +3,12 @@ import Decimal from 'decimal.js';
 import { getDatabase } from '../config/database.js';
 import { entityAccessMiddleware } from '../middleware/auth.js';
 
+import { POSTED_GL_SUBQUERY, calculateAccountBalance } from '../lib/posted-gl.js';
+
 const router = express.Router({ mergeParams: true });
 
-/** Subquery: only GL rows whose journal entry is POSTED (QBO-compatible). */
-const POSTED_GL = `
-  SELECT gl.* FROM general_ledger gl
-  INNER JOIN journal_entries je ON je.id = gl.journal_entry_id AND je.status = 'POSTED'
-`;
+/** @deprecated use POSTED_GL_SUBQUERY from lib/posted-gl.js */
+const POSTED_GL = POSTED_GL_SUBQUERY;
 
 async function getAccountsWithBalances(db, entityId, asOfDate = null) {
   let query = `
@@ -33,14 +32,7 @@ async function getAccountsWithBalances(db, entityId, asOfDate = null) {
 
 // Helper: Calculate account balance
 function calculateBalance(account) {
-  const debit = new Decimal(account.total_debit || 0);
-  const credit = new Decimal(account.total_credit || 0);
-  
-  if (account.normal_balance === 'DEBIT') {
-    return debit.minus(credit);
-  } else {
-    return credit.minus(debit);
-  }
+  return calculateAccountBalance(account);
 }
 
 // GET /api/entities/:entityId/reports/income-statement
