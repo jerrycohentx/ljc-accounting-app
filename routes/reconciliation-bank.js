@@ -25,6 +25,7 @@ import {
 } from '../lib/bank-reconcile-session.js';
 import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
 import { prepareReconciliation } from '../lib/reconcile-prepare.js';
+import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/statement-auto-load.js';
 
 const router = express.Router();
 
@@ -513,6 +514,26 @@ router.get('/summary', async (req, res) => {
       error: 'Failed to get reconciliation summary',
       details: error.message
     });
+  }
+});
+
+// GET /api/reconciliation/bank/auto-load/status
+router.get('/auto-load/status', async (req, res) => {
+  try {
+    return res.json(getStatementAutoLoadStatus());
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/auto-load/run', async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const result = await runStatementAutoLoad(db, { reason: 'manual' });
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    console.error('Manual statement auto-load error:', error);
+    return res.status(500).json({ error: error.message || 'Auto-load failed' });
   }
 });
 

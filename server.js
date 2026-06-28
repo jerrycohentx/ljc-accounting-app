@@ -30,6 +30,7 @@ import backupRoutes from './routes/backup.js';
 import { authMiddleware } from './middleware/auth.js';
 import { getAppInfo } from './lib/app-info.js';
 import { getBackupStatus, startAutoBackup } from './lib/app-backup.js';
+import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.get('/health', async (req, res) => {
     version: appInfo.version,
     gitSha: appInfo.gitSha,
     lastBackupAt: backup.lastBackupAt,
+    statementAutoLoad: getStatementAutoLoadStatus(),
   };
   try {
     const db = await getDatabase();
@@ -184,6 +186,7 @@ async function start() {
     await getDatabase();
     console.log('✓ Database connected');
     startAutoBackup();
+    startStatementAutoLoad(getDatabase);
   } catch (error) {
     console.error('Database initialization failed:', error);
     process.exit(1);
