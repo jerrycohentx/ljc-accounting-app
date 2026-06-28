@@ -24,6 +24,7 @@ import taxFinancialsRoutes, { entityTaxRouter } from './routes/tax-financials.js
 import productionBootstrapRoutes from './routes/production-bootstrap.js';
 import lonestarCatchupRoutes from './routes/lonestar-catchup.js';
 import amexCatchupRoutes from './routes/amex-catchup.js';
+import simmonsOfxCatchupRoutes from './routes/simmons-ofx-catchup.js';
 import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
@@ -76,6 +77,7 @@ app.post('/api/receipts/webhook/whatsapp', whatsappWebhookHandler);
 app.use('/api/production-bootstrap', productionBootstrapRoutes);
 app.use('/api/lonestar-catchup', lonestarCatchupRoutes);
 app.use('/api/amex-catchup', amexCatchupRoutes);
+app.use('/api/simmons-ofx-catchup', simmonsOfxCatchupRoutes);
 
 // Protected routes
 app.use('/api', authMiddleware);
