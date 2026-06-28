@@ -26,6 +26,14 @@ services:
           property: connectionString
       - key: ADMIN_EMAIL
         value: jerry@ljcfinancial.com
+      - key: ADMIN_PHONE
+        value: "+12818317855"
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
       - key: PLAID_CLIENT_ID
         sync: false
       - key: PLAID_SECRET
