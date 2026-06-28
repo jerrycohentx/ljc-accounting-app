@@ -135,11 +135,17 @@ export default function QBDLayout() {
       <div className="qbd-work"><Outlet context={{ showToast }} /></div>
 
       <div className="qbd-statusbar">
-        <span onClick={() => setBackupOpen(true)} title="View backups" style={{ cursor: 'pointer' }}>{appLabel}</span>
+        <span onClick={() => setBackupOpen(true)} title="View backups" style={{ cursor: 'pointer' }}>
+          <strong>Version</strong> {appLabel}
+        </span>
         <span className="qbd-status-sep">|</span>
-        <span onClick={() => setBackupOpen(true)} title="View backups" style={{ cursor: 'pointer' }}>Backup: {backupLabel}</span>
+        <span onClick={() => setBackupOpen(true)} title="View backups" style={{ cursor: 'pointer' }}>
+          <strong>Backup</strong> {backupLabel}
+        </span>
         <span className="qbd-status-sep">|</span>
-        <span onClick={() => setEmailOpen(true)} title="Bank statement email" style={{ cursor: 'pointer' }}>Email: {emailLabel}</span>
+        <span onClick={() => setEmailOpen(true)} title="Bank statement email" style={{ cursor: 'pointer' }}>
+          <strong>Email</strong> {emailLabel}
+        </span>
         <span className="sp" />
         <span className="qbd-muted">Auto backup {backupInfo?.backup?.intervalMinutes || 60}m · email {emailInfo?.intervalHours || 6}h</span>
       </div>

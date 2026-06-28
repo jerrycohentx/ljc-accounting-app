@@ -5,6 +5,8 @@ import {
   Tabs, Tab, CircularProgress, Link
 } from '@mui/material';
 import { authAPI } from '../services/api';
+import { formatBackupShort } from '../qbd/QBDBackupDialog';
+import { formatEmailScanShort } from '../qbd/QBEmailIngestDialog';
 
 const EMPTY_FORM = {
   email: '',
@@ -22,23 +24,28 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [buildLabel, setBuildLabel] = useState('');
+  const [serverStatus, setServerStatus] = useState(null);
   const [resetChannel, setResetChannel] = useState('');
   const forgotOpenedAt = useRef(0);
 
   const [formData, setFormData] = useState(EMPTY_FORM);
 
   useEffect(() => {
-    fetch('/health')
-      .then((r) => r.json())
-      .then((d) => setBuildLabel(d.app || d.version || ''))
-      .catch(() => {});
+    const loadHealth = () => {
+      fetch('/health')
+        .then((r) => r.json())
+        .then((d) => setServerStatus(d))
+        .catch(() => {});
+    };
+    loadHealth();
+    const id = setInterval(loadHealth, 60000);
     try {
       const saved = sessionStorage.getItem('ljc_login_email');
       if (saved) setFormData((prev) => ({ ...prev, email: saved }));
     } catch {
       // ignore
     }
+    return () => clearInterval(id);
   }, []);
 
   const persistEmail = (email) => {
@@ -364,11 +371,33 @@ export default function LoginPage() {
               Demo login: demo@ljcfinancial.com / demo123
             </Typography>
           )}
-          {buildLabel && (
-            <Typography variant="caption" align="center" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
-              Server {buildLabel}
-            </Typography>
-          )}
+
+          <Box
+            sx={{
+              mt: 2,
+              pt: 1.5,
+              borderTop: '2px solid #dbe2ec',
+              background: 'linear-gradient(#eef2f7,#e4eaf2)',
+              mx: -4,
+              mb: -4,
+              px: 2,
+              py: 1.25,
+              borderRadius: '0 0 4px 4px',
+              fontSize: 12,
+              color: '#42566f',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <span><strong>Version</strong> {serverStatus?.app || serverStatus?.version || '…'}</span>
+            <span>|</span>
+            <span><strong>Backup</strong> {formatBackupShort(serverStatus?.lastBackupAt)}</span>
+            <span>|</span>
+            <span><strong>Email</strong> {formatEmailScanShort(serverStatus?.statementEmailIngest?.lastRunAt)}</span>
+          </Box>
         </Paper>
       </Container>
     </Box>

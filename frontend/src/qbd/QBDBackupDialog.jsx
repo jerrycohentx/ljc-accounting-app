@@ -116,7 +116,20 @@ export function useBackupStatus() {
   const refresh = useCallback(() => {
     backupAPI.status()
       .then((r) => setInfo(r.data))
-      .catch(() => {});
+      .catch(() => {
+        fetch('/health')
+          .then((r) => r.json())
+          .then((d) => {
+            setInfo({
+              app: { buildLabel: d.app, version: d.version, gitSha: d.gitSha },
+              backup: {
+                lastBackupAt: d.lastBackupAt,
+                intervalMinutes: 60,
+              },
+            });
+          })
+          .catch(() => {});
+      });
   }, []);
 
   useEffect(() => {
