@@ -45,3 +45,41 @@ export function flattenTree(nodes, depth = 0, out = []) {
 export function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
+
+/** Credit card / liability accounts use Charge + Payment columns (QBD style). */
+export function isCreditCardAccount(account) {
+  if (!account) return false;
+  if (account.account_type === 'LIABILITY') return true;
+  if (account.normal_balance === 'CREDIT') return true;
+  return /Credit-Cards|Credit Card/i.test(account.account_name || '');
+}
+
+export function reconColumnLabels(account) {
+  return isCreditCardAccount(account)
+    ? { col1: 'Charge', col2: 'Payment', cleared1: 'Cleared charges', cleared2: 'Cleared payments' }
+    : { col1: 'Deposit', col2: 'Payment', cleared1: 'Cleared deposits', cleared2: 'Cleared payments' };
+}
+
+/** Signed register delta for reconcile math (matches backend normal_balance). */
+export function signedGlDelta(entry, account) {
+  const d = +(entry.debit || 0);
+  const c = +(entry.credit || 0);
+  return isCreditCardAccount(account) ? c - d : d - c;
+}
+
+/** QBD column amounts for register row display. */
+export function registerDisplayAmounts(entry, account) {
+  const d = +(entry.debit || 0);
+  const c = +(entry.credit || 0);
+  if (isCreditCardAccount(account)) return { col1: c || null, col2: d || null };
+  return { col1: d || null, col2: c || null };
+}
+
+/** Statement line columns (+ = charge/deposit, − = payment). */
+export function statementDisplayAmounts(line, account) {
+  const amt = +(line.amount || 0);
+  if (isCreditCardAccount(account)) {
+    return { col1: amt > 0 ? amt : null, col2: amt < 0 ? Math.abs(amt) : null };
+  }
+  return { col1: line.deposit ?? (amt > 0 ? amt : null), col2: line.payment ?? (amt < 0 ? Math.abs(amt) : null) };
+}

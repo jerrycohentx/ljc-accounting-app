@@ -1,8 +1,20 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, bankReconAPI } from '../services/api';
-import { fmt, leafLabel, todayISO } from './helpers';
+import {
+  fmt,
+  leafLabel,
+  todayISO,
+  isCreditCardAccount,
+  reconColumnLabels,
+  signedGlDelta,
+  registerDisplayAmounts,
+  statementDisplayAmounts,
+} from './helpers';
+
+const SPLIT_STORAGE_KEY = 'qbd-recon-split-pct';
+const DEFAULT_SPLIT = 48;
 
 function flat(nodes, out) {
   (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flat(n.children, out); });
@@ -14,7 +26,11 @@ function periodLabel(statementDate) {
   return String(statementDate).slice(0, 7);
 }
 
-function StmtTable({ lines, highlightGlId, onSelect, onHover }) {
+function roundAmt(n) {
+  return Math.round(Number(n) * 100) / 100;
+}
+
+function StmtTable({ lines, account, labels, highlightGlId, onSelect, onHover }) {
   if (!lines.length) {
     return <div className="qbd-empty">No statement lines for this period.</div>;
   }
@@ -24,27 +40,29 @@ function StmtTable({ lines, highlightGlId, onSelect, onHover }) {
         <tr>
           <th className="qbd-d">DATE</th>
           <th>MEMO</th>
-          <th className="qbd-amt">Deposit</th>
-          <th className="qbd-amt">Payment</th>
+          <th className="qbd-amt">{labels.col1}</th>
+          <th className="qbd-amt">{labels.col2}</th>
         </tr>
       </thead>
       <tbody>
         {lines.map((line) => {
           const hl = highlightGlId && line.matchedGlId === highlightGlId;
           const matched = !!line.matchedGlId;
+          const { col1, col2 } = statementDisplayAmounts(line, account);
           return (
             <tr
               key={line.id}
+              data-gl-id={line.matchedGlId || undefined}
               className={[hl ? 'hl' : '', matched ? 'matched' : ''].filter(Boolean).join(' ') || undefined}
-              style={{ cursor: line.matchedGlId ? 'pointer' : 'default' }}
-              onMouseEnter={() => onHover && onHover(line.matchedGlId)}
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={() => onHover && onHover(line.matchedGlId || null)}
               onMouseLeave={() => onHover && onHover(null)}
               onClick={() => onSelect && onSelect(line)}
             >
               <td className="qbd-d">{line.date}</td>
               <td>{line.description}</td>
-              <td className="qbd-amt">{line.deposit ? fmt(line.deposit) : ''}</td>
-              <td className="qbd-amt">{line.payment ? fmt(line.payment) : ''}</td>
+              <td className="qbd-amt">{col1 ? fmt(col1) : ''}</td>
+              <td className="qbd-amt">{col2 ? fmt(col2) : ''}</td>
             </tr>
           );
         })}
@@ -53,7 +71,7 @@ function StmtTable({ lines, highlightGlId, onSelect, onHover }) {
   );
 }
 
-function RegisterTable({ entries, checked, highlightGlId, onToggle, onHover }) {
+function RegisterTable({ entries, account, labels, checked, highlightGlId, onToggle, onHover }) {
   if (!entries.length) {
     return <div className="qbd-empty">No uncleared register items.</div>;
   }
@@ -65,17 +83,19 @@ function RegisterTable({ entries, checked, highlightGlId, onToggle, onHover }) {
           <th className="qbd-d">DATE</th>
           <th className="qbd-je">ENTRY</th>
           <th>MEMO</th>
-          <th className="qbd-amt">Deposit</th>
-          <th className="qbd-amt">Payment</th>
+          <th className="qbd-amt">{labels.col1}</th>
+          <th className="qbd-amt">{labels.col2}</th>
         </tr>
       </thead>
       <tbody>
         {entries.map((e) => {
           const isChecked = !!checked[e.id];
           const hl = highlightGlId === e.id;
+          const { col1, col2 } = registerDisplayAmounts(e, account);
           return (
             <tr
               key={e.id}
+              data-gl-id={e.id}
               className={[hl ? 'hl' : '', isChecked ? 'cleared' : ''].filter(Boolean).join(' ') || undefined}
               style={{ cursor: 'pointer' }}
               onMouseEnter={() => onHover && onHover(e.id)}
@@ -93,14 +113,70 @@ function RegisterTable({ entries, checked, highlightGlId, onToggle, onHover }) {
               <td className="qbd-d">{e.posting_date}</td>
               <td className="qbd-je">{e.je_number}</td>
               <td>{e.je_description || e.description || ''}</td>
-              <td className="qbd-amt">{(+e.debit) ? fmt(+e.debit) : ''}</td>
-              <td className="qbd-amt">{(+e.credit) ? fmt(+e.credit) : ''}</td>
+              <td className="qbd-amt">{col1 ? fmt(col1) : ''}</td>
+              <td className="qbd-amt">{col2 ? fmt(col2) : ''}</td>
             </tr>
           );
         })}
       </tbody>
     </table>
   );
+}
+
+function useSplitResize(splitRef, setSplitPct) {
+  const dragging = useRef(false);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!dragging.current || !splitRef.current) return;
+      const rect = splitRef.current.getBoundingClientRect();
+      const pct = ((e.clientX - rect.left) / rect.width) * 100;
+      setSplitPct(Math.min(75, Math.max(25, pct)));
+    };
+    const onUp = () => {
+      dragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [splitRef, setSplitPct]);
+
+  return useCallback(() => {
+    dragging.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
+}
+
+function useSyncScroll(enabled, stmtRef, regRef) {
+  const lock = useRef(null);
+
+  const sync = useCallback((source, target) => {
+    if (!enabled || !source || !target || lock.current === target) return;
+    lock.current = source;
+    const max = source.scrollHeight - source.clientHeight;
+    const ratio = max > 0 ? source.scrollTop / max : 0;
+    const tMax = target.scrollHeight - target.clientHeight;
+    target.scrollTop = ratio * tMax;
+    requestAnimationFrame(() => {
+      if (lock.current === source) lock.current = null;
+    });
+  }, [enabled]);
+
+  const onStmtScroll = useCallback(() => {
+    sync(stmtRef.current, regRef.current);
+  }, [sync, stmtRef, regRef]);
+
+  const onRegScroll = useCallback(() => {
+    sync(regRef.current, stmtRef.current);
+  }, [sync, stmtRef, regRef]);
+
+  return { onStmtScroll, onRegScroll };
 }
 
 export default function QBDReconcile() {
@@ -115,6 +191,21 @@ export default function QBDReconcile() {
   const [checked, setChecked] = useState({});
   const [busy, setBusy] = useState(false);
   const [highlightGlId, setHighlightGlId] = useState(null);
+  const [syncScroll, setSyncScroll] = useState(true);
+  const [splitPct, setSplitPct] = useState(() => {
+    const saved = parseFloat(localStorage.getItem(SPLIT_STORAGE_KEY) || '');
+    return Number.isFinite(saved) ? saved : DEFAULT_SPLIT;
+  });
+
+  const splitRef = useRef(null);
+  const stmtScrollRef = useRef(null);
+  const regScrollRef = useRef(null);
+  const startResize = useSplitResize(splitRef, setSplitPct);
+  const { onStmtScroll, onRegScroll } = useSyncScroll(syncScroll, stmtScrollRef, regScrollRef);
+
+  useEffect(() => {
+    localStorage.setItem(SPLIT_STORAGE_KEY, String(Math.round(splitPct)));
+  }, [splitPct]);
 
   useEffect(() => {
     if (!entityId) return;
@@ -151,12 +242,24 @@ export default function QBDReconcile() {
 
   const toggle = (id) => setChecked((c) => ({ ...c, [id]: !c[id] }));
 
+  const account = data?.account;
+  const labels = useMemo(() => reconColumnLabels(account), [account]);
+  const isCard = isCreditCardAccount(account);
+
   const entries = data?.entries || [];
   const statementLines = data?.statementLines || [];
   const beginning = +(data?.beginningBalance || 0);
-  const clearedSigned = entries.filter((e) => checked[e.id]).reduce((s, e) => s + ((+e.debit || 0) - (+e.credit || 0)), 0);
-  const clearedDep = entries.filter((e) => checked[e.id]).reduce((s, e) => s + (+e.debit || 0), 0);
-  const clearedPay = entries.filter((e) => checked[e.id]).reduce((s, e) => s + (+e.credit || 0), 0);
+  const clearedSigned = entries
+    .filter((e) => checked[e.id])
+    .reduce((s, e) => s + signedGlDelta(e, account), 0);
+  const clearedCol1 = entries.filter((e) => checked[e.id]).reduce((s, e) => {
+    const { col1 } = registerDisplayAmounts(e, account);
+    return s + (+col1 || 0);
+  }, 0);
+  const clearedCol2 = entries.filter((e) => checked[e.id]).reduce((s, e) => {
+    const { col2 } = registerDisplayAmounts(e, account);
+    return s + (+col2 || 0);
+  }, 0);
   const target = parseFloat(endBal || data?.endingBalance || data?.statementMeta?.currentBalance || '0') || 0;
   const difference = Math.round((target - (beginning + clearedSigned)) * 100) / 100;
   const balanced = Math.abs(difference) < 0.005;
@@ -165,12 +268,24 @@ export default function QBDReconcile() {
   const glByAmountDate = useMemo(() => {
     const map = new Map();
     for (const e of entries) {
-      const amt = roundAmt((+e.debit || 0) - (+e.credit || 0));
+      const amt = roundAmt(signedGlDelta(e, account));
       const key = `${e.posting_date}|${amt}`;
       if (!map.has(key)) map.set(key, e.id);
     }
     return map;
-  }, [entries]);
+  }, [entries, account]);
+
+  const scrollRowIntoView = useCallback((glId) => {
+    if (!glId) return;
+    [stmtScrollRef, regScrollRef].forEach((ref) => {
+      const row = ref.current?.querySelector(`[data-gl-id="${glId}"]`);
+      row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (highlightGlId) scrollRowIntoView(highlightGlId);
+  }, [highlightGlId, scrollRowIntoView]);
 
   const onStatementSelect = (line) => {
     if (line.matchedGlId && entries.some((e) => e.id === line.matchedGlId)) {
@@ -226,7 +341,7 @@ export default function QBDReconcile() {
         </div>
         <div className="frow"><label>Statement date</label><input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} /></div>
         <div className="frow"><label>Ending balance</label><input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From your bank statement" style={{ textAlign: 'right', width: 180 }} /></div>
-        <div className="qbd-botbar"><span className="qbd-muted">QuickBooks-style reconcile: mark cleared register items until difference is zero. Statement appears beside the register.</span><span className="sp" /><button className="qbd-btn" disabled={busy} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button></div>
+        <div className="qbd-botbar"><span className="qbd-muted">QuickBooks-style reconcile: mark cleared register items until difference is zero. Statement appears beside the register — drag the center bar to resize.</span><span className="sp" /><button className="qbd-btn" disabled={busy} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button></div>
       </div>
     );
   }
@@ -259,8 +374,9 @@ export default function QBDReconcile() {
   ) : null;
 
   return (
-    <div className="qbd-window" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+    <div className="qbd-window" style={{ maxHeight: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
       <div className="qbd-wtitle">Reconcile — {data.account.account_number} · {leafLabel(data.account.account_name)}
+        {isCard && <span style={{ fontWeight: 'normal', fontSize: 11, marginLeft: 8 }}>(Credit card)</span>}
         <span className="x" onClick={() => { setStarted(false); setData(null); }}>✕</span>
       </div>
       {sessionBanner}
@@ -268,8 +384,8 @@ export default function QBDReconcile() {
         <div><span className="lbl">Statement period</span><span className="val">{stmtPeriod.periodStart || '—'} → {stmtPeriod.periodEnd || data.statementDate}</span></div>
         <div><span className="lbl">Stmt beginning</span><span className="val">{stmtMeta.previousBalance != null ? fmt(stmtMeta.previousBalance) : fmt(beginning)}</span></div>
         <div><span className="lbl">Books beginning</span><span className="val">{fmt(beginning)}</span></div>
-        <div><span className="lbl">Cleared deposits</span><span className="val">{fmt(clearedDep) || '0.00'}</span></div>
-        <div><span className="lbl">Cleared payments</span><span className="val">{fmt(clearedPay) || '0.00'}</span></div>
+        <div><span className="lbl">{labels.cleared1}</span><span className="val">{fmt(clearedCol1) || '0.00'}</span></div>
+        <div><span className="lbl">{labels.cleared2}</span><span className="val">{fmt(clearedCol2) || '0.00'}</span></div>
         <div><span className="lbl">Statement ending</span><span className="val">{fmt(target) || '0.00'}</span></div>
         <div>
           <span className="lbl">Difference</span>
@@ -278,34 +394,53 @@ export default function QBDReconcile() {
       </div>
       <div className="qbd-tools" style={{ gap: 12 }}>
         <button className="qbd-btn" onClick={() => { setStarted(false); setData(null); }}>← Change</button>
-        <span className="qbd-muted">{statementLines.length} statement lines · {entries.length} register items</span>
-        {stmtMeta.statementLabel && <span className="qbd-muted">PDF: {stmtMeta.statementLabel}</span>}
+        <span className="qbd-muted">{statementLines.length} statement · {entries.length} register</span>
+        {stmtMeta.statementLabel && <span className="qbd-muted">{stmtMeta.statementLabel}</span>}
+        <label className="qbd-recon-tools-chk">
+          <input type="checkbox" checked={syncScroll} onChange={(e) => setSyncScroll(e.target.checked)} />
+          Sync scroll
+        </label>
+        <button type="button" className="qbd-btn" style={{ fontSize: 10, padding: '2px 8px' }} onClick={() => setSplitPct(DEFAULT_SPLIT)} title="Reset pane width">
+          Reset split
+        </button>
         <span className="sp" />
-        <span className="qbd-muted">Click a statement line to mark its register match cleared</span>
+        <span className="qbd-muted">Drag center bar to resize · click statement line to toggle register match</span>
       </div>
-      <div className="qbd-recon-split">
-        <div className="qbd-recon-pane">
+      <div className="qbd-recon-split" ref={splitRef}>
+        <div className="qbd-recon-pane" style={{ width: `${splitPct}%` }}>
           <div className="qbd-recon-panehead">
-            Bank statement
-            <span className="qbd-muted">{stmtMeta.bankName || 'Imported / PDF'}</span>
+            {isCard ? 'Card statement' : 'Bank statement'}
+            <span className="qbd-muted">{stmtMeta.bankName || stmtMeta.cardName || 'Imported / PDF'}</span>
           </div>
-          <div className="qbd-recon-panebody">
+          <div className="qbd-recon-panebody" ref={stmtScrollRef} onScroll={onStmtScroll}>
             <StmtTable
               lines={statementLines}
+              account={account}
+              labels={labels}
               highlightGlId={highlightGlId}
               onSelect={onStatementSelect}
               onHover={setHighlightGlId}
             />
           </div>
         </div>
-        <div className="qbd-recon-pane">
+        <div
+          className="qbd-recon-gutter"
+          role="separator"
+          aria-orientation="vertical"
+          aria-valuenow={Math.round(splitPct)}
+          title="Drag to resize panes"
+          onMouseDown={startResize}
+        />
+        <div className="qbd-recon-pane" style={{ width: `${100 - splitPct}%` }}>
           <div className="qbd-recon-panehead">
             Register — mark cleared
             <span className="qbd-muted">{checkedIds.length} marked</span>
           </div>
-          <div className="qbd-recon-panebody">
+          <div className="qbd-recon-panebody" ref={regScrollRef} onScroll={onRegScroll}>
             <RegisterTable
               entries={entries}
+              account={account}
+              labels={labels}
               checked={checked}
               highlightGlId={highlightGlId}
               onToggle={toggle}
@@ -322,8 +457,4 @@ export default function QBDReconcile() {
       </div>
     </div>
   );
-}
-
-function roundAmt(n) {
-  return Math.round(Number(n) * 100) / 100;
 }
