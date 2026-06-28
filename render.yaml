@@ -11,7 +11,7 @@ services:
     repo: https://github.com/jerrycohentx/ljc-accounting-app
     branch: master
     plan: free
-    buildCommand: npm install && npm run build:frontend
+    buildCommand: npm install && npx playwright install chromium && npm run build:frontend
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -54,4 +54,10 @@ services:
         sync: false
       - key: LOAN_TRACKER_INTEGRATION_KEY
         value: ljc-cohen-loan-tracker-2026
+      - key: LONESTAR_ONLINE_USER
+        sync: false
+      - key: LONESTAR_ONLINE_PASSWORD
+        sync: false
+      - key: LONESTAR_ACCOUNT_LAST4
+        value: "7367"
     healthCheckPath: /health
