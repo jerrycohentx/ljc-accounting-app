@@ -1,62 +1,44 @@
 ================================================================================
-  JERRY — START HERE (no Command Prompt needed)
+  JERRY — START HERE
 ================================================================================
 
 YOUR ROLE: CEO / owner. You use the app. The computer team handles the rest.
 
 --------------------------------------------------------------------------------
-OPTION A — USE THE APP IN YOUR BROWSER (easiest)
+OPEN THE APP (every day)
 --------------------------------------------------------------------------------
 
-  1. Open Chrome (or any browser)
+  1. Double-click the **LJC Accounting** icon on your desktop or taskbar
+     — OR double-click **START-APP.bat** in your project folder
 
-  2. Go to:  https://ljc-accounting-app.onrender.com
+  2. Your browser opens to:  https://ljc-accounting-app.onrender.com
 
   3. Log in with your usual email and password
 
   4. Banking → Reconcile → pick account → Start reconciling
 
-  New features (import statement beside register) appear here automatically
-  after updates — no install on your PC.
+  Updates appear on the website automatically. You do not need to rebuild
+  anything on your PC.
 
 --------------------------------------------------------------------------------
-OPTION B — RUN ON YOUR COMPUTER (if you prefer local data)
+FIRST TIME (or if shortcuts still open localhost)
 --------------------------------------------------------------------------------
 
-  Do NOT open Command Prompt.
+  1. In your project folder, double-click:  INSTALL-SHORTCUTS.bat
 
-  1. Click the Windows Start button (or open File Explorer)
+  2. That replaces desktop and taskbar shortcuts with the web version.
 
-  2. In the search box at the top, type:   START-APP.bat
-
-  3. When Windows finds it, double-click START-APP.bat
-
-  4. Wait ~30 seconds. Your browser opens to http://localhost:3000
-
-  5. Log in and use the app.
-
-  Your project folder is probably ONE of these (not both):
-
-    C:\Users\jerry\Claude\Projects\AI accounting\ljc-accounting-app
-
-    C:\Users\jerry\OneDrive\Desktop\Claude\Projects\AI accounting\ljc-accounting-app
-
-  If search finds START-APP.bat, use that folder — path does not matter.
-
-  To get the newest screen after an update: double-click START-APP-Update.bat
-  (same folder as START-APP.bat). If you do not see it, double-click
-  START-APP.bat anyway — it rebuilds when needed.
+  3. If the old icon stays on the taskbar, right-click it → Unpin, then
+     right-click the new desktop icon → Pin to taskbar.
 
 --------------------------------------------------------------------------------
-RECONCILE (what you were doing)
+RECONCILE
 --------------------------------------------------------------------------------
 
   • Left side = bank statement  |  Right side = your register
   • Click "Import bank statement" to load OFX or PDF
   • Check off cleared lines until Difference = $0.00
   • Then click Reconcile Now
-
-  If Difference is not zero, the period stays OPEN (by design).
 
 --------------------------------------------------------------------------------
 WHEN SOMETHING BREAKS
