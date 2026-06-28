@@ -60,4 +60,10 @@ services:
         sync: false
       - key: LONESTAR_ACCOUNT_LAST4
         value: "7367"
+      - key: GMAIL_OAUTH_CLIENT_ID
+        sync: false
+      - key: GMAIL_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_OAUTH_REDIRECT_URI
+        value: https://ljc-accounting-app.onrender.com/api/email/gmail/callback
     healthCheckPath: /health

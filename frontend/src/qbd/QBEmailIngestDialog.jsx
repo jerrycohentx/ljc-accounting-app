@@ -18,9 +18,16 @@ function ConnectRow({ acc, busy, gmailConfigured, onOAuth, onImap, showToast }) 
 
   if (acc.connected) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 11 }}>
-        <span style={{ flex: 1 }}>{acc.user}</span>
-        <span className="qbd-pill">Connected ✓</span>
+      <div style={{ marginBottom: 8, fontSize: 11 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ flex: 1 }}>{acc.user}</span>
+          <span className="qbd-pill">Connected ✓</span>
+        </div>
+        {acc.lastError && (
+          <div style={{ color: '#b00020', marginTop: 4, lineHeight: 1.3 }}>
+            Last error: {acc.lastError.slice(0, 120)}
+          </div>
+        )}
       </div>
     );
   }
@@ -143,6 +150,11 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
               {ingest.lonestarPortal.configured
                 ? `✓ login ${ingest.lonestarPortal.accountLast4 || '7367'}`
                 : '⚠ add LONESTAR_ONLINE_PASSWORD on Render'}
+            </div>
+          )}
+          {ingest?.gmailOAuthConfigured === false && (
+            <div style={{ color: '#b00020' }}>
+              <span className="lbl">Gmail API</span> ⚠ add GMAIL_OAUTH_CLIENT_ID + SECRET on Render
             </div>
           )}
         </div>
