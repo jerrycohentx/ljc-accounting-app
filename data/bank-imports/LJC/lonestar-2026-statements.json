@@ -1,0 +1,335 @@
+{
+  "generatedAt": "2026-06-28T05:06:14.327Z",
+  "statements": [
+    {
+      "file": "LJCckg7367_101007367_statement_01302026_30df.pdf",
+      "meta": {
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-01-31",
+        "previousBalance": 598.88,
+        "currentBalance": 726.07,
+        "accountLast4": "7367",
+        "bankName": "Lone Star Bank"
+      },
+      "transactionCount": 12,
+      "netChange": 127.13,
+      "transactions": [
+        {
+          "date": "2026-01-05",
+          "amount": 2500,
+          "description": "DDA Credit Memo",
+          "fitid": "pdf-23f4d76d3ac2677469b5a80c",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-06",
+          "amount": 3000,
+          "description": "DDA Credit Memo",
+          "fitid": "pdf-ecf70c7329ed5a0b6db640ae",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-13",
+          "amount": 4700,
+          "description": "DDA Credit Memo",
+          "fitid": "pdf-36dcf0107f88557dff9dc8f4",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-13",
+          "amount": 29575,
+          "description": "DDA Credit Memo",
+          "fitid": "pdf-88497870f0a5f28a8f91b599",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-23",
+          "amount": 725.87,
+          "description": "C.D. INTEREST",
+          "fitid": "pdf-55135681b280ae47bd4dd868",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-02",
+          "amount": -35,
+          "description": "OVERDRAFT FEE",
+          "fitid": "pdf-fcb3bcbded8da507994b3d98",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-05",
+          "amount": -2500,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-96d9d784f0f2ed90c9fa83da",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-05",
+          "amount": -35,
+          "description": "OVERDRAFT FEE",
+          "fitid": "pdf-adadc2178b3e222faca80372",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-06",
+          "amount": -3000,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-d15a8d23d1c9016c83f93013",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-13",
+          "amount": -29575,
+          "description": "DDA DEBIT MEMO",
+          "fitid": "pdf-5452b17568954abc4523c4c3",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-15",
+          "amount": -2019.74,
+          "description": "LOAN PAYMENT",
+          "fitid": "pdf-8df317a6c24fd902934e994f",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-16",
+          "amount": -3209,
+          "description": "DDA DEBIT MEMO",
+          "fitid": "pdf-2dbbdc208ba65492ad1edbbc",
+          "isCredit": false
+        }
+      ],
+      "expectedNet": 127.19,
+      "netVariance": -0.06
+    },
+    {
+      "file": "LJCckg7367_101007367_statement_02272026_37a5.pdf",
+      "meta": {
+        "periodStart": "2026-02-01",
+        "periodEnd": "2026-02-28",
+        "previousBalance": 726.07,
+        "currentBalance": 195073.68,
+        "accountLast4": "7367",
+        "bankName": "Lone Star Bank"
+      },
+      "transactionCount": 6,
+      "netChange": 194347.61,
+      "transactions": [
+        {
+          "date": "2026-02-19",
+          "amount": 303348.98,
+          "description": "DDA Credit Memo",
+          "fitid": "pdf-08e78d86b7791ca2a4e2e3e7",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-23",
+          "amount": 599.71,
+          "description": "C.D. INTEREST",
+          "fitid": "pdf-c71781892756f24b25677b1f",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-23",
+          "amount": 197896.24,
+          "description": "DDA Credit Memo",
+          "fitid": "pdf-2e9201857141c830a4de3621",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-28",
+          "amount": 2.68,
+          "description": "INTEREST PAID  28 DAYS",
+          "fitid": "pdf-c2ce50c1c3cb4d727184aa56",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-19",
+          "amount": -300000,
+          "description": "DDA DEBIT MEMO",
+          "fitid": "pdf-fa43c81d935da13276603fe2",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-26",
+          "amount": -7500,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-40a3a8ea1b17f4e60f6c2a9e",
+          "isCredit": false
+        }
+      ],
+      "expectedNet": 194347.61,
+      "netVariance": 0
+    },
+    {
+      "file": "LJCckg7367_101007367_statement_03312026_05c2.pdf",
+      "meta": {
+        "periodStart": "2026-03-01",
+        "periodEnd": "2026-03-31",
+        "previousBalance": 195073.68,
+        "currentBalance": 180566.92,
+        "accountLast4": "7367",
+        "bankName": "Lone Star Bank"
+      },
+      "transactionCount": 5,
+      "netChange": -14506.76,
+      "transactions": [
+        {
+          "date": "2026-03-31",
+          "amount": 12.98,
+          "description": "INTEREST PAID  31 DAYS",
+          "fitid": "pdf-c34bd5da5d84888eacd66a08",
+          "isCredit": true
+        },
+        {
+          "date": "2026-03-13",
+          "amount": -2019.74,
+          "description": "LOAN PAYMENT",
+          "fitid": "pdf-f22fe67b921452ddd5e001f4",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-24",
+          "amount": -5000,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-82b5e693135e2f6e7a2c62df",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-26",
+          "amount": -2500,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-a02a79317f95db99848553c4",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-26",
+          "amount": -5000,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-36cc0e85092c01e573b021ce",
+          "isCredit": false
+        }
+      ],
+      "expectedNet": -14506.76,
+      "netVariance": 0
+    },
+    {
+      "file": "LJCckg7367_101007367_statement_04302026_4bd3.pdf",
+      "meta": {
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-04-30",
+        "previousBalance": 180566.92,
+        "currentBalance": 108556.88,
+        "accountLast4": "7367",
+        "bankName": "Lone Star Bank"
+      },
+      "transactionCount": 6,
+      "netChange": -72010.04,
+      "transactions": [
+        {
+          "date": "2026-04-30",
+          "amount": 9.7,
+          "description": "INTEREST PAID  30 DAYS",
+          "fitid": "pdf-b3ee565b8dd883c0266d5aad",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-08",
+          "amount": -10000,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-57328aaced2b35eb945903aa",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-14",
+          "amount": -25000,
+          "description": "TRANSFER_I Baselane",
+          "fitid": "pdf-c783b0de32f9c12216f8e8d3",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-15",
+          "amount": -2019.74,
+          "description": "LOAN PAYMENT",
+          "fitid": "pdf-4de050925c6cf2a918a3d269",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-20",
+          "amount": -25000,
+          "description": "PAYMENT    LJC FINANCIAL LL",
+          "fitid": "pdf-1ca832c584b0763e79e533e0",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-28",
+          "amount": -10000,
+          "description": "PAYMENT    LJC FINANCIAL LL",
+          "fitid": "pdf-20bddb2f3e6363a7a04ec30e",
+          "isCredit": false
+        }
+      ],
+      "expectedNet": -72010.04,
+      "netVariance": 0
+    },
+    {
+      "file": "LJCckg7367_101007367_statement_05292026_549181_4b0d.pdf",
+      "meta": {
+        "periodStart": "2026-05-01",
+        "periodEnd": "2026-05-31",
+        "previousBalance": 108556.88,
+        "currentBalance": 3528.66,
+        "accountLast4": "7367",
+        "bankName": "Lone Star Bank"
+      },
+      "transactionCount": 6,
+      "netChange": -105028.22,
+      "transactions": [
+        {
+          "date": "2026-05-31",
+          "amount": 4.02,
+          "description": "INTEREST PAID  31 DAYS",
+          "fitid": "pdf-7f0f47beed70a284f3232f93",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-12",
+          "amount": -30000,
+          "description": "Xfr to Sim LJC FINANCIAL",
+          "fitid": "pdf-11e50aba2f88c59fa1f24109",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-15",
+          "amount": -2019.74,
+          "description": "LOAN PAYMENT",
+          "fitid": "pdf-c3a2013543290105cc64e01d",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-15",
+          "amount": -12000,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-eecc1dcdcd17df7ead821c62",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-20",
+          "amount": -56012.5,
+          "description": "DDA DEBIT MEMO",
+          "fitid": "pdf-5747256f17be85dd621d2063",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-28",
+          "amount": -5000,
+          "description": "Xfr to Sim LJC FINANCIAL",
+          "fitid": "pdf-a70ba5599952c30d4b62f731",
+          "isCredit": false
+        }
+      ],
+      "expectedNet": -105028.22,
+      "netVariance": 0
+    }
+  ]
+}

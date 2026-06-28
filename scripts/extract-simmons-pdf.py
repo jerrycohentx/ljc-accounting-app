@@ -42,9 +42,19 @@ def parse_metadata(text: str) -> dict:
     m = re.search(r"Current Balance\s+([\d,]+\.\d{2})", text)
     if m:
         meta["currentBalance"] = parse_amount(m.group(1))
+    m = re.search(r"Ending Balance\s+([\d,]+\.\d{2})", text)
+    if m and "currentBalance" not in meta:
+        meta["currentBalance"] = parse_amount(m.group(1))
     m = re.search(r"Account Number X+(\d{4})", text)
     if m:
         meta["accountLast4"] = m.group(1)
+    m = re.search(r"Account Number\s+Ending\s+(\d{4})", text, re.I)
+    if m and "accountLast4" not in meta:
+        meta["accountLast4"] = m.group(1)
+    if meta.get("accountLast4") == "7367":
+        meta["bankName"] = "Lone Star Bank"
+    elif meta.get("accountLast4") == "0260":
+        meta["bankName"] = "Simmons Bank"
     return meta
 
 
@@ -220,8 +230,8 @@ def main():
         sys.exit(1)
     pdf_path = sys.argv[1]
     text = extract_text(pdf_path)
-    if "Current Balance" not in text and "CHECKING ACCOUNTS" not in text:
-        print(json.dumps({"error": "not a Simmons checking statement", "file": pdf_path}))
+    if "CHECKING ACCOUNTS" not in text and "Current Balance" not in text and "Ending Balance" not in text:
+        print(json.dumps({"error": "not a supported checking statement", "file": pdf_path}))
         sys.exit(1)
     meta = parse_metadata(text)
     txns = parse_transactions(text)
