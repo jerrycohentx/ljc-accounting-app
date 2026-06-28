@@ -21,6 +21,7 @@ import interestAccrualRoutes from './routes/interest-accrual.js';
 import accountingOpsRoutes from './routes/accounting-ops.js';
 import intercompanyRoutes from './routes/intercompany.js';
 import taxFinancialsRoutes, { entityTaxRouter } from './routes/tax-financials.js';
+import productionBootstrapRoutes from './routes/production-bootstrap.js';
 import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
@@ -68,6 +69,9 @@ app.post('/api/plaid/webhook', plaidWebhookHandler);
 
 // WhatsApp receipt-bot webhook (no JWT — secured by shared token)
 app.post('/api/receipts/webhook/whatsapp', whatsappWebhookHandler);
+
+// Production bootstrap (integration key — no JWT)
+app.use('/api/production-bootstrap', productionBootstrapRoutes);
 
 // Protected routes
 app.use('/api', authMiddleware);

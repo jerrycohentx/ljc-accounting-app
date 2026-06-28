@@ -1,0 +1,1781 @@
+{
+  "statements": [
+    {
+      "file": "LJC_ckg_260-STATEMENT-01-30-2026_6479.pdf",
+      "meta": {
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-02-01",
+        "previousBalance": 11450.19,
+        "currentBalance": 15880.28
+      },
+      "transactions": [
+        {
+          "date": "2026-01-02",
+          "amount": 2500.0,
+          "description": "LeanneRent LJC FINANCIAL",
+          "fitid": "pdf-904c9f368179c23df262266e",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-02",
+          "amount": 33313.27,
+          "description": "ACH BATCH  LJC FINANCIAL",
+          "fitid": "pdf-54ba9b14faacad513bdce355",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-05",
+          "amount": 5218.61,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-ac666e0f68d65e779a93e637",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-05",
+          "amount": 6700.0,
+          "description": "Deposit",
+          "fitid": "pdf-f8b255a1acb0c2db89664e1a",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-06",
+          "amount": 183.68,
+          "description": "Deposit - Mobile",
+          "fitid": "pdf-f31d2d9db8166c17ce157faf",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 5584.6,
+          "description": "Deposit",
+          "fitid": "pdf-1bf1b9f234c2d5edeb782e02",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-08",
+          "amount": 93.8,
+          "description": "Deposit - Mobile",
+          "fitid": "pdf-71c830ad77de59b306af66c4",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-09",
+          "amount": 3344.3,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-af49d64b84fc0eb3582e545b",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-09",
+          "amount": 2787.5,
+          "description": "ACH BATCH  LJC FINANCIAL",
+          "fitid": "pdf-ae3fd9a58d05dd5fdaa09666",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-15",
+          "amount": 15000.0,
+          "description": "Transfer CH x7036 to",
+          "fitid": "pdf-c97922e883091270ec418627",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-20",
+          "amount": 35000.0,
+          "description": "Transfer CH x5718 to",
+          "fitid": "pdf-00152da9e4d2055da2a156d3",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-21",
+          "amount": 2500.0,
+          "description": "Deposit",
+          "fitid": "pdf-649e980789f86e52dd892dbb",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-23",
+          "amount": 115.72,
+          "description": "Deposit - Mobile",
+          "fitid": "pdf-b53a6516a368de167feecf4f",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-26",
+          "amount": 7500.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-8e2f9e9c9c8963e874954b51",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-26",
+          "amount": 18000.0,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-9211df0c34536374f093cc7a",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-02",
+          "amount": -243.8,
+          "description": "CHARGEBACK ON WELLINGTON",
+          "fitid": "pdf-9fc551ada4c8b0391c3ac166",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-02",
+          "amount": -781.02,
+          "description": "CHARGEBACK ON WELLINGTON",
+          "fitid": "pdf-aa2fea48fee4667b74a80241",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-02",
+          "amount": -2500.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-b1bc4c6ed8aa78f9c0a074ce",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-02",
+          "amount": -2000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-3a95152ec23726901c4d1366",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-02",
+          "amount": -101.25,
+          "description": "ENT ACH DR CPENERGY ENTEX",
+          "fitid": "pdf-2aa0ec0bc9067730cea5b6d9",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-05",
+          "amount": -7241.67,
+          "description": "Chargeback",
+          "fitid": "pdf-8fabdf4e42cfd67260257765",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-05",
+          "amount": -8834.17,
+          "description": "Chargeback",
+          "fitid": "pdf-c94caba90bef73e8b7eca2d5",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-05",
+          "amount": -325.96,
+          "description": "Account Analysis Charge",
+          "fitid": "pdf-c668e96434b0d2a8f7d25540",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-05",
+          "amount": -2500.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-441f96716123edeaea937ec2",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-05",
+          "amount": -2500.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-f85bc23aa47560e056a57b8b",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-06",
+          "amount": -2787.5,
+          "description": "Chargeback",
+          "fitid": "pdf-d12b0a8cea3dbbf512103467",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-06",
+          "amount": -3000.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-7275f48ba8e095fb64dc0743",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-06",
+          "amount": -5500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-1ee12ec10e19dc6087a0b2ea",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": -1608.99,
+          "description": "ACH PMT    NEWREZ-SHELLPOIN",
+          "fitid": "pdf-eb0c9ca468aad2c805667b71",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-07",
+          "amount": -2105.32,
+          "description": "ACH PMT    NEWREZ-SHELLPOIN",
+          "fitid": "pdf-22dc1342ab48448ecce1c6c7",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-08",
+          "amount": -1687.74,
+          "description": "ACH PMTS   FAY SERVICING",
+          "fitid": "pdf-cd5cfeb2eee7d2fa0cd9bfb4",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-09",
+          "amount": -1000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-a888bdafc189d992f3cae538",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-09",
+          "amount": -3000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-1fca43638a5eb19c08e51056",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-12",
+          "amount": -1000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-27e39dd671e7795dd1c8b0f9",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-13",
+          "amount": -4700.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-aff88e028e6359a19c3e14f8",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-13",
+          "amount": -2500.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-70f2f116683ef0157a204999",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-13",
+          "amount": -2500.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-70f2f116683ef0157a204999-2",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-15",
+          "amount": -651.32,
+          "description": "CASH DISB  WELLINGTON INSUR",
+          "fitid": "pdf-bab0c7a233aa8f64b2122afa",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-16",
+          "amount": -645.0,
+          "description": "E-PAYMENTS PROTECTIVE LIFE",
+          "fitid": "pdf-e188d23faae96c87606d63ed",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-16",
+          "amount": -800.0,
+          "description": "E-PAYMENTS PROTECTIVE LIFE",
+          "fitid": "pdf-4743f782ec151e6f013bd6ed",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-16",
+          "amount": -1000.0,
+          "description": "Loan       LJC FINANCIAL",
+          "fitid": "pdf-b332b13d971723f37186def1",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-16",
+          "amount": -16500.0,
+          "description": "#P4544     LJC FINANCIAL",
+          "fitid": "pdf-701c0a44a73e4ed98d4dc656",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-20",
+          "amount": -200.0,
+          "description": "Transfer from x0260 to x4790",
+          "fitid": "pdf-6c6ed2598223f40899d8a9be",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-20",
+          "amount": -1000.0,
+          "description": "Transfer to DDA",
+          "fitid": "pdf-4c76f7310ef853a7982d89fb",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-20",
+          "amount": -2500.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-9a8c3da23c0bf94d06d51d5d",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-21",
+          "amount": -200.0,
+          "description": "Transfer from x0260 to x4790",
+          "fitid": "pdf-2e77325429ed60b4fc4c5d60",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-21",
+          "amount": -788.11,
+          "description": "OscarHealt OscarHealth",
+          "fitid": "pdf-df17dc1b865e18709807ad54",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-22",
+          "amount": -500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-d476055d811c92d0fbf0e67e",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-23",
+          "amount": -2500.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-934104a4ef142da483abb611",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-26",
+          "amount": -1000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-26fd5745d35934b6188301c3",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-28",
+          "amount": -2500.0,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-6c00086b7db4e4c391cc5017",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-28",
+          "amount": -2500.0,
+          "description": "LJC to GM  LJC FINANCIAL",
+          "fitid": "pdf-bb21b535bd14c7ace8be26de",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-28",
+          "amount": -3000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-9f1b3dab83ad0ea77afe3720",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-30",
+          "amount": -1000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-c9a0b909835d7d19c1e8ae38",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-30",
+          "amount": -2500.0,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-ebbd67e1d13639b38f23ea07",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-09",
+          "amount": -1218.75,
+          "description": "Check",
+          "fitid": "pdf-b3e4a9936b1676a7c2801fa7",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-21",
+          "amount": -29623.93,
+          "description": "Check",
+          "fitid": "pdf-2ac4fabbbcb2a57c32b58938",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-09",
+          "amount": -4312.5,
+          "description": "Check",
+          "fitid": "pdf-2bdef9ebc46482d660b86204",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-30",
+          "amount": -54.36,
+          "description": "Check #1023282",
+          "fitid": "pdf-e704971016e1817054b2138a",
+          "isCredit": false
+        }
+      ]
+    },
+    {
+      "file": "LJC_ckg_260-STATEMENT-02-27-2026_bc69.pdf",
+      "meta": {
+        "periodStart": "2026-02-02",
+        "periodEnd": "2026-03-01",
+        "previousBalance": 15880.28,
+        "currentBalance": 9912.36
+      },
+      "transactions": [
+        {
+          "date": "2026-02-02",
+          "amount": 37564.52,
+          "description": "ACH BATCH  LJC FINANCIAL",
+          "fitid": "pdf-5b88b64f5fbf96e99aa69c4d",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-02",
+          "amount": 774.0,
+          "description": "Deposit",
+          "fitid": "pdf-e5908afc9d116f525818bde9",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-03",
+          "amount": 2500.0,
+          "description": "LeanneRent LJC FINANCIAL",
+          "fitid": "pdf-f5f38679d9eec27114ade43c",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-09",
+          "amount": 7276.2,
+          "description": "Deposit",
+          "fitid": "pdf-2b545b3d55f773931c21b1d6",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-11",
+          "amount": 2319.71,
+          "description": "Feb pymnt  LJC FINANCIAL",
+          "fitid": "pdf-0bd5b4a82a2b61e9c72376a6",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-13",
+          "amount": 32500.0,
+          "description": "Transfer from x5718 to x0260",
+          "fitid": "pdf-1aa91846dc539422f9de9bf6",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-19",
+          "amount": 3115.59,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-9256ee22f400d9778d91da4e",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-19",
+          "amount": 2000.0,
+          "description": "Transfer CH x5831 to",
+          "fitid": "pdf-2621168e39718453896823ea",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-26",
+          "amount": 75362.76,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-858f4eb175d6ed0c0a2a32e7",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-27",
+          "amount": 781.02,
+          "description": "Deposit - Mobile",
+          "fitid": "pdf-95ab890628b6241ba5d1e149",
+          "isCredit": true
+        },
+        {
+          "date": "2026-02-02",
+          "amount": -2255.0,
+          "description": "Transfer from x0260 to x7036",
+          "fitid": "pdf-4e15432ca51a5cc948044837",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-02",
+          "amount": -2500.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-894a6ffad468692a4947ace5",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-03",
+          "amount": -2209.25,
+          "description": "Chargeback",
+          "fitid": "pdf-2fa8e23c0343ef0b123fb7ca",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-03",
+          "amount": -7241.67,
+          "description": "Chargeback",
+          "fitid": "pdf-dd4c71b05d8808e8b4c7b0fd",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-03",
+          "amount": -8834.17,
+          "description": "Chargeback",
+          "fitid": "pdf-002f1dac35ace91c129852e2",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-03",
+          "amount": -2500.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-5e486d3701d537d4bb7149d6",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-03",
+          "amount": -3000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-bb89174ec53c68bb2512863d",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-04",
+          "amount": -73.95,
+          "description": "ENT ACH DR CPENERGY ENTEX",
+          "fitid": "pdf-f4a01ec8134e517bb3cc5bb2",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-05",
+          "amount": -2042.0,
+          "description": "Chargeback",
+          "fitid": "pdf-38271272852daa04a171908a",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-05",
+          "amount": -356.63,
+          "description": "Account Analysis Charge",
+          "fitid": "pdf-cde989385e527e7c33d70eb4",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-05",
+          "amount": -2500.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-55d5bd2f16669bd1d10b3f21",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-06",
+          "amount": -4000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-3060bab70553898be2f58829",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-06",
+          "amount": -5000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-f9d81d5279a4b1641ded448d",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-09",
+          "amount": -500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-23f13383ac00344b23c5f522",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-09",
+          "amount": -1608.99,
+          "description": "ACH PMT    NEWREZ-SHELLPOIN",
+          "fitid": "pdf-99ce2f6c1d1950492af7a468",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-09",
+          "amount": -2105.32,
+          "description": "ACH PMT    NEWREZ-SHELLPOIN",
+          "fitid": "pdf-278f113c9d4691fbb3870058",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-10",
+          "amount": -1687.74,
+          "description": "ACH PMTS   FAY SERVICING",
+          "fitid": "pdf-8f57b13c417bb60a83855570",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-11",
+          "amount": -3000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-e99ecb4229748167423b174c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-11",
+          "amount": -3000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-d4fadfc80a2a0f6f05ff1d94",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-11",
+          "amount": -54.36,
+          "description": "Zelle Debit",
+          "fitid": "pdf-9459b2260c3792dc2d6b3490",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-12",
+          "amount": -5000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-251e77203e9aebfa7b9392d8",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-13",
+          "amount": -32445.85,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-8c5ecc229527396b602dade3",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-17",
+          "amount": -651.32,
+          "description": "CASH DISB  WELLINGTON INSUR",
+          "fitid": "pdf-0535bb2438198c06ec85f464",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-18",
+          "amount": -500.0,
+          "description": "Transfer from x0260 to x7036",
+          "fitid": "pdf-ef6ce960bd1b5854a15a172e",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-19",
+          "amount": -2000.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-b63f79baf574f5f81ce9d843",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-19",
+          "amount": -250.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-6b912695c283452d4e18d0df",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-19",
+          "amount": -500.0,
+          "description": "Transfer from x0260 to x7036",
+          "fitid": "pdf-36666ec661a475b57a60eae5",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-23",
+          "amount": -3000.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-7413628e87563abf283f02cf",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-26",
+          "amount": -67500.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-90358a4aac869a4908224a42",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-03",
+          "amount": -145.0,
+          "description": "Check #1023280",
+          "fitid": "pdf-bf16559f277759ba3a93aad6",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-06",
+          "amount": -2600.0,
+          "description": "Check #1023283",
+          "fitid": "pdf-2d4dbd81e7ead2ebe3e31cb9",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-02",
+          "amount": -700.0,
+          "description": "Check #1023281",
+          "fitid": "pdf-21f40664bea60de175666ec5",
+          "isCredit": false
+        },
+        {
+          "date": "2026-02-06",
+          "amount": -400.47,
+          "description": "Check #1023284",
+          "fitid": "pdf-14feeb75705166f5c4d730d2",
+          "isCredit": false
+        }
+      ]
+    },
+    {
+      "file": "LJC_ckg_260-STATEMENT-03-31-2026-9542b3f6-f642-4827-973c-78e20d9588ee_5aba.pdf",
+      "meta": {
+        "periodStart": "2026-03-02",
+        "periodEnd": "2026-03-31",
+        "previousBalance": 9912.36,
+        "currentBalance": 33074.61
+      },
+      "transactions": [
+        {
+          "date": "2026-03-02",
+          "amount": 2500.0,
+          "description": "LeanneRent LJC FINANCIAL",
+          "fitid": "pdf-567c68da0a7a1b2cdb293cd8",
+          "isCredit": true
+        },
+        {
+          "date": "2026-03-02",
+          "amount": 36497.09,
+          "description": "ACH BATCH  LJC FINANCIAL",
+          "fitid": "pdf-e09b566d2b7d2bc03ae4d710",
+          "isCredit": true
+        },
+        {
+          "date": "2026-03-09",
+          "amount": 8156.96,
+          "description": "Deposit",
+          "fitid": "pdf-3bd2cfe494b092adac45e191",
+          "isCredit": true
+        },
+        {
+          "date": "2026-03-11",
+          "amount": 909334.25,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-02c095143a03b0dfbc580f17",
+          "isCredit": true
+        },
+        {
+          "date": "2026-03-16",
+          "amount": 3350.53,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-17532708d5bb7b81e5788f7f",
+          "isCredit": true
+        },
+        {
+          "date": "2026-03-23",
+          "amount": 153090.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-0df1353f49727ad95bd77eeb",
+          "isCredit": true
+        },
+        {
+          "date": "2026-03-30",
+          "amount": 114600.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-29a6805011b6b7cfbe99023d",
+          "isCredit": true
+        },
+        {
+          "date": "2026-03-02",
+          "amount": -2500.0,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-6e835561a150e8bbda361a76",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-02",
+          "amount": -2500.0,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-6e835561a150e8bbda361a76-2",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-03",
+          "amount": -2209.25,
+          "description": "Chargeback",
+          "fitid": "pdf-41937a2c13de01bc9988e645",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-03",
+          "amount": -1000.0,
+          "description": "Transfer from x0260 to x7036",
+          "fitid": "pdf-9a2af598da8c6698a6f0de58",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-03",
+          "amount": -788.11,
+          "description": "OscarHealt OscarHealth",
+          "fitid": "pdf-54043fec83bf7549fb98bc7c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-03",
+          "amount": -5000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-5c42adc8208e2a058da778ef",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-04",
+          "amount": -1867.5,
+          "description": "Chargeback",
+          "fitid": "pdf-36660eb92faa9476148c6994",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-04",
+          "amount": -2500.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-558f667dbc5fcfeb2b2c82cf",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-05",
+          "amount": -2042.0,
+          "description": "Chargeback",
+          "fitid": "pdf-39bb48d87a0d1efdd4dfc87a",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-05",
+          "amount": -345.45,
+          "description": "Account Analysis Charge",
+          "fitid": "pdf-fdf6264c7f2dbe8eb66b1221",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-05",
+          "amount": -350.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-bfed9b75da64ae6efa8d97c4",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-05",
+          "amount": -140.62,
+          "description": "ENT ACH DR CPENERGY ENTEX",
+          "fitid": "pdf-e888c39108ab8cf3fe147e09",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-06",
+          "amount": -500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-7542d2bc2881b855f6b7c15a",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-06",
+          "amount": -2500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-28767aec77dd3afb42083d37",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-06",
+          "amount": -2500.0,
+          "description": "LJC to GM  LJC FINANCIAL",
+          "fitid": "pdf-7ccffb71e104c3c7e32ca91f",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-09",
+          "amount": -1608.99,
+          "description": "ACH PMT    NEWREZ-SHELLPOIN",
+          "fitid": "pdf-44584c88f7f78015cbf4ebf3",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-09",
+          "amount": -2105.32,
+          "description": "ACH PMT    NEWREZ-SHELLPOIN",
+          "fitid": "pdf-7c72b19adcabb5b94f2689fa",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-10",
+          "amount": -1687.74,
+          "description": "ACH PMTS   FAY SERVICING",
+          "fitid": "pdf-6ee402a8419b9062548c8c22",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-10",
+          "amount": -7500.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-b07565eefb9670f398a74934",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-11",
+          "amount": -832500.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-a507db9d0dc09a54d4249a9f",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-11",
+          "amount": -2500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-8b80b4ebfbf1518671cfaed3",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-11",
+          "amount": -2500.0,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-81d65c5ed521fbdc1e5fd51b",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-12",
+          "amount": -29013.93,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-bc563508221d41be6170d9f4",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-12",
+          "amount": -1000.0,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-3b415a97d5a8798eeab45b57",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-13",
+          "amount": -5000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-5a6321344559201c703ec909",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-17",
+          "amount": -4000.0,
+          "description": "SETTLEMENT PDS GW28 TRANSPE",
+          "fitid": "pdf-dfff85c660739abfe329a7db",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-18",
+          "amount": -651.32,
+          "description": "CASH DISB  WELLINGTON INSUR",
+          "fitid": "pdf-fc12166ed248559b31306c49",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-19",
+          "amount": -2500.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-40b212089a7980d418113f96",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-23",
+          "amount": -161279.97,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-4dc39034c37737d23e1c2cc7",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-30",
+          "amount": -24269.34,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-043f23bbfc06d760bbee3e15",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-30",
+          "amount": -95800.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-2de9342358987d53f58e9034",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-31",
+          "amount": -25.0,
+          "description": "ACHINVOICE USIO OPS ACCT",
+          "fitid": "pdf-dfd8c4640a4f05f8cba8f18f",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-31",
+          "amount": -1293.59,
+          "description": "PURCHASE R RESIDENTIALELEVA",
+          "fitid": "pdf-9d5296457c192c4745ea742e",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-24",
+          "amount": -915.45,
+          "description": "Check",
+          "fitid": "pdf-96c3d7e07c0f4c645150ee32",
+          "isCredit": false
+        },
+        {
+          "date": "2026-03-30",
+          "amount": -1473.0,
+          "description": "Check",
+          "fitid": "pdf-afa5f32f6b2e3dcd4d62d89e",
+          "isCredit": false
+        }
+      ]
+    },
+    {
+      "file": "LJC_ckg_260-STATEMENT-04-30-2026_8023.pdf",
+      "meta": {
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-04-30",
+        "previousBalance": 33074.61,
+        "currentBalance": 79722.84
+      },
+      "transactions": [
+        {
+          "date": "2026-04-01",
+          "amount": 2600.0,
+          "description": "LeanneRent LJC FINANCIAL",
+          "fitid": "pdf-f080c81a67d7cd8cc942183d",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-01",
+          "amount": 34242.09,
+          "description": "ACH BATCH  LJC FINANCIAL",
+          "fitid": "pdf-2075e547b3030547bcb29e28",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-01",
+          "amount": 8311.85,
+          "description": "Deposit - Mobile",
+          "fitid": "pdf-7e5d98e44d5f5ded0abaf757",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-03",
+          "amount": 55000.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-c46d7e1ef38c43d52a74d226",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-03",
+          "amount": 500.0,
+          "description": "Deposit - Mobile",
+          "fitid": "pdf-09247800995347d98081aef4",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-06",
+          "amount": 54695.0,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-62ee954d15f4067fd753f540",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-06",
+          "amount": 63.0,
+          "description": "Credit Back Item",
+          "fitid": "pdf-756ea00bdb06fe6de789667d",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-07",
+          "amount": 264500.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-ce5ac00be55c5b9470d4b420",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-07",
+          "amount": 10806.19,
+          "description": "Deposit",
+          "fitid": "pdf-3232e192ce9749992b886c12",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-08",
+          "amount": 243.8,
+          "description": "Deposit - Mobile",
+          "fitid": "pdf-0bf41c86d3279bca1aa965aa",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-10",
+          "amount": 151213.08,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-2f9d832f74cdb1074682f1f4",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-23",
+          "amount": 25000.0,
+          "description": "TRANSFER_O LJC Financial LL",
+          "fitid": "pdf-a80860127435e15dd75f494e",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-23",
+          "amount": 25000.0,
+          "description": "PAYMENT    LJC FINANCIAL LL",
+          "fitid": "pdf-9f1da76321176023f15c1baa",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-27",
+          "amount": 4038.15,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-dd7471f41932d83327a74c88",
+          "isCredit": true
+        },
+        {
+          "date": "2026-04-01",
+          "amount": -63.0,
+          "description": "Rec fee    LJC FINANCIAL",
+          "fitid": "pdf-4cc1d4a923ea63205c47e56e",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-01",
+          "amount": -788.11,
+          "description": "OscarHealt OscarHealth",
+          "fitid": "pdf-325869773f24c24456e5bbb5",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-02",
+          "amount": -2209.25,
+          "description": "Chargeback",
+          "fitid": "pdf-89638db624991cc4b59e51e4",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-02",
+          "amount": -63.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-0b9e56e06a3d4a96fb3543cd",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-03",
+          "amount": -54695.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-7c8d549769e245f4fb3b4b1c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-03",
+          "amount": -53.45,
+          "description": "ENT ACH DR CPENERGY ENTEX",
+          "fitid": "pdf-592201ff9e72d2fdd80afdfb",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-03",
+          "amount": -5000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-27a8ff721ad54f717388fadc",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-06",
+          "amount": -2042.0,
+          "description": "Chargeback",
+          "fitid": "pdf-606ffcf444afcda0e82ad3ad",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-06",
+          "amount": -320.15,
+          "description": "Account Analysis Charge",
+          "fitid": "pdf-3adaccc2e3cd67f6472eb652",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-06",
+          "amount": -54695.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-5c287575e0419381a32334bc",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-06",
+          "amount": -2500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-3238ffe175c97b0bd3f64af9",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-06",
+          "amount": -2105.32,
+          "description": "MORTGAGE   CARRINGTON",
+          "fitid": "pdf-5d9771bb9558630272e12641",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-07",
+          "amount": -282741.91,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-197f92ccff34c5b1ae0936db",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-07",
+          "amount": -5500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-bcefcb2a881cec3e28fa3cf2",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-07",
+          "amount": -1608.99,
+          "description": "ACH PMT    NEWREZ-SHELLPOIN",
+          "fitid": "pdf-db7f3c070f626a9e298706d5",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-08",
+          "amount": -1687.74,
+          "description": "ACH PMTS   FAY SERVICING",
+          "fitid": "pdf-28f0c60778c6a107e53c9c89",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-10",
+          "amount": -2500.0,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-82c69f6574559a07644646a6",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-13",
+          "amount": -134100.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-bb8ba43242db8c89fedee0de",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-13",
+          "amount": -2000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-2abf92664139f8ccbf8be736",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-15",
+          "amount": -651.32,
+          "description": "CASH DISB  WELLINGTON INSUR",
+          "fitid": "pdf-acddc094ea3b7bf8d26bc18b",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-16",
+          "amount": -78.65,
+          "description": "Zelle Debit",
+          "fitid": "pdf-d6430f49baced32f18d003c1",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-17",
+          "amount": -5000.0,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-b6a2faf08f7356099e673ec4",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-20",
+          "amount": -2500.0,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-166364fbcf4d7536c05dccaf",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-20",
+          "amount": -5000.0,
+          "description": "EPAY       CHASE CREDIT CRD",
+          "fitid": "pdf-d68384dcb92d7d257e209af3",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-22",
+          "amount": -10000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-e622916ea9832e018ee2271e",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-23",
+          "amount": -1637.04,
+          "description": "4HUM9422T7 RAMP STATEMENT",
+          "fitid": "pdf-a25cb641ee2ab8950182887c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-27",
+          "amount": -5000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-d5f829dbd44c6b49237e299c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-29",
+          "amount": -5000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-ddab088120736b23cd17d06a",
+          "isCredit": false
+        },
+        {
+          "date": "2026-04-30",
+          "amount": -25.0,
+          "description": "ACHINVOICE USIO OPS ACCT",
+          "fitid": "pdf-b6ace73626b4d9e16a9fae1f",
+          "isCredit": false
+        }
+      ]
+    },
+    {
+      "file": "LJC_ckg_260-STATEMENT-05-29-2026-aff53b08-2411-437a-85d4-c59234952432_55c3.pdf",
+      "meta": {
+        "periodStart": "2026-05-01",
+        "periodEnd": "2026-05-31",
+        "previousBalance": 79722.84,
+        "currentBalance": 19977.13
+      },
+      "transactions": [
+        {
+          "date": "2026-05-01",
+          "amount": 2750.0,
+          "description": "Rent       LJC FINANCIAL",
+          "fitid": "pdf-1a754a83e0c7c563df1073eb",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-01",
+          "amount": 36345.6,
+          "description": "ACH BATCH  LJC FINANCIAL",
+          "fitid": "pdf-b6268abdf843448f92eb1e49",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-07",
+          "amount": 5587.11,
+          "description": "Deposit",
+          "fitid": "pdf-fc27ac7ccf69d12891bb7d97",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-08",
+          "amount": 5000.0,
+          "description": "Transfer CH x5718 to",
+          "fitid": "pdf-9cb486955126726c79f0113c",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-08",
+          "amount": 2750.0,
+          "description": "TRANSFER_O LJC Financial LL",
+          "fitid": "pdf-7a5cca24385e46e77ec5c597",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-11",
+          "amount": 30000.0,
+          "description": "Xfr to Sim LJC FINANCIAL",
+          "fitid": "pdf-35e1508e0711f04adfb8a9b3",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-12",
+          "amount": 4557.28,
+          "description": "ACH Pmt    MANAGERENTHOUSES",
+          "fitid": "pdf-4accc8587493ac48b4ffed37",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-13",
+          "amount": 300000.0,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-e2a9c75d17e381f47eedde61",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-15",
+          "amount": 310049.25,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-3bacaf706162d4311192717c",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-15",
+          "amount": 10000.0,
+          "description": "PAYMENT    LJC FINANCIAL LL",
+          "fitid": "pdf-cd054edfef273087fe5ac6b0",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-18",
+          "amount": 20000.0,
+          "description": "Transfer from x5718 to x0260",
+          "fitid": "pdf-c5b979c62cca206212b42408",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-19",
+          "amount": 10000.0,
+          "description": "Transfer CH x5718 to",
+          "fitid": "pdf-570234fefec3c3102b967704",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-20",
+          "amount": 56000.0,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-9507900c915a5216c3d68cc1",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-20",
+          "amount": 102000.0,
+          "description": "Transfer from x4177 to x0260",
+          "fitid": "pdf-30f2ec8e1e9a6954b2277852",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-21",
+          "amount": 119144.25,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-54d1e50db3777c90946c6745",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-26",
+          "amount": 5000.0,
+          "description": "Transfer from x5718 to x0260",
+          "fitid": "pdf-303ec18e23e41a7eddfca28e",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-26",
+          "amount": 2013.36,
+          "description": "Deposit",
+          "fitid": "pdf-35638bebd375c7bf14af7488",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-27",
+          "amount": 5000.0,
+          "description": "Xfr to Sim LJC FINANCIAL",
+          "fitid": "pdf-25e9123bb75e8b360b0ad0c8",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-28",
+          "amount": 152447.5,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-4d7c2b07cc43617f1f308e52",
+          "isCredit": true
+        },
+        {
+          "date": "2026-05-01",
+          "amount": -788.11,
+          "description": "PURCHASE   OscarHealth",
+          "fitid": "pdf-2855fc1065eb890e7cd61c38",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-04",
+          "amount": -2209.25,
+          "description": "Chargeback",
+          "fitid": "pdf-d6d9aeb610165e2c36e454c5",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-04",
+          "amount": -7241.67,
+          "description": "Chargeback",
+          "fitid": "pdf-ed211c9f677b95d7b61c929c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-04",
+          "amount": -8834.17,
+          "description": "Chargeback",
+          "fitid": "pdf-b04b752117e9762cb8c95537",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-04",
+          "amount": -1500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-98670aff5c11ac8c3db6d95f",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-04",
+          "amount": -54.53,
+          "description": "ENT ACH DR CPENERGY ENTEX",
+          "fitid": "pdf-6aadf283c97ef7b6ff89f34a",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-04",
+          "amount": -2750.0,
+          "description": "Refund     LJC FINANCIAL",
+          "fitid": "pdf-96ed96fd0b5ce73a82368402",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-05",
+          "amount": -2042.0,
+          "description": "Chargeback",
+          "fitid": "pdf-90f122bdeea392358563701b",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-05",
+          "amount": -2243.75,
+          "description": "Chargeback",
+          "fitid": "pdf-5a4096b394878ac3d188a2cd",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-05",
+          "amount": -329.0,
+          "description": "Account Analysis Charge",
+          "fitid": "pdf-955708cc7a3c8334828c244f",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-05",
+          "amount": -1000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-95ea7a5646b2a63d4954292c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-05",
+          "amount": -2500.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-ab1ab930064197d9b6013863",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-06",
+          "amount": -2787.5,
+          "description": "Chargeback",
+          "fitid": "pdf-ecdd4280b5e39ddcb01d4f78",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-06",
+          "amount": -3000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-bf0db50192f11dc9c02fa625",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-06",
+          "amount": -495.0,
+          "description": "F:618387   CLOSINGLOCK INC",
+          "fitid": "pdf-8ac60740c4cbb04038749611",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-07",
+          "amount": -1613.52,
+          "description": "ACH PMT    NEWREZ-SHELLPOIN",
+          "fitid": "pdf-97c2878d2661d85edd9cf516",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-07",
+          "amount": -5000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-4fcbb1468c5369074564519d",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-08",
+          "amount": -2105.32,
+          "description": "MTG PYMT   CARRINGTON MTG",
+          "fitid": "pdf-8cc936824280af997de35d0a",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-08",
+          "amount": -2433.62,
+          "description": "ACH PMTS   FAY SERVICING",
+          "fitid": "pdf-37f08b75c58b015ac3353d20",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-11",
+          "amount": -5000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-998f3da73761ddca542ecb7c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-13",
+          "amount": -2000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-d7d922b87a01fdefa30025bd",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-13",
+          "amount": -24542.52,
+          "description": "EPAYMENT   FORT BEND COUNTY",
+          "fitid": "pdf-e52f70a348b4104d8f7418f2",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-14",
+          "amount": -166950.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-29a881aaeaeb7089a759b243",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-14",
+          "amount": -189000.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-e7c8b4e633e4d48a38c426cf",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-15",
+          "amount": -254520.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-6804f8cd8d2307ca3fc66dd6",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-15",
+          "amount": -30000.0,
+          "description": "Transfer from x0260 to x5718",
+          "fitid": "pdf-09b81fc08367e1a05fc2900c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-15",
+          "amount": -651.32,
+          "description": "CASH DISB  WELLINGTON INSUR",
+          "fitid": "pdf-a3e229efcb1789217142dd54",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-18",
+          "amount": -1000.0,
+          "description": "Transfer from x0260 to x4177",
+          "fitid": "pdf-63dc3cba9393fad87d929d91",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-19",
+          "amount": -5145.49,
+          "description": "3TBB479JK4 RAMP STATEMENT",
+          "fitid": "pdf-3512b63d9902382d2d7e4e9a",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-20",
+          "amount": -156173.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-ef573985cbfa5141ac66606c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-20",
+          "amount": -5000.0,
+          "description": "ACH PMT    AMEX EPAYMENT",
+          "fitid": "pdf-dad3f5f14b728c928d228716",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-22",
+          "amount": -336.2,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-601d17c78a656ce144fca17d",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-22",
+          "amount": -2000.0,
+          "description": "Leanne     LJC FINANCIAL",
+          "fitid": "pdf-da0395c436fadb1aac9443e3",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-22",
+          "amount": -5000.0,
+          "description": "Calvert    LJC FINANCIAL",
+          "fitid": "pdf-ad1b6428d66f3263c43cadb9",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-26",
+          "amount": -6004.29,
+          "description": "ARTUZHBWAT RAMP STATEMENT",
+          "fitid": "pdf-d3ba5d4453e23e711c8477cd",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-27",
+          "amount": -119309.52,
+          "description": "Wire Transfer Debit",
+          "fitid": "pdf-f51117c8ffc4d93e07c86d69",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-28",
+          "amount": -135000.0,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-ac35ddd587abec89f7a613da",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-29",
+          "amount": -25.0,
+          "description": "ACHINVOICE USIO OPS ACCT",
+          "fitid": "pdf-5a2b3ec64a6c2ed78f154222",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-18",
+          "amount": -56805.28,
+          "description": "Check",
+          "fitid": "pdf-e959697d13eeb20ada3a9c8d",
+          "isCredit": false
+        },
+        {
+          "date": "2026-05-04",
+          "amount": -25000.0,
+          "description": "Check #1023284",
+          "fitid": "pdf-fd688222edae2252dc91fcfb",
+          "isCredit": false
+        }
+      ]
+    }
+  ]
+}
