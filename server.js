@@ -27,10 +27,12 @@ import amexCatchupRoutes from './routes/amex-catchup.js';
 import simmonsOfxCatchupRoutes from './routes/simmons-ofx-catchup.js';
 import qboPlCatchupRoutes from './routes/qbo-pl-catchup.js';
 import backupRoutes from './routes/backup.js';
+import emailIngestRoutes from './routes/email-ingest.js';
 import { authMiddleware } from './middleware/auth.js';
 import { getAppInfo } from './lib/app-info.js';
 import { getBackupStatus, startAutoBackup } from './lib/app-backup.js';
 import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
+import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
 
 dotenv.config();
 
@@ -67,6 +69,7 @@ app.get('/health', async (req, res) => {
     gitSha: appInfo.gitSha,
     lastBackupAt: backup.lastBackupAt,
     statementAutoLoad: getStatementAutoLoadStatus(),
+    statementEmailIngest: getStatementEmailIngestStatus(),
   };
   try {
     const db = await getDatabase();
@@ -116,6 +119,7 @@ app.use('/api/plaid', plaidRoutes);
 app.use('/api/receipts', receiptRoutes);
 app.use('/api/holdback-draws', holdbackDrawRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/email/ingest', emailIngestRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
 
 // Entity-specific routes
@@ -187,6 +191,7 @@ async function start() {
     console.log('✓ Database connected');
     startAutoBackup();
     startStatementAutoLoad(getDatabase);
+    startStatementEmailIngest(getDatabase);
   } catch (error) {
     console.error('Database initialization failed:', error);
     process.exit(1);
