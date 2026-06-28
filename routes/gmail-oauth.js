@@ -10,6 +10,7 @@ import {
 } from '../lib/statement-email-config.js';
 import {
   upsertGmailMailbox,
+  upsertImapMailbox,
   disconnectMailbox,
   listStatementMailboxes,
   ensureStatementMailboxTable,
@@ -45,11 +46,13 @@ router.get('/status', async (req, res) => {
     ];
 
     const accounts = targets.map((t) => {
-      const dbRow = dbMailboxes.find((m) => m.email_user === t.user && m.transport === 'gmail-oauth');
+      const dbRow = dbMailboxes.find((m) => m.email_user === t.user);
       const envRow = envAccounts.find((a) => a.user === t.user);
+      const connected = !!(dbRow && dbRow.status === 'CONNECTED') || !!envRow?.refresh_token;
       return {
         ...t,
-        connected: !!(dbRow || envRow?.refresh_token),
+        connected,
+        transport: dbRow?.transport || (envRow?.refresh_token ? 'gmail-oauth' : null),
         source: dbRow ? 'database' : envRow?.refresh_token ? 'environment' : null,
         lastSyncAt: dbRow?.last_sync_at || null,
         lastError: dbRow?.last_error || null,
@@ -179,6 +182,27 @@ router.post('/disconnect', async (req, res) => {
     const db = await getDatabase();
     await disconnectMailbox(db, user);
     return res.json({ ok: true, user });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/** Connect Gmail via IMAP app password (works without Google Cloud OAuth keys). */
+router.post('/imap-connect', async (req, res) => {
+  try {
+    const { user, password, label, entityId = 'ent-ljc' } = req.body;
+    if (!user || !password) {
+      return res.status(400).json({ error: 'user and password required' });
+    }
+    const db = await getDatabase();
+    await upsertImapMailbox(db, {
+      entityId,
+      label: label || user.split('@')[0],
+      user,
+      password: String(password).replace(/\s/g, ''),
+      host: 'imap.gmail.com',
+    });
+    return res.json({ ok: true, user, message: `${user} connected — scanning will start automatically` });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

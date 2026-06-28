@@ -195,6 +195,7 @@ export const gmailAPI = {
   status: () => client.get('/api/email/gmail/status'),
   authUrl: (user, label) => client.get('/api/email/gmail/auth-url', { params: { user, label } }),
   disconnect: (user) => client.post('/api/email/gmail/disconnect', { user }),
+  imapConnect: (data) => client.post('/api/email/gmail/imap-connect', data),
   scanStatements: (options = {}) => client.post('/api/import/email-scan', options),
 };
 

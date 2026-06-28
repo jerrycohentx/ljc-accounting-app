@@ -12,6 +12,69 @@ function fmtWhen(iso) {
   }
 }
 
+function ConnectRow({ acc, busy, gmailConfigured, onOAuth, onImap, showToast }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const [appPassword, setAppPassword] = useState('');
+
+  if (acc.connected) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 11 }}>
+        <span style={{ flex: 1 }}>{acc.user}</span>
+        <span className="qbd-pill">Connected ✓</span>
+      </div>
+    );
+  }
+
+  const submitPassword = () => {
+    if (!appPassword.trim()) {
+      showToast && showToast('Paste the 16-character app password');
+      return;
+    }
+    onImap(acc, appPassword.trim());
+    setShowPassword(false);
+    setAppPassword('');
+  };
+
+  return (
+    <div style={{ marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #e8ecf0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
+        <span style={{ flex: 1 }}>{acc.user}</span>
+        <span className="qbd-muted">Not connected</span>
+        {gmailConfigured && (
+          <button type="button" className="qbd-btn" disabled={busy} onClick={() => onOAuth(acc)}>
+            Connect with Google
+          </button>
+        )}
+        <button
+          type="button"
+          className="qbd-btn qbd-btn-import"
+          disabled={busy}
+          onClick={() => setShowPassword((v) => !v)}
+        >
+          Connect
+        </button>
+      </div>
+      {showPassword && (
+        <div style={{ marginTop: 8, fontSize: 11 }}>
+          <div className="qbd-muted" style={{ marginBottom: 6, lineHeight: 1.4 }}>
+            Google Account → Security → 2-Step Verification → App passwords → create “Mail” → paste the 16-character password below.
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              type="password"
+              value={appPassword}
+              onChange={(e) => setAppPassword(e.target.value)}
+              placeholder="xxxx xxxx xxxx xxxx"
+              style={{ flex: 1, fontSize: 11, padding: '4px 6px' }}
+            />
+            <button type="button" className="qbd-btn" disabled={busy} onClick={submitPassword}>Save</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function QBEmailIngestDialog({ open, onClose, showToast, onStatusChange }) {
   const [busy, setBusy] = useState(false);
   const [gmail, setGmail] = useState(null);
@@ -28,12 +91,25 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
 
   if (!open) return null;
 
-  const connect = (user, label) => {
+  const connectOAuth = (acc) => {
     setBusy(true);
-    gmailAPI.authUrl(user, label)
+    gmailAPI.authUrl(acc.user, acc.label)
       .then((r) => {
         window.open(r.data.authUrl, '_blank', 'width=520,height=640');
-        showToast && showToast(`Sign in to ${user} in the new window`);
+        showToast && showToast(`Sign in to ${acc.user} in the new window, then click Refresh`);
+      })
+      .catch((e) => showToast && showToast(e.response?.data?.error || e.message))
+      .finally(() => setBusy(false));
+  };
+
+  const connectImap = (acc, password) => {
+    setBusy(true);
+    gmailAPI.imapConnect({ user: acc.user, password, label: acc.label })
+      .then((r) => {
+        showToast && showToast(r.data.message || 'Email connected ✓');
+        load();
+        onStatusChange && onStatusChange();
+        emailIngestAPI.run().catch(() => {});
       })
       .catch((e) => showToast && showToast(e.response?.data?.error || e.message))
       .finally(() => setBusy(false));
@@ -61,28 +137,20 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
         <div className="qbd-backup-meta">
           <div><span className="lbl">Auto scan</span> every {ingest?.intervalHours || 6} hours</div>
           <div><span className="lbl">Last scan</span> {fmtWhen(ingest?.lastRunAt)}</div>
-          {ingest?.graphConfigured && (
-            <div><span className="lbl">jerry@ mailbox</span> {ingest.graphMailbox} (Microsoft — server configured)</div>
-          )}
         </div>
 
         <div className="qbd-modal-body" style={{ padding: '8px 12px' }}>
-          <div className="fhd" style={{ fontSize: 11, marginBottom: 8 }}>Gmail — click Connect once per account</div>
-          {!gmail?.configured && (
-            <div className="qbd-muted" style={{ marginBottom: 8, fontSize: 11 }}>
-              Gmail OAuth keys not on server yet — your agent will add them on Render.
-            </div>
-          )}
+          <div className="fhd" style={{ fontSize: 11, marginBottom: 8 }}>Click Connect for each Gmail account (one time)</div>
           {(gmail?.accounts || []).map((acc) => (
-            <div key={acc.user} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 11 }}>
-              <span style={{ flex: 1 }}>{acc.user}</span>
-              <span className={acc.connected ? 'qbd-pill' : 'qbd-muted'}>
-                {acc.connected ? 'Connected ✓' : 'Not connected'}
-              </span>
-              {!acc.connected && gmail?.configured && (
-                <button className="qbd-btn" disabled={busy} onClick={() => connect(acc.user, acc.label)}>Connect</button>
-              )}
-            </div>
+            <ConnectRow
+              key={acc.user}
+              acc={acc}
+              busy={busy}
+              gmailConfigured={!!gmail?.configured}
+              onOAuth={connectOAuth}
+              onImap={connectImap}
+              showToast={showToast}
+            />
           ))}
 
           {(ingest?.recentImports || []).length > 0 && (
