@@ -31,6 +31,14 @@ export const RECONCILIATION_TARGETS = {
       { statementDate: '2026-04-30', endingBalance: 108556.88, label: 'April 2026' },
       { statementDate: '2026-05-31', endingBalance: 3528.66, label: 'May 2026' },
     ],
+    '2010': [
+      { statementDate: '2026-01-09', endingBalance: 80091.93, label: 'January 2026 (88007)' },
+      { statementDate: '2026-02-06', endingBalance: 84511.49, label: 'February 2026 (88007)' },
+      { statementDate: '2026-03-09', endingBalance: 84369.45, label: 'March 2026 (88007)' },
+      { statementDate: '2026-04-08', endingBalance: 84148.66, label: 'April 2026 (88007)' },
+      { statementDate: '2026-05-08', endingBalance: 82982.56, label: 'May 2026 (88007)' },
+      { statementDate: '2026-06-08', endingBalance: 83162.65, label: 'June 2026 (88007)' },
+    ],
   },
 };
 
