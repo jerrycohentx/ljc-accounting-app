@@ -19,6 +19,7 @@
     "jsonwebtoken": "9.0.0",
     "mailparser": "^3.9.12",
     "nodemailer": "^6.9.16",
+    "pdf-parse": "^1.1.1",
     "pg": "^8.11.3",
     "plaid": "^31.1.0",
     "playwright": "^1.61.1",
