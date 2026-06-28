@@ -258,12 +258,12 @@ CREATE TABLE IF NOT EXISTS email_import_log (
   entity_id TEXT NOT NULL,
   from_address TEXT,
   subject TEXT,
-  received_at DATETIME,
+  received_at TIMESTAMP,
   attachment_count INTEGER DEFAULT 0,
   status TEXT DEFAULT 'PROCESSED',
   result_summary TEXT,
   error_message TEXT,
-  processed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   processed_by TEXT,
   FOREIGN KEY(entity_id) REFERENCES entities(id)
 );

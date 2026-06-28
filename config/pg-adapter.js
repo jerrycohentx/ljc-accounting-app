@@ -5,6 +5,7 @@
 
 function normalizePgSql(sql) {
   return sql
+    .replace(/\bDATETIME\b/gi, 'TIMESTAMP')
     .replace(/\bis_active\s*=\s*1\b/gi, 'is_active = TRUE')
     .replace(/\bis_active\s*=\s*0\b/gi, 'is_active = FALSE')
     .replace(/\bcleared\s*=\s*1\b/gi, 'cleared = TRUE')
