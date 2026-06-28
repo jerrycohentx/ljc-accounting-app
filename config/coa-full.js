@@ -36,8 +36,11 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '3900', name: 'Opening Balance Equity', type: 'EQUITY' },
   { entity: 'ent-ljc', number: '4000', name: 'Interest Income', type: 'REVENUE' },
   { entity: 'ent-ljc', number: '4010', name: 'Portfolio Loan Interest Income', type: 'REVENUE' },
+  { entity: 'ent-ljc', number: '4080', name: 'Gain (Loss) on Sale of REO', type: 'REVENUE' },
   { entity: 'ent-ljc', number: '4090', name: 'Other Income', type: 'REVENUE' },
+  { entity: 'ent-ljc', number: '4091', name: 'Uncategorized Income', type: 'REVENUE' },
   { entity: 'ent-ljc', number: '4100', name: 'Rental Income', type: 'REVENUE' },
+  { entity: 'ent-ljc', number: '4150', name: 'REO / Property Sales', type: 'REVENUE' },
   { entity: 'ent-ljc', number: '4200', name: 'Origination & Fee Income', type: 'REVENUE' },
   { entity: 'ent-ljc', number: '3995', name: 'QBO P&L Migration Clearing', type: 'EQUITY' },
   { entity: 'ent-ljc', number: '5000', name: 'Interest Expense', type: 'EXPENSE' },
@@ -58,7 +61,9 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '5800', name: 'Lending Expenses (DLOC & Warehouse)', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5801', name: 'Chargebacks & Reversals', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5910', name: 'Automobile Expense', type: 'EXPENSE' },
+  { entity: 'ent-ljc', number: '5920', name: 'Commissions Paid', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '6100', name: 'Rental Property Expenses', type: 'EXPENSE' },
+  { entity: 'ent-ljc', number: '6110', name: 'Fees Paid on Sale of REO', type: 'EXPENSE' },
 
   // ── Justin Financial LLC ─────────────────────────────────────────────────
   { entity: 'ent-justin', number: '1000', name: 'Cash & Bank Accounts', type: 'ASSET' },
