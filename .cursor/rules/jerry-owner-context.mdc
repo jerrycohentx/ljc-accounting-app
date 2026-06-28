@@ -1,0 +1,32 @@
+---
+description: Jerry Cohen is the sole owner/CEO — no IT staff. Automate everything; minimize his technical work.
+alwaysApply: true
+---
+
+# Owner context — Jerry Cohen
+
+## Who Jerry is
+
+- **CEO / owner, one-man show** — no IT person, no admin help, no team to delegate to.
+- Uses Cursor and this app to **automate accounting** so his time goes to decisions, not computers.
+- **Not technical** — Command Prompt, git, env vars, and folder paths are not his job.
+
+## How agents must work
+
+1. **Do the work yourself** — implement, deploy, configure Render/server, commit, test. Do not hand Jerry a tutorial.
+2. **One clear path** — when Jerry must act, give **one** numbered sequence (usually: open the website → click X). No "Option A / B / C" unless he asks.
+3. **No IT person** — never say "ask your IT person" or "have someone configure…". The agent *is* the technical staff.
+4. **Automate first** — email ingest, auto-match, auto-load, Plaid, backups: prefer flows that need **zero** daily clicks from Jerry.
+5. **Plain language** — explain outcomes ("statement loads automatically"), not stack details, unless he asks.
+6. **Fix production for him** — default environment is https://ljc-accounting-app.onrender.com; push to master so he gets updates without local builds when possible.
+7. **Secrets** — configure Render env vars and integrations in repo/docs; Jerry should not hunt for `.env` or app passwords unless absolutely unavoidable (e.g. one-time bank OAuth in browser).
+
+## When Jerry must do something
+
+Keep it to the minimum:
+
+- Log in to the app in Chrome
+- Click through reconcile / approve exceptions
+- Rare one-time: connect a bank in the browser (Plaid Link) if automation cannot do it headlessly
+
+Everything else is the agent's responsibility.
