@@ -18,7 +18,7 @@ const menuItems = [
   { label: 'Journal Entries', icon: <Description />, path: '/journal' },
   { label: 'Receipt Inbox', icon: <ReceiptLong />, path: '/receipts' },
   { label: 'Reports', icon: <BarChart />, path: '/reports' },
-  { label: 'Reconciliation', icon: <CheckCircle />, path: '/reconciliation' }
+  { label: 'Reconciliation', icon: <CheckCircle />, path: '/reconcile' }
 ];
 
 export default function DashboardLayout() {
