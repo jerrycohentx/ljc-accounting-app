@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Container, Paper, TextField, Button, Typography, Alert,
-  Tabs, Tab, CircularProgress, Link
+  Tabs, Tab, CircularProgress, Link, InputAdornment, IconButton
 } from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { authAPI } from '../services/api';
 import AppStatusPanel, { useServerStatus } from '../components/AppStatusPanel';
 
@@ -25,6 +27,7 @@ export default function LoginPage() {
   const [success, setSuccess] = useState('');
   const { data: serverStatus } = useServerStatus(60000);
   const [resetChannel, setResetChannel] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const forgotOpenedAt = useRef(0);
 
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -67,7 +70,10 @@ export default function LoginPage() {
       persistEmail(formData.email);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      const msg = err.response?.data?.error || 'Login failed';
+      setError(msg === 'Invalid email or password'
+        ? 'Invalid email or password — clear the password field and type it fresh (browser autofill may be wrong).'
+        : msg);
     } finally {
       setLoading(false);
     }
@@ -223,12 +229,26 @@ export default function LoginPage() {
                   fullWidth
                   label="Password"
                   name="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleInputChange}
                   margin="normal"
                   disabled={loading}
                   autoComplete={tab === 0 ? 'current-password' : 'new-password'}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="show password"
+                          onClick={() => setShowPassword((v) => !v)}
+                          edge="end"
+                          tabIndex={-1}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
 
                 {tab === 0 && (
