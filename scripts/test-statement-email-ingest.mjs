@@ -2,6 +2,13 @@
 import { detectBankTarget } from '../lib/statement-email-ingest.js';
 import { getAllMailboxes, getEmailIngestSettings } from '../lib/statement-email-config.js';
 import { mergeStatementJson } from '../lib/statement-json-merge.js';
+import {
+  isLonestarEStatementNotification,
+  parseLonestarNotificationMeta,
+  extractCandidateUrls,
+  pickStatementDownloadUrl,
+} from '../lib/lonestar-estatement-notify.js';
+import { periodAlreadyImported } from '../lib/lonestar-estatement-fetch.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -19,6 +26,33 @@ const loneStar = detectBankTarget({
   fileName: 'LJCckg7367_statement.pdf',
 });
 assert(loneStar?.accountNumber === '1001', 'Lone Star detection');
+
+const loneStarNotify = isLonestarEStatementNotification({
+  subject: 'eStatement for account ending in 7367 is ready to view',
+  from: 'info@lsbtexas.com',
+  attachments: [],
+});
+assert(loneStarNotify, 'Lone Star eStatement notification detection');
+
+const withPdf = isLonestarEStatementNotification({
+  subject: 'eStatement ready',
+  from: 'info@lsbtexas.com',
+  attachments: [{ filename: 'statement.pdf' }],
+});
+assert(!withPdf, 'Lone Star notification skips when PDF attached');
+
+const notifyMeta = parseLonestarNotificationMeta({
+  subject: 'Your January 2026 eStatement for account ending in 7367 is ready',
+});
+assert(notifyMeta.accountLast4 === '7367', 'notification account last4');
+assert(notifyMeta.periodEnd === '2026-01-31', 'notification period end');
+
+const urls = extractCandidateUrls({
+  html: '<a href="https://my.lsbtexas.com/documents/statement.pdf">View</a>',
+});
+assert(pickStatementDownloadUrl(urls)?.includes('statement.pdf'), 'pick statement URL');
+
+assert(periodAlreadyImported('1001', '2026-01-31'), 'Jan 2026 Lone Star already in JSON');
 
 const simmons = detectBankTarget({
   subject: 'Simmons Bank statement',

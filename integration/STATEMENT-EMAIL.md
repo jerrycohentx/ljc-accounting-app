@@ -21,6 +21,24 @@ Microsoft 365 mail for `jerry@ljcfinancial.com` is read by the server using Grap
 
 Until Graph is configured, forward Lone Star statement emails to **documents.ljcfinancial@gmail.com** and connect that Gmail account using the steps above.
 
+## Lone Star eStatement notifications (no PDF attachment)
+
+Lone Star sends emails like **"eStatement …7367 is ready to view"** from `info@lsbtexas.com` with **no PDF attached**. When the app sees that email it:
+
+1. Tries any download link in the email body
+2. Otherwise logs into **my.lsbtexas.com** using portal credentials on Render
+3. Downloads the statement PDF and imports it like an email attachment
+
+**Render environment (agent setup):**
+
+```
+LONESTAR_ONLINE_USER=984900000208
+LONESTAR_ONLINE_PASSWORD=your NetTeller password
+LONESTAR_ACCOUNT_LAST4=7367
+```
+
+Use a NetTeller login **without 2FA/passkey** for automation. After saving env vars on Render, click **Scan email now** in Banking → Connect bank email.
+
 ## What the app does with each email
 
 1. Finds PDF / OFX attachments from banks
