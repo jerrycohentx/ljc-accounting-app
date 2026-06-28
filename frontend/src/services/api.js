@@ -75,6 +75,12 @@ export const bankReconAPI = {
   reopen: (data) => client.post('/api/reconciliation/bank/reopen', data),
 };
 
+export const backupAPI = {
+  status: () => client.get('/api/backup/status'),
+  list: (limit = 20) => client.get('/api/backup/list', { params: { limit } }),
+  run: () => client.post('/api/backup/run'),
+};
+
 export const taxAPI = {
   allEntities: (taxYear) => client.get(`/api/tax-financials/${taxYear}`),
   entity: (entityId, taxYear) => client.get(`/api/entities/${entityId}/tax-financials/${taxYear}`),

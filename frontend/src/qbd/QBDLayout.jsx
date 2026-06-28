@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useEntity } from './EntityContext';
+import QBDBackupDialog, { useBackupStatus, formatBackupShort } from './QBDBackupDialog';
+import { backupAPI } from '../services/api';
 import './qbd.css';
 
 const MENUS = ['File', 'Edit', 'View', 'Lists', 'Favorites', 'Company', 'Customers', 'Vendors', 'Employees', 'Banking', 'Reports', 'Window', 'Help'];
@@ -22,7 +24,9 @@ export default function QBDLayout() {
   const [openMenu, setOpenMenu] = useState(null);
   const [menuPos, setMenuPos] = useState({ left: 0, top: 0 });
   const [toast, setToast] = useState('');
+  const [backupOpen, setBackupOpen] = useState(false);
   const toastTimer = useRef(null);
+  const { info: backupInfo, refresh: refreshBackup } = useBackupStatus();
 
   const showToast = (m) => {
     setToast(m);
@@ -31,6 +35,26 @@ export default function QBDLayout() {
   };
   const goOrToast = (path, label) => (path ? nav(path) : showToast(`${label} — coming to the app`));
   const closeCompany = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; };
+
+  const runBackupNow = () => {
+    backupAPI.run()
+      .then((r) => { showToast(r.data.message || 'Backup complete ✓'); refreshBackup(); })
+      .catch((e) => showToast('Backup failed: ' + (e.response?.data?.error || e.message)));
+  };
+
+  const showAbout = () => {
+    const app = backupInfo?.app;
+    const backup = backupInfo?.backup;
+    const lines = [
+      app?.name || 'LJC AI Accounting',
+      app?.buildLabel || `v${app?.version || '0.1.0'}`,
+      '',
+      `Last backup: ${formatBackupShort(backup?.lastBackupAt)}`,
+      backup?.lastBackup?.filename ? `Latest file: ${backup.lastBackup.filename}` : null,
+      `Auto backup: every ${backup?.intervalMinutes || 60} minutes`,
+    ].filter(Boolean).join('\n');
+    showToast(lines.replace(/\n/g, ' · '));
+  };
 
   useEffect(() => {
     const close = (e) => {
@@ -47,7 +71,10 @@ export default function QBDLayout() {
       case 'File':
         return [['H', 'Open Company'],
           ...entities.map((e) => [e.name, () => setEntityId(e.id)]),
-          '-', ['Back Up Company…', t('Backup runs server-side')], ['Close Company', closeCompany], '-', ['Exit', closeCompany]];
+          '-',
+          ['Back Up Company…', runBackupNow],
+          ['View Backups…', () => setBackupOpen(true)],
+          ['Close Company', closeCompany], '-', ['Exit', closeCompany]];
       case 'Edit': return [['Find…', t('Find — live app')], ['Preferences…', t('Preferences — live app')]];
       case 'View': return [['Home Page', () => nav('/')], ['Open Window List', t('Live app')]];
       case 'Lists': return [['Chart of Accounts', () => nav('/accounts')], ['Item List', t('Item List — live app')], ['Class List', t('Live app')]];
@@ -59,7 +86,7 @@ export default function QBDLayout() {
       case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], ['Bank Reconciliation', () => nav('/bank-reconciliation')], '-', ['Bank Feeds', () => nav('/bank-feeds')]];
       case 'Reports': return [['Report Center', () => nav('/reports')], ['Tax Year Financials…', () => nav('/tax-financials')], '-', ['H', 'Company & Financial'], ['Balance Sheet', () => nav('/reports?r=bs')], ['Profit & Loss', () => nav('/reports?r=pl')], '-', ['H', 'Accountant & Lists'], ['Account Listing', () => nav('/accounts')], ['Journal', () => nav('/journal')]];
       case 'Window': return [['Home', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')]];
-      case 'Help': return [['About…', t('Cohen Entities AI Accounting (QuickBooks-style)')]];
+      case 'Help': return [['About…', showAbout]];
       default: return [];
     }
   };
@@ -73,6 +100,8 @@ export default function QBDLayout() {
   };
 
   const toolActive = (path) => path && (path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path));
+  const appLabel = backupInfo?.app?.buildLabel || 'v0.1.0';
+  const backupLabel = formatBackupShort(backupInfo?.backup?.lastBackupAt);
 
   return (
     <div className="qbd">
@@ -101,6 +130,20 @@ export default function QBDLayout() {
 
       <div className="qbd-work"><Outlet context={{ showToast }} /></div>
 
+      <div className="qbd-statusbar" onClick={() => setBackupOpen(true)} title="Click to view backups">
+        <span>{appLabel}</span>
+        <span className="qbd-status-sep">|</span>
+        <span>Backup: {backupLabel}</span>
+        {backupInfo?.backup?.lastBackup?.filename && (
+          <>
+            <span className="qbd-status-sep">|</span>
+            <span className="qbd-muted">{backupInfo.backup.lastBackup.filename}</span>
+          </>
+        )}
+        <span className="sp" />
+        <span className="qbd-muted">Auto every {backupInfo?.backup?.intervalMinutes || 60}m</span>
+      </div>
+
       {openMenu && (
         <div className="qbd-topmenu" style={{ left: menuPos.left, top: menuPos.top }}>
           {menuDefs(openMenu).map((it, i) => {
@@ -110,6 +153,13 @@ export default function QBDLayout() {
           })}
         </div>
       )}
+
+      <QBDBackupDialog
+        open={backupOpen}
+        onClose={() => setBackupOpen(false)}
+        showToast={showToast}
+        onStatusChange={refreshBackup}
+      />
 
       {toast && <div className="qbd-toast">{toast}</div>}
     </div>

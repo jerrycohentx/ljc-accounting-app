@@ -26,7 +26,10 @@ import lonestarCatchupRoutes from './routes/lonestar-catchup.js';
 import amexCatchupRoutes from './routes/amex-catchup.js';
 import simmonsOfxCatchupRoutes from './routes/simmons-ofx-catchup.js';
 import qboPlCatchupRoutes from './routes/qbo-pl-catchup.js';
+import backupRoutes from './routes/backup.js';
 import { authMiddleware } from './middleware/auth.js';
+import { getAppInfo } from './lib/app-info.js';
+import { getBackupStatus, startAutoBackup } from './lib/app-backup.js';
 
 dotenv.config();
 
@@ -53,7 +56,16 @@ app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 // Health check
 app.get('/health', async (req, res) => {
-  const payload = { status: 'ok', timestamp: new Date().toISOString() };
+  const appInfo = getAppInfo();
+  const backup = getBackupStatus();
+  const payload = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    app: appInfo.buildLabel,
+    version: appInfo.version,
+    gitSha: appInfo.gitSha,
+    lastBackupAt: backup.lastBackupAt,
+  };
   try {
     const db = await getDatabase();
     const row = await db.get('SELECT COUNT(*) as count FROM users');
@@ -101,6 +113,7 @@ app.use('/api/tax-financials', taxFinancialsRoutes);
 app.use('/api/plaid', plaidRoutes);
 app.use('/api/receipts', receiptRoutes);
 app.use('/api/holdback-draws', holdbackDrawRoutes);
+app.use('/api/backup', backupRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
 
 // Entity-specific routes
@@ -170,6 +183,7 @@ async function start() {
   try {
     await getDatabase();
     console.log('✓ Database connected');
+    startAutoBackup();
   } catch (error) {
     console.error('Database initialization failed:', error);
     process.exit(1);
