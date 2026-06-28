@@ -16,13 +16,17 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle token expiry
+// Handle token expiry — do not hard-reload on /login (that resets the form to demo defaults)
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      const path = window.location.pathname || '';
+      const onLoginPage = path === '/login' || path.endsWith('/login');
+      if (!onLoginPage) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

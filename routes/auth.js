@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../config/database.js';
 import { issuePasswordResetCode, verifyPasswordResetCode } from '../lib/password-reset-store.js';
 import { isSmsConfigured, sendPasswordResetSms, maskPhone } from '../lib/outbound-sms.js';
+import { isEmailConfigured, sendPasswordResetCode } from '../lib/outbound-mail.js';
 import { resolvePhoneForUser } from '../lib/user-phone.js';
 
 const router = express.Router();
@@ -27,36 +28,50 @@ router.post('/forgot-password/request', async (req, res) => {
     }
 
     const phone = await resolvePhoneForUser(db, email);
-    if (!phone) {
-      console.warn('[password-reset] No phone on file for', email);
-      return res.status(400).json({
-        error: 'No mobile number on file for this account. Contact support to add your phone number.',
-      });
+    const smsReady = isSmsConfigured() && !!phone;
+    const emailReady = isEmailConfigured();
+
+    if (!smsReady && !emailReady) {
+      if (!phone) {
+        return res.status(400).json({
+          error: 'No mobile number on file for this account. Contact support to add your phone number.',
+        });
+      }
     }
 
     const { code, expiresMinutes } = await issuePasswordResetCode(db, email);
 
-    if (!isSmsConfigured()) {
-      console.warn('[password-reset] Twilio not configured — code not sent for', email);
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[password-reset] DEV code:', code, 'phone:', phone);
-        return res.json({
-          message: `${GENERIC_RESET_MSG} (Dev: ${maskPhone(phone)})`,
-          devCode: code,
-          smsConfigured: false,
-          sentTo: maskPhone(phone),
-        });
-      }
-      return res.status(503).json({
-        error: 'Text message reset is not configured yet. Contact support.',
+    if (smsReady) {
+      await sendPasswordResetSms({ to: phone, code, expiresMinutes });
+      return res.json({
+        message: `Verification code sent by text to ${maskPhone(phone)}.`,
+        channel: 'sms',
+        sentTo: maskPhone(phone),
       });
     }
 
-    await sendPasswordResetSms({ to: phone, code, expiresMinutes });
-    return res.json({
-      message: `${GENERIC_RESET_MSG} Sent to ${maskPhone(phone)}.`,
-      smsConfigured: true,
-      sentTo: maskPhone(phone),
+    if (emailReady) {
+      await sendPasswordResetCode({ to: email, code, expiresMinutes });
+      return res.json({
+        message: `Text messaging is not set up yet. Verification code sent to ${email}.`,
+        channel: 'email',
+        sentTo: email,
+      });
+    }
+
+    console.warn('[password-reset] No SMS or email sender configured for', email);
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[password-reset] DEV code:', code, 'phone:', phone);
+      return res.json({
+        message: `Dev mode — code for ${maskPhone(phone)} / ${email}`,
+        devCode: code,
+        channel: 'dev',
+        sentTo: maskPhone(phone),
+      });
+    }
+
+    return res.status(503).json({
+      error: 'Password reset is not fully configured yet. Try again later or contact support.',
     });
   } catch (error) {
     console.error('Forgot password request error:', error);
@@ -232,6 +247,38 @@ router.post('/loan-tracker-token', async (req, res) => {
   } catch (error) {
     console.error('Loan tracker token error:', error);
     return res.status(500).json({ error: 'Integration login failed' });
+  }
+});
+
+// POST /auth/support/set-password — agent/support only (integration key)
+router.post('/support/set-password', async (req, res) => {
+  try {
+    const key = req.headers['x-loan-tracker-key'] || req.headers['x-admin-key'];
+    const expected = process.env.LOAN_TRACKER_INTEGRATION_KEY;
+    if (!expected || key !== expected) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const newPassword = String(req.body.newPassword || '');
+    if (!email || !newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: 'email and newPassword (8+ chars) required' });
+    }
+
+    const db = await getDatabase();
+    const user = await db.get('SELECT id FROM users WHERE email = ? AND is_active = 1', email);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const passwordHash = await bcryptjs.hash(newPassword, 10);
+    await db.run(
+      'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [passwordHash, user.id]
+    );
+
+    return res.json({ ok: true, email, message: 'Password updated' });
+  } catch (error) {
+    console.error('Support set-password error:', error);
+    return res.status(500).json({ error: error.message });
   }
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Container, Paper, TextField, Button, Typography, Alert,
@@ -6,34 +6,56 @@ import {
 } from '@mui/material';
 import { authAPI } from '../services/api';
 
+const EMPTY_FORM = {
+  email: '',
+  password: '',
+  fullName: '',
+  code: '',
+  newPassword: '',
+  confirmPassword: '',
+};
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState(0);
-  const [view, setView] = useState('auth'); // auth | forgot-request | forgot-reset
+  const [view, setView] = useState('auth');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [buildLabel, setBuildLabel] = useState('');
+  const [resetChannel, setResetChannel] = useState('');
+  const forgotOpenedAt = useRef(0);
+
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
   useEffect(() => {
     fetch('/health')
       .then((r) => r.json())
       .then((d) => setBuildLabel(d.app || d.version || ''))
       .catch(() => {});
+    try {
+      const saved = sessionStorage.getItem('ljc_login_email');
+      if (saved) setFormData((prev) => ({ ...prev, email: saved }));
+    } catch {
+      // ignore
+    }
   }, []);
 
-  const [formData, setFormData] = useState({
-    email: 'demo@ljcfinancial.com',
-    password: 'demo123',
-    fullName: 'Demo User',
-    code: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
+  const persistEmail = (email) => {
+    try {
+      sessionStorage.setItem('ljc_login_email', email);
+    } catch {
+      // ignore
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === 'email') persistEmail(value);
+      return next;
+    });
     setError('');
     setSuccess('');
   };
@@ -45,6 +67,7 @@ export default function LoginPage() {
       const response = await authAPI.login(formData.email, formData.password);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      persistEmail(formData.email);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
@@ -60,10 +83,10 @@ export default function LoginPage() {
       await authAPI.register(formData.email, formData.password, formData.fullName);
       setError('');
       setTab(0);
-      setFormData({ ...formData, fullName: '' });
       const response = await authAPI.login(formData.email, formData.password);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      persistEmail(formData.email);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
@@ -79,10 +102,12 @@ export default function LoginPage() {
     setSuccess('');
     try {
       const response = await authAPI.forgotPasswordRequest(formData.email);
-      setSuccess(response.data.message || 'Verification code sent');
+      setResetChannel(response.data.channel || '');
+      let msg = response.data.message || 'Verification code sent';
       if (response.data.devCode) {
-        setSuccess(`${response.data.message} Code: ${response.data.devCode}`);
+        msg = `${msg} Your code: ${response.data.devCode}`;
       }
+      setSuccess(msg);
       setView('forgot-reset');
     } catch (err) {
       setError(err.response?.data?.error || 'Could not send verification code');
@@ -109,7 +134,7 @@ export default function LoginPage() {
       setSuccess(response.data.message || 'Password updated');
       setView('auth');
       setTab(0);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         password: prev.newPassword,
         code: '',
@@ -123,19 +148,27 @@ export default function LoginPage() {
     }
   };
 
-  const goForgot = () => {
+  const goForgot = (e) => {
+    e?.preventDefault?.();
+    forgotOpenedAt.current = Date.now();
     setView('forgot-request');
     setError('');
     setSuccess('');
-    setFormData(prev => ({ ...prev, code: '', newPassword: '', confirmPassword: '' }));
+    setResetChannel('');
+    setFormData((prev) => ({ ...prev, code: '', newPassword: '', confirmPassword: '' }));
   };
 
   const goBackLogin = () => {
+    if (Date.now() - forgotOpenedAt.current < 500) return;
     setView('auth');
     setTab(0);
     setError('');
     setSuccess('');
   };
+
+  const forgotHint = resetChannel === 'email'
+    ? 'Enter the 6-digit code from your email and choose a new password.'
+    : 'Enter the 6-digit code from your text message and choose a new password.';
 
   return (
     <Box
@@ -185,6 +218,7 @@ export default function LoginPage() {
                   onChange={handleInputChange}
                   margin="normal"
                   disabled={loading}
+                  autoComplete="email"
                 />
 
                 <TextField
@@ -196,11 +230,18 @@ export default function LoginPage() {
                   onChange={handleInputChange}
                   margin="normal"
                   disabled={loading}
+                  autoComplete={tab === 0 ? 'current-password' : 'new-password'}
                 />
 
                 {tab === 0 && (
                   <Box sx={{ textAlign: 'right', mt: 1 }}>
-                    <Link component="button" type="button" variant="body2" onClick={goForgot}>
+                    <Link
+                      component="button"
+                      type="button"
+                      variant="body2"
+                      onClick={goForgot}
+                      sx={{ userSelect: 'none' }}
+                    >
                       Forgot password?
                     </Link>
                   </Box>
@@ -224,7 +265,7 @@ export default function LoginPage() {
             <>
               <Typography variant="h6" sx={{ mb: 2 }}>Reset password — step 1</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Enter your email. We will text a 6-digit verification code to your mobile number on file.
+                Enter your email. We will send a 6-digit code by text (or email if texting is unavailable).
               </Typography>
               <form onSubmit={handleForgotRequest}>
                 <TextField
@@ -237,11 +278,12 @@ export default function LoginPage() {
                   margin="normal"
                   disabled={loading}
                   autoFocus
+                  autoComplete="email"
                 />
                 <Button fullWidth variant="contained" size="large" type="submit" sx={{ mt: 3 }} disabled={loading}>
-                  {loading ? <CircularProgress size={24} /> : 'Send text verification code'}
+                  {loading ? <CircularProgress size={24} /> : 'Send verification code'}
                 </Button>
-                <Button fullWidth sx={{ mt: 1 }} onClick={goBackLogin} disabled={loading}>
+                <Button fullWidth sx={{ mt: 2 }} type="button" onClick={goBackLogin} disabled={loading}>
                   Back to login
                 </Button>
               </form>
@@ -252,7 +294,7 @@ export default function LoginPage() {
             <>
               <Typography variant="h6" sx={{ mb: 2 }}>Reset password — step 2</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Enter the 6-digit code from your text message and choose a new password.
+                {forgotHint}
               </Typography>
               <form onSubmit={handleForgotReset}>
                 <TextField
@@ -285,6 +327,7 @@ export default function LoginPage() {
                   margin="normal"
                   disabled={loading}
                   helperText="At least 8 characters"
+                  autoComplete="new-password"
                 />
                 <TextField
                   fullWidth
@@ -295,19 +338,21 @@ export default function LoginPage() {
                   onChange={handleInputChange}
                   margin="normal"
                   disabled={loading}
+                  autoComplete="new-password"
                 />
                 <Button fullWidth variant="contained" size="large" type="submit" sx={{ mt: 3 }} disabled={loading}>
                   {loading ? <CircularProgress size={24} /> : 'Set new password'}
                 </Button>
                 <Button
                   fullWidth
-                  sx={{ mt: 1 }}
+                  sx={{ mt: 2 }}
+                  type="button"
                   onClick={() => setView('forgot-request')}
                   disabled={loading}
                 >
-                  Resend text code
+                  Resend code
                 </Button>
-                <Button fullWidth sx={{ mt: 1 }} onClick={goBackLogin} disabled={loading}>
+                <Button fullWidth sx={{ mt: 1 }} type="button" onClick={goBackLogin} disabled={loading}>
                   Back to login
                 </Button>
               </form>
@@ -315,8 +360,8 @@ export default function LoginPage() {
           )}
 
           {view === 'auth' && (
-            <Typography variant="caption" align="center" display="block" sx={{ mt: 2 }}>
-              Demo credentials: demo@ljcfinancial.com / demo123
+            <Typography variant="caption" align="center" display="block" sx={{ mt: 2, color: 'text.secondary' }}>
+              Demo login: demo@ljcfinancial.com / demo123
             </Typography>
           )}
           {buildLabel && (
