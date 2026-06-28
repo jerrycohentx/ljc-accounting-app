@@ -24,6 +24,7 @@ import {
   reopenBankReconciliation,
 } from '../lib/bank-reconcile-session.js';
 import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
+import { prepareReconciliation } from '../lib/reconcile-prepare.js';
 
 const router = express.Router();
 
@@ -515,14 +516,42 @@ router.get('/summary', async (req, res) => {
   }
 });
 
+// GET /api/reconciliation/bank/prepare — load statement from folder/JSON and suggest fields
+router.get('/prepare', async (req, res) => {
+  try {
+    const { entityId, accountId, statementDate, importFromFolder } = req.query;
+    if (!entityId || !accountId) {
+      return res.status(400).json({ error: 'entityId and accountId required' });
+    }
+    const db = await getDatabase();
+    const result = await prepareReconciliation(db, {
+      entityId,
+      accountId,
+      statementDate: statementDate || null,
+      userId: req.user?.id || 'usr-admin',
+      importFromFolder: importFromFolder !== '0',
+    });
+    return res.json(result);
+  } catch (error) {
+    console.error('Reconcile prepare error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to prepare reconciliation' });
+  }
+});
+
 // GET /api/reconciliation/bank/worksheet — QuickBooks-style statement reconcile worksheet
 router.get('/worksheet', async (req, res) => {
   try {
-    const { entityId, accountId, statementDate } = req.query;
+    const { entityId, accountId, statementDate, autoMatch } = req.query;
     if (!entityId || !accountId) return res.status(400).json({ error: 'Entity ID and Account ID required' });
     const db = await getDatabase();
     const date = statementDate || new Date().toISOString().split('T')[0];
-    const worksheet = await buildWorksheet(db, { entityId, accountId, statementDate: date });
+    const worksheet = await buildWorksheet(db, {
+      entityId,
+      accountId,
+      statementDate: date,
+      autoMatch: autoMatch === '1' || autoMatch === 'true',
+      userId: req.user?.id || 'usr-admin',
+    });
     return res.json(worksheet);
   } catch (error) {
     console.error('Reconcile worksheet error:', error);

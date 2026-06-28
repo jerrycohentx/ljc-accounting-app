@@ -186,7 +186,10 @@ export default function QBDReconcile() {
   const [accounts, setAccounts] = useState([]);
   const [accountId, setAccountId] = useState('');
   const [stmtDate, setStmtDate] = useState(todayISO());
+  const [beginBal, setBeginBal] = useState('');
   const [endBal, setEndBal] = useState('');
+  const [prepareMsg, setPrepareMsg] = useState('');
+  const [prepareBusy, setPrepareBusy] = useState(false);
   const [started, setStarted] = useState(false);
   const [data, setData] = useState(null);
   const [checked, setChecked] = useState({});
@@ -205,6 +208,7 @@ export default function QBDReconcile() {
   const importFileRef = useRef(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
   const [importFileName, setImportFileName] = useState('');
+  const [showUnmatchedOnly, setShowUnmatchedOnly] = useState(false);
   const startResize = useSplitResize(splitRef, setSplitPct);
   const { onStmtScroll, onRegScroll } = useSyncScroll(syncScroll, stmtScrollRef, regScrollRef);
 
@@ -267,25 +271,55 @@ export default function QBDReconcile() {
     }).catch(() => {});
   }, [entityId]);
 
+  useEffect(() => {
+    if (!entityId || !accountId) {
+      setPrepareMsg('');
+      return;
+    }
+    setPrepareBusy(true);
+    bankReconAPI.prepare(entityId, accountId, stmtDate || undefined)
+      .then((r) => {
+        const p = r.data;
+        if (p.statementDate) setStmtDate(p.statementDate);
+        if (p.endingBalance != null) setEndBal(String(p.endingBalance));
+        if (p.beginningBalance != null) setBeginBal(String(p.beginningBalance));
+        setPrepareMsg(p.message || '');
+      })
+      .catch((e) => setPrepareMsg(e.response?.data?.error || 'Could not load statement'))
+      .finally(() => setPrepareBusy(false));
+  }, [entityId, accountId]);
+
+  const applyAutoChecked = useCallback((worksheet) => {
+    const ids = worksheet?.suggestedCheckedGlIds || [];
+    const next = {};
+    ids.forEach((id) => { next[id] = true; });
+    setChecked(next);
+  }, []);
+
   const loadWorksheet = useCallback(() => {
     if (!accountId) return Promise.resolve();
     setBusy(true);
-    return bankReconAPI.worksheet(entityId, accountId, stmtDate)
+    return bankReconAPI.worksheet(entityId, accountId, stmtDate, { autoMatch: true })
       .then((r) => {
         setData(r.data);
-        setChecked({});
+        applyAutoChecked(r.data);
         setHighlightGlId(null);
         setStarted(true);
-        setEndBal((prev) => {
-          if (prev) return prev;
-          if (r.data?.statementMeta?.currentBalance != null) return String(r.data.statementMeta.currentBalance);
-          if (r.data?.endingBalance != null) return String(r.data.endingBalance);
-          return prev;
-        });
+        if (r.data.statementDate) setStmtDate(r.data.statementDate);
+        if (r.data.suggestedEndingBalance != null) {
+          setEndBal(String(r.data.suggestedEndingBalance));
+        } else if (r.data.endingBalance != null) {
+          setEndBal(String(r.data.endingBalance));
+        }
+        if (r.data.displayBeginning != null) setBeginBal(String(r.data.displayBeginning));
+        const am = r.data.autoMatch;
+        if (am && showToast) {
+          showToast(`Auto-matched ${am.matchedStmtCount} of ${am.totalStmtLines} statement lines — review ${am.unmatchedRegisterCount} register item(s)`);
+        }
       })
       .catch((e) => showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message)))
       .finally(() => setBusy(false));
-  }, [entityId, accountId, stmtDate, showToast]);
+  }, [entityId, accountId, stmtDate, showToast, applyAutoChecked]);
 
   const start = () => {
     if (!accountId) { showToast && showToast('Pick an account'); return; }
@@ -300,7 +334,8 @@ export default function QBDReconcile() {
 
   const entries = data?.entries || [];
   const statementLines = data?.statementLines || [];
-  const beginning = +(data?.beginningBalance || 0);
+  const matchedGlSet = useMemo(() => new Set(data?.suggestedCheckedGlIds || []), [data?.suggestedCheckedGlIds]);
+  const beginning = +(data?.displayBeginning ?? data?.beginningBalance ?? beginBal ?? 0);
   const clearedSigned = entries
     .filter((e) => checked[e.id])
     .reduce((s, e) => s + signedGlDelta(e, account), 0);
@@ -358,6 +393,17 @@ export default function QBDReconcile() {
   const needsReopen = periodSession && !periodSession.balanced;
   const stmtMeta = data?.statementMeta || {};
   const stmtPeriod = data?.statementPeriod || {};
+  const autoMatchInfo = data?.autoMatch;
+
+  const visibleEntries = useMemo(() => {
+    if (!showUnmatchedOnly) return entries;
+    return entries.filter((e) => !matchedGlSet.has(e.id) && !checked[e.id]);
+  }, [entries, showUnmatchedOnly, matchedGlSet, checked]);
+
+  const visibleStatementLines = useMemo(() => {
+    if (!showUnmatchedOnly) return statementLines;
+    return statementLines.filter((l) => !l.matchedGlId || !matchedGlSet.has(l.matchedGlId));
+  }, [statementLines, showUnmatchedOnly, matchedGlSet]);
 
   const reopenPeriod = () => {
     setBusy(true);
@@ -391,12 +437,24 @@ export default function QBDReconcile() {
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
           </select>
         </div>
-        <div className="frow"><label>Statement date</label><input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} /></div>
-        <div className="frow"><label>Ending balance</label><input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From your bank statement" style={{ textAlign: 'right', width: 180 }} /></div>
+        {accountId && (
+          <>
+            <div className="frow"><label>Statement date</label>
+              <input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} />
+            </div>
+            <div className="frow"><label>Beginning balance</label>
+              <input type="text" readOnly value={beginBal ? fmt(+beginBal) : '—'} style={{ textAlign: 'right', width: 180, background: '#f5f7fa' }} />
+            </div>
+            <div className="frow"><label>Ending balance</label>
+              <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 180 }} />
+            </div>
+            {prepareMsg && <div className="qbd-muted" style={{ padding: '0 12px 8px', fontSize: 11 }}>{prepareMsg}</div>}
+          </>
+        )}
         <div className="qbd-botbar">
-          <span className="qbd-muted">Import OFX or PDF on the reconcile screen — statement shows beside the register.</span>
+          <span className="qbd-muted">Statement loads from your import folder — fields fill automatically.</span>
           <span className="sp" />
-          <button className="qbd-btn" disabled={busy} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button>
+          <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button>
         </div>
       </div>
     );
@@ -440,9 +498,16 @@ export default function QBDReconcile() {
         <span className="x" onClick={() => { setStarted(false); setData(null); if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl); setPdfPreviewUrl(null); }}>✕</span>
       </div>
       {sessionBanner}
+      {autoMatchInfo && (
+        <div className="qbd-recon-banner" style={{ background: '#e8f4fc', color: '#1f3550', borderBottom: '1px solid #c9d3df' }}>
+          Auto-matched {autoMatchInfo.matchedStmtCount} of {autoMatchInfo.totalStmtLines} statement lines.
+          {autoMatchInfo.unmatchedRegisterCount > 0 && ` Review ${autoMatchInfo.unmatchedRegisterCount} unmatched register item(s).`}
+          {autoMatchInfo.unmatchedStmtCount > 0 && ` ${autoMatchInfo.unmatchedStmtCount} statement line(s) need a register match.`}
+        </div>
+      )}
       <div className="qbd-recon-summary">
         <span className="item"><span className="lbl">Period</span><span className="val">{stmtPeriod.periodStart || '—'} → {stmtPeriod.periodEnd || data.statementDate}</span></span>
-        <span className="item"><span className="lbl">Beginning</span><span className="val">{fmt(stmtMeta.previousBalance != null ? stmtMeta.previousBalance : beginning)}</span></span>
+        <span className="item"><span className="lbl">Beginning</span><span className="val">{fmt(beginning)}</span></span>
         <span className="item"><span className="lbl">{labels.cleared1}</span><span className="val">{fmt(clearedCol1) || '0.00'}</span></span>
         <span className="item"><span className="lbl">{labels.cleared2}</span><span className="val">{fmt(clearedCol2) || '0.00'}</span></span>
         <span className="item"><span className="lbl">Ending</span><span className="val">{fmt(target) || '0.00'}</span></span>
@@ -469,6 +534,10 @@ export default function QBDReconcile() {
           </span>
         )}
         <label className="qbd-recon-tools-chk">
+          <input type="checkbox" checked={showUnmatchedOnly} onChange={(e) => setShowUnmatchedOnly(e.target.checked)} />
+          Unmatched only
+        </label>
+        <label className="qbd-recon-tools-chk">
           <input type="checkbox" checked={syncScroll} onChange={(e) => setSyncScroll(e.target.checked)} />
           Sync scroll
         </label>
@@ -491,7 +560,7 @@ export default function QBDReconcile() {
             )}
             <div className="qbd-stmt-lines">
               <StmtTable
-                lines={statementLines}
+                lines={visibleStatementLines}
                 account={account}
                 labels={labels}
                 highlightGlId={highlightGlId}
@@ -516,7 +585,7 @@ export default function QBDReconcile() {
           </div>
           <div className="qbd-recon-panebody" ref={regScrollRef} onScroll={onRegScroll}>
             <RegisterTable
-              entries={entries}
+              entries={visibleEntries}
               account={account}
               labels={labels}
               checked={checked}

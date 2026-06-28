@@ -70,7 +70,17 @@ export const reportAPI = {
 };
 
 export const bankReconAPI = {
-  worksheet: (entityId, accountId, statementDate) => client.get('/api/reconciliation/bank/worksheet', { params: { entityId, accountId, statementDate } }),
+  prepare: (entityId, accountId, statementDate) => client.get('/api/reconciliation/bank/prepare', {
+    params: { entityId, accountId, statementDate },
+  }),
+  worksheet: (entityId, accountId, statementDate, opts = {}) => client.get('/api/reconciliation/bank/worksheet', {
+    params: {
+      entityId,
+      accountId,
+      statementDate,
+      autoMatch: opts.autoMatch ? '1' : undefined,
+    },
+  }),
   reconcile: (data) => client.post('/api/reconciliation/bank/reconcile', data),
   reopen: (data) => client.post('/api/reconciliation/bank/reopen', data),
   importStatement: (data) => client.post('/api/reconciliation/bank/import-statement', data),
