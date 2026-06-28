@@ -3,8 +3,100 @@ import jwt from 'jsonwebtoken';
 import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../config/database.js';
+import { issuePasswordResetCode, verifyPasswordResetCode } from '../lib/password-reset-store.js';
+import { isSmtpConfigured, sendPasswordResetCode } from '../lib/outbound-mail.js';
 
 const router = express.Router();
+
+const GENERIC_RESET_MSG = 'If that email is registered, a verification code was sent. Check your inbox.';
+
+// POST /auth/forgot-password/request — step 1: email verification code
+router.post('/forgot-password/request', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Valid email required' });
+    }
+
+    const db = await getDatabase();
+    const user = await db.get('SELECT id, email, full_name FROM users WHERE email = ? AND is_active = 1', email);
+
+    if (!user) {
+      return res.json({ message: GENERIC_RESET_MSG });
+    }
+
+    const { code, expiresMinutes } = await issuePasswordResetCode(db, email);
+
+    if (!isSmtpConfigured()) {
+      console.warn('[password-reset] SMTP not configured — code not emailed for', email);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[password-reset] DEV code:', code);
+        return res.json({
+          message: GENERIC_RESET_MSG,
+          devCode: code,
+          smtpConfigured: false,
+        });
+      }
+      return res.status(503).json({
+        error: 'Password reset email is not configured yet. Contact support.',
+      });
+    }
+
+    await sendPasswordResetCode({ to: email, code, expiresMinutes });
+    return res.json({ message: GENERIC_RESET_MSG, smtpConfigured: true });
+  } catch (error) {
+    console.error('Forgot password request error:', error);
+    return res.status(500).json({ error: 'Could not send verification code' });
+  }
+});
+
+// POST /auth/forgot-password/reset — step 2: code + new password
+router.post('/forgot-password/reset', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const code = String(req.body.code || '').trim();
+    const newPassword = String(req.body.newPassword || '');
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ error: 'Email, verification code, and new password required' });
+    }
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: 'Verification code must be 6 digits' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    const db = await getDatabase();
+    const verify = await verifyPasswordResetCode(db, email, code);
+
+    if (!verify.ok) {
+      const messages = {
+        no_code: 'No reset code found — request a new one',
+        expired: 'Code expired — request a new one',
+        too_many_attempts: 'Too many attempts — request a new code',
+        invalid_code: 'Invalid verification code',
+      };
+      return res.status(400).json({ error: messages[verify.reason] || 'Invalid verification code' });
+    }
+
+    const user = await db.get('SELECT id FROM users WHERE email = ? AND is_active = 1', email);
+    if (!user) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    const passwordHash = await bcryptjs.hash(newPassword, 10);
+    await db.run(
+      'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [passwordHash, user.id]
+    );
+
+    return res.json({ message: 'Password updated — you can log in now' });
+  } catch (error) {
+    console.error('Forgot password reset error:', error);
+    return res.status(500).json({ error: 'Password reset failed' });
+  }
+});
 
 // POST /auth/register
 router.post('/register', async (req, res) => {

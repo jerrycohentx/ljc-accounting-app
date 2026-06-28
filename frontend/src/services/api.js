@@ -31,7 +31,10 @@ client.interceptors.response.use(
 export const authAPI = {
   login: (email, password) => client.post('/auth/login', { email, password }),
   register: (email, password, fullName) => client.post('/auth/register', { email, password, fullName }),
-  refresh: (token) => client.post('/auth/refresh', { token })
+  refresh: (token) => client.post('/auth/refresh', { token }),
+  forgotPasswordRequest: (email) => client.post('/auth/forgot-password/request', { email }),
+  forgotPasswordReset: (email, code, newPassword) =>
+    client.post('/auth/forgot-password/reset', { email, code, newPassword }),
 };
 
 export const entityAPI = {
