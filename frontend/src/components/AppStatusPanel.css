@@ -1,48 +1,107 @@
 .ljc-status-panel {
   background: linear-gradient(180deg, #eef3f9 0%, #dde6f0 100%);
-  border-top: 2px solid #b9c4d2;
-  padding: 10px 16px 12px;
+  border-top: 1px solid #b9c4d2;
+  padding: 4px 12px 5px;
   color: #1a2d42;
   flex-shrink: 0;
 }
 
-.ljc-status-panel.compact {
-  padding: 8px 12px 10px;
+.ljc-status-panel.expanded {
+  padding: 6px 12px 8px;
+}
+
+.ljc-status-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 22px;
+}
+
+.ljc-status-head.expandable {
+  cursor: pointer;
+  user-select: none;
 }
 
 .ljc-status-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #4a6278;
-  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.ljc-status-chevron {
+  font-size: 10px;
+  color: #6a7889;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ljc-status-bar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px 12px;
+  font-size: 11px;
+  line-height: 1.2;
+  overflow: hidden;
+}
+
+.ljc-status-chip {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.ljc-status-chip.warn {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.ljc-status-chip.clickable {
+  cursor: pointer;
+}
+
+.ljc-status-chip.clickable:hover {
+  color: #0d47a1;
+  text-decoration: underline;
 }
 
 .ljc-status-loading {
-  font-size: 13px;
+  font-size: 11px;
   color: #6a7889;
 }
 
 .ljc-status-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px 16px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px 12px;
+  margin-top: 6px;
 }
 
-.ljc-status-panel.compact .ljc-status-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px 12px;
+@media (max-width: 1100px) {
+  .ljc-status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 700px) {
   .ljc-status-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ljc-status-bar {
+    display: none;
   }
 }
 
 .ljc-status-cell {
   min-width: 0;
+  line-height: 1.25;
 }
 
 .ljc-status-cell.clickable {
@@ -55,26 +114,21 @@
 }
 
 .ljc-status-cell .lbl {
-  display: block;
-  font-size: 10px;
+  display: inline;
+  font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #6a7889;
-  margin-bottom: 3px;
+  margin-right: 5px;
 }
 
 .ljc-status-cell .val {
-  display: block;
-  font-size: 13px;
+  display: inline;
+  font-size: 11px;
   font-weight: 600;
-  line-height: 1.35;
   color: #1a2d42;
   word-break: break-word;
-}
-
-.ljc-status-panel.compact .ljc-status-cell .val {
-  font-size: 12px;
 }
 
 .ljc-status-cell.warn .val {

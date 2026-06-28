@@ -134,7 +134,7 @@ export default function QBDLayout() {
       <div className="qbd-work"><Outlet context={{ showToast }} /></div>
 
       <AppStatusPanel
-        compact
+        defaultCollapsed
         data={statusData}
         onBackupClick={() => setBackupOpen(true)}
         onEmailClick={() => setEmailOpen(true)}
