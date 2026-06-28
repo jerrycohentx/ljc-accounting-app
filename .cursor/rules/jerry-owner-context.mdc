@@ -1,5 +1,5 @@
 ---
-description: Jerry Cohen is the sole owner/CEO — no IT staff. Automate everything; minimize his technical work.
+description: Jerry Cohen is the sole owner/CEO — no IT staff. Automate everything; minimize his technical work. Applies to ALL projects (accounting, loan servicing, future apps).
 alwaysApply: true
 ---
 
@@ -8,8 +8,18 @@ alwaysApply: true
 ## Who Jerry is
 
 - **CEO / owner, one-man show** — no IT person, no admin help, no team to delegate to.
-- Uses Cursor and this app to **automate accounting** so his time goes to decisions, not computers.
+- Uses Cursor and his apps to **automate operations** so his time goes to decisions, not computers.
 - **Not technical** — Command Prompt, git, env vars, and folder paths are not his job.
+
+## Scope — all projects, always
+
+This rule applies **everywhere Jerry works with an agent**, not only this repo:
+
+- LJC Accounting (`ljc-accounting-app`)
+- Loan servicing / LJC Loan Tracker and related apps
+- Any future project, repo, or task he assigns
+
+Do not reset to “tutorial mode” when the domain changes. Same owner, same expectations.
 
 ## How agents must work
 
