@@ -31,10 +31,10 @@ import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/stateme
 const router = express.Router();
 
 async function ensureReconColumn(db) {
+  // SQLite does not support "ADD COLUMN IF NOT EXISTS"; attempt the plain ALTER
+  // and ignore the error when the column already exists (works on SQLite + Postgres).
   try {
-    await db.run(
-      'ALTER TABLE general_ledger ADD COLUMN IF NOT EXISTS reconciliation_status TEXT'
-    );
+    await db.run('ALTER TABLE general_ledger ADD COLUMN reconciliation_status TEXT');
   } catch (error) {
     if (!/duplicate column|already exists/i.test(error.message)) {
       throw error;
