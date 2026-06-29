@@ -101,6 +101,7 @@
 .qbd-recon-register-split{display:flex;flex:1;min-height:0;flex-direction:row}
 .qbd-recon-register-split>.qbd-recon-subpane{flex:1;min-width:0;border-bottom:none;border-right:1px solid #c9d3df}
 .qbd-recon-register-split>.qbd-recon-subpane:last-child{border-right:none}
+.qbd-recon-split.register-only .qbd-recon-dual{width:100%!important;flex:1}
 .qbd-recon-banner{padding:4px 10px!important;font-size:11px!important}
 .qbd-recon-tools{padding:4px 8px!important;flex-shrink:0}
 .qbd-recon-modify{background:#fff8e6;border-bottom:1px solid #e6d9a8;padding:6px 10px;font-size:11px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;flex-shrink:0}
