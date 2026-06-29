@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS general_ledger (
   balance DECIMAL(19,2),
   posting_date DATE NOT NULL,
   description TEXT,
+  reconciliation_status TEXT,
+  reconciliation_session_id TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(entity_id) REFERENCES entities(id),
