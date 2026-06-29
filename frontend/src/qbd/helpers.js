@@ -49,15 +49,26 @@ export function todayISO() {
 /** Reconcile tables: m/d/yr only (e.g. 1/5/26) — no timestamps. */
 export function fmtReconDate(value) {
   if (value == null || value === '') return '';
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return `${value.getMonth() + 1}/${value.getDate()}/${String(value.getFullYear()).slice(-2)}`;
+  }
   const raw = String(value).trim();
-  const d = raw.includes('T')
-    ? new Date(raw)
-    : new Date(`${raw.slice(0, 10)}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return raw.slice(0, 10);
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  const yr = String(d.getFullYear()).slice(-2);
-  return `${m}/${day}/${yr}`;
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const m = +iso[2];
+    const day = +iso[3];
+    const yr = iso[1].slice(-2);
+    return `${m}/${day}/${yr}`;
+  }
+  const d = raw.includes('T') ? new Date(raw) : new Date(`${raw.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+}
+
+/** Single amount column for compact reconcile panes (always positive). */
+export function reconRegisterAmount(entry, account) {
+  const signed = signedGlDelta(entry, account);
+  return Math.abs(signed) < 0.005 ? null : Math.abs(signed);
 }
 
 /** Credit card / liability accounts use Charge + Payment columns (QBD style). */
