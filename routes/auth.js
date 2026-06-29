@@ -8,6 +8,7 @@ import { isSmsConfigured, sendPasswordResetSms, maskPhone } from '../lib/outboun
 import { isEmailConfigured, sendPasswordResetCode } from '../lib/outbound-mail.js';
 import { resolvePhoneForUser } from '../lib/user-phone.js';
 import { parseJsonField } from '../lib/parse-json-field.js';
+import { verifyPassword } from '../lib/password-verify.js';
 
 const router = express.Router();
 
