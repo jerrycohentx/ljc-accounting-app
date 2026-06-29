@@ -1,4 +1,5 @@
 import pg from 'pg';
+import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -166,11 +167,11 @@ async function initializeDatabase() {
     const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
 
     if (existingUser.rows.length === 0) {
-      // Note: In production, hash the password properly
       const password = process.env.ADMIN_PASSWORD || 'ChangeMe123!';
+      const passwordHash = await bcrypt.hash(password, 10);
       await client.query(
         'INSERT INTO users (id, email, password_hash, full_name, role, is_active) VALUES ($1, $2, $3, $4, $5, $6)',
-        [userId, adminEmail, password, 'Admin User', 'ADMIN', true]
+        [userId, adminEmail, passwordHash, 'Admin User', 'ADMIN', true]
       );
       console.log(`✓ Admin user created: ${adminEmail}`);
     }
