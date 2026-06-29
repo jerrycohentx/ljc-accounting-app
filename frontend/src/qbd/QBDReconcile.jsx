@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, bankReconAPI } from '../services/api';
 import { useBackupStatus } from './QBDBackupDialog';
@@ -19,6 +19,7 @@ import {
 
 const SPLIT_STORAGE_KEY = 'qbd-recon-split-pct';
 const HIDE_AFTER_END_KEY = 'qbd-recon-hide-after-end';
+const SHOW_STMT_KEY = 'qbd-recon-show-statement';
 const DEFAULT_SPLIT = 48;
 
 function isAfterStatementEnd(postingDate, statementEndDate) {
@@ -84,7 +85,7 @@ function StmtTable({ lines, account, labels, highlightGlId, onSelect, onHover })
   );
 }
 
-function RegisterTable({ entries, account, labels, checked, confirmed, highlightGlId, onToggle, onHover, compact }) {
+function RegisterTable({ entries, account, labels, checked, confirmed, highlightGlId, onToggle, onHover, onEntryDblClick, compact }) {
   if (!entries.length) {
     return <div className="qbd-empty">{compact ? 'None' : 'No uncleared register items.'}</div>;
   }
@@ -115,6 +116,8 @@ function RegisterTable({ entries, account, labels, checked, confirmed, highlight
               onMouseEnter={() => onHover && onHover(e.id)}
               onMouseLeave={() => onHover && onHover(null)}
               onClick={() => onToggle(e.id, true)}
+              onDoubleClick={() => onEntryDblClick && onEntryDblClick(e)}
+              title={onEntryDblClick ? 'Double-click to open in register' : undefined}
             >
               <td style={{ textAlign: 'center' }}>
                 <input
@@ -196,6 +199,7 @@ function useSyncScroll(enabled, stmtRef, regRef) {
 
 export default function QBDReconcile() {
   const { entityId } = useEntity();
+  const navigate = useNavigate();
   const { showToast } = useOutletContext() || {};
   const [searchParams] = useSearchParams();
   const [accounts, setAccounts] = useState([]);
@@ -239,6 +243,11 @@ export default function QBDReconcile() {
     const saved = localStorage.getItem(HIDE_AFTER_END_KEY);
     return saved !== 'false';
   });
+  const [showStatementPanel, setShowStatementPanel] = useState(() => {
+    return localStorage.getItem(SHOW_STMT_KEY) === 'true';
+  });
+  const [beginningOverride, setBeginningOverride] = useState('');
+  const [reportModal, setReportModal] = useState(null);
   const startResize = useSplitResize(splitRef, setSplitPct);
   const { onStmtScroll, onRegScroll } = useSyncScroll(syncScroll, stmtScrollRef, regScrollRef);
 
@@ -249,6 +258,10 @@ export default function QBDReconcile() {
   useEffect(() => {
     localStorage.setItem(HIDE_AFTER_END_KEY, hideAfterEndDate ? 'true' : 'false');
   }, [hideAfterEndDate]);
+
+  useEffect(() => {
+    localStorage.setItem(SHOW_STMT_KEY, showStatementPanel ? 'true' : 'false');
+  }, [showStatementPanel]);
 
   useEffect(() => () => {
     if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
@@ -463,6 +476,23 @@ export default function QBDReconcile() {
     showToast && showToast('All pending matches accepted for review');
   };
 
+  /** QBD bank feeds: Matched — check off all downloaded/auto-matched transactions */
+  const runMatched = () => {
+    const next = { ...checked };
+    (data?.suggestedCheckedGlIds || []).forEach((id) => { next[id] = true; });
+    setChecked(next);
+    const conf = {};
+    Object.keys(next).forEach((id) => { if (next[id]) conf[id] = true; });
+    setConfirmed(conf);
+    showToast && showToast(`Matched ${(data?.suggestedCheckedGlIds || []).length} transaction(s) for ${stmtDate || data?.statementDate}`);
+  };
+
+  const openRegisterEntry = (entry) => {
+    if (!accountId || !entry?.id) return;
+    navigate(`/register/${accountId}?from=${entry.posting_date}&to=${entry.posting_date}`);
+    showToast && showToast('Open register to edit — double-click entry row');
+  };
+
   const rerunAutoMatch = () => loadWorksheet();
 
   const account = data?.account;
@@ -472,7 +502,7 @@ export default function QBDReconcile() {
   const entries = data?.entries || [];
   const statementLines = data?.statementLines || [];
   const matchedGlSet = useMemo(() => new Set(data?.suggestedCheckedGlIds || []), [data?.suggestedCheckedGlIds]);
-  const beginning = +(data?.displayBeginning ?? data?.beginningBalance ?? beginBal ?? 0);
+  const beginning = +(beginningOverride !== '' ? beginningOverride : (data?.displayBeginning ?? data?.beginningBalance ?? beginBal ?? 0));
   const svc = parseFloat(serviceCharge || '0') || 0;
   const int = parseFloat(interestEarned || '0') || 0;
   let markedDeposits = 0;
@@ -572,6 +602,33 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   };
 
+  const enterAdjustment = () => {
+    if (balanced) {
+      showToast && showToast('Difference is already zero');
+      return;
+    }
+    if (!window.confirm(
+      'Enter Adjustment posts a journal entry for the current difference. Intuit recommends resolving differences manually and consulting your accountant before using this. Continue?'
+    )) return;
+    setBusy(true);
+    bankReconAPI.adjustment({
+      entityId,
+      accountId,
+      statementDate: stmtDate,
+      difference,
+      glIds: checkedIds,
+      serviceCharge: svc,
+      interestEarned: int,
+      statementEndingBalance: target,
+    })
+      .then((r) => {
+        showToast && showToast(r.data.message || 'Adjustment posted');
+        return loadWorksheet();
+      })
+      .catch((e) => showToast && showToast('Adjustment failed: ' + (e.response?.data?.error || e.message)))
+      .finally(() => setBusy(false));
+  };
+
   const finish = () => {
     if (!balanced) { showToast && showToast('Difference must be $0.00 to reconcile'); return; }
     if (checkedIds.length === 0) { showToast && showToast('Mark the cleared transactions first'); return; }
@@ -585,7 +642,19 @@ export default function QBDReconcile() {
       serviceCharge: svc,
       interestEarned: int,
     })
-      .then(() => { showToast && showToast(`Reconciled ${checkedIds.length} transactions ✓`); setStarted(false); setData(null); setEndBal(''); })
+      .then((r) => {
+        setReportModal({
+          reconciledCount: r.data.reconciledCount,
+          beginningBalance: r.data.beginningBalance,
+          endingBalance: r.data.endingBalance,
+          statementDate: stmtDate,
+          accountLabel: `${data.account.account_number} · ${leafLabel(data.account.account_name)}`,
+        });
+        setStarted(false);
+        setData(null);
+        setEndBal('');
+        setBeginningOverride('');
+      })
       .catch((e) => {
         const msg = e.response?.data?.error || e.message;
         showToast && showToast(msg);
@@ -607,9 +676,10 @@ export default function QBDReconcile() {
         <div className="qbd-form">
           <div className="fhd">Begin Reconciliation</div>
           <div className="qbd-muted" style={{ padding: '0 12px 10px', fontSize: 11, lineHeight: 1.45 }}>
-            <strong>Banking → Reconcile</strong> — select your bank or credit card account, enter the
-            <strong> statement ending date</strong> and <strong>ending balance</strong> exactly as shown on your
-            bank statement, then click <strong>Continue</strong>.
+            Get your monthly statement from your bank, then <strong>Banking → Reconcile</strong>.
+            Enter the <strong>statement ending date</strong> and verify the <strong>beginning balance</strong> matches your statement.
+            Enter the <strong>ending balance</strong> and any <strong>service charge</strong> or <strong>interest</strong> not already in QuickBooks.
+            If you use bank feeds, you can usually leave service charge and interest blank.
           </div>
           <div className="frow"><label>Account</label>
             <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
@@ -619,7 +689,7 @@ export default function QBDReconcile() {
           </div>
           {accountId && (
             <>
-              <div className="frow"><label>Statement date</label>
+              <div className="frow"><label>Statement ending date</label>
                 <input
                   type="date"
                   value={dateDraft}
@@ -638,6 +708,12 @@ export default function QBDReconcile() {
               </div>
               <div className="frow"><label>Ending balance</label>
                 <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 180 }} />
+              </div>
+              <div className="frow"><label>Service charge</label>
+                <input type="number" step="0.01" min="0" value={serviceCharge} onChange={(e) => setServiceCharge(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 180 }} />
+              </div>
+              <div className="frow"><label>Interest earned</label>
+                <input type="number" step="0.01" min="0" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 180 }} />
               </div>
               {prepareMsg && (
                 <div className="qbd-muted" style={{ padding: '0 12px 8px', fontSize: 11, color: /invalid|failed|error|not found/i.test(prepareMsg) ? '#b3261e' : undefined }}>
@@ -747,8 +823,20 @@ export default function QBDReconcile() {
         <button type="button" className="qbd-btn" disabled={busy} onClick={markAll}>Mark All</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={unmarkAll}>Unmark All</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={rerunAutoMatch}>Auto-Match</button>
-        <button type="button" className="qbd-btn" disabled={busy} onClick={acceptAllMatches}>Accept all matches</button>
+        <button
+          type="button"
+          className="qbd-btn"
+          disabled={busy}
+          onClick={runMatched}
+          style={{ fontWeight: 'bold' }}
+          title="Bank feeds: check off all downloaded transactions that match your statement"
+        >
+          Matched
+        </button>
+        <button type="button" className="qbd-btn" disabled={busy} onClick={acceptAllMatches}>Accept matches</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={() => setShowModify((v) => !v)}>Modify</button>
+        <button type="button" className="qbd-btn" disabled={busy} onClick={() => navigate('/write-checks')}>Write Checks</button>
+        <button type="button" className="qbd-btn" disabled={busy} onClick={() => navigate('/make-deposits')}>Make Deposits</button>
         <button
           type="button"
           className="qbd-btn qbd-btn-import"
@@ -764,6 +852,10 @@ export default function QBDReconcile() {
             {(importFileName || stmtMeta.statementLabel).slice(0, 36)}
           </span>
         )}
+        <label className="qbd-recon-tools-chk" title="Show imported bank statement beside register (optional)">
+          <input type="checkbox" checked={showStatementPanel} onChange={(e) => setShowStatementPanel(e.target.checked)} />
+          Show bank statement
+        </label>
         <label className="qbd-recon-tools-chk" title="QuickBooks Desktop: hide future-dated register items">
           <input type="checkbox" checked={hideAfterEndDate} onChange={(e) => setHideAfterEndDate(e.target.checked)} />
           Hide after statement end date
@@ -782,11 +874,26 @@ export default function QBDReconcile() {
       </div>
       {showModify && (
         <div className="qbd-recon-modify">
-          <span className="qbd-muted">Statement period: {stmtPeriod.periodStart || '—'} → {stmtPeriod.periodEnd || data.statementDate}</span>
-          <span className="qbd-muted" style={{ marginLeft: 12 }}>Cleared balance: {fmt(calc.clearedBalance)}</span>
+          <label>Statement ending
+            <input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} style={{ marginLeft: 6 }} />
+          </label>
+          <label style={{ marginLeft: 12 }}>Beginning
+            <input type="number" step="0.01" value={beginningOverride !== '' ? beginningOverride : beginning} onChange={(e) => setBeginningOverride(e.target.value)} style={{ width: 100, marginLeft: 6, textAlign: 'right' }} />
+          </label>
+          <label style={{ marginLeft: 12 }}>Ending
+            <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} style={{ width: 100, marginLeft: 6, textAlign: 'right' }} />
+          </label>
+          <label style={{ marginLeft: 12 }}>Service charge
+            <input type="number" step="0.01" value={serviceCharge} onChange={(e) => setServiceCharge(e.target.value)} style={{ width: 80, marginLeft: 6, textAlign: 'right' }} />
+          </label>
+          <label style={{ marginLeft: 12 }}>Interest
+            <input type="number" step="0.01" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} style={{ width: 80, marginLeft: 6, textAlign: 'right' }} />
+          </label>
+          <span className="qbd-muted" style={{ marginLeft: 12 }}>Verify these match your statement if Difference ≠ $0.00</span>
         </div>
       )}
-      <div className="qbd-recon-split" ref={splitRef}>
+      <div className={`qbd-recon-split${showStatementPanel ? '' : ' register-only'}`} ref={splitRef}>
+        {showStatementPanel && (
         <div className="qbd-recon-pane" style={{ width: `${splitPct}%` }}>
           <div className="qbd-recon-panehead">
             {isCard ? 'Card statement' : 'Bank statement'}
@@ -811,6 +918,8 @@ export default function QBDReconcile() {
             </div>
           </div>
         </div>
+        )}
+        {showStatementPanel && (
         <div
           className="qbd-recon-gutter"
           role="separator"
@@ -819,19 +928,20 @@ export default function QBDReconcile() {
           title="Drag to resize panes"
           onMouseDown={startResize}
         />
-        <div className="qbd-recon-pane qbd-recon-dual" style={{ width: `${100 - splitPct}%` }}>
+        )}
+        <div className="qbd-recon-pane qbd-recon-dual" style={{ width: showStatementPanel ? `${100 - splitPct}%` : '100%' }}>
           {!isCard ? (
             <div className="qbd-recon-register-split">
               <div className="qbd-recon-subpane">
                 <div className="qbd-recon-panehead">Checks and Payments <span className="qbd-muted">{paymentCount} cleared · {fmt(markedPayments)}</span></div>
                 <div className="qbd-recon-panebody" ref={regScrollRef} onScroll={onRegScroll}>
-                  <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} compact />
+                  <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} onEntryDblClick={openRegisterEntry} compact />
                 </div>
               </div>
               <div className="qbd-recon-subpane">
                 <div className="qbd-recon-panehead">Deposits and Other Credits <span className="qbd-muted">{depositCount} cleared · {fmt(markedDeposits)}</span></div>
                 <div className="qbd-recon-panebody">
-                  <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} compact />
+                  <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} onEntryDblClick={openRegisterEntry} compact />
                 </div>
               </div>
             </div>
@@ -842,7 +952,7 @@ export default function QBDReconcile() {
                 <span className="qbd-muted">{checkedIds.length} marked</span>
               </div>
               <div className="qbd-recon-panebody" ref={regScrollRef} onScroll={onRegScroll}>
-                <RegisterTable entries={visibleEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} />
+                <RegisterTable entries={visibleEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} onEntryDblClick={openRegisterEntry} />
               </div>
             </>
           )}
@@ -863,9 +973,37 @@ export default function QBDReconcile() {
         {!balanced && <span className="qbd-muted" style={{ color: '#b3261e', marginLeft: 12 }}>Difference must be $0.00 to reconcile</span>}
         {balanced && <span className="qbd-muted" style={{ color: '#2f6b3a', marginLeft: 12 }}>Ready to reconcile</span>}
         <span className="sp" />
+        {!balanced && (
+          <button type="button" className="qbd-btn" disabled={busy} onClick={enterAdjustment} title="Last resort — posts a journal entry for the difference">
+            Enter Adjustment…
+          </button>
+        )}
         <button className="qbd-btn" disabled={busy} onClick={() => { setStarted(false); showToast && showToast('Progress saved — nothing posted to the ledger'); }}>Leave</button>
         <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={finish} style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dff3e2,#bfe6c8)' : undefined }}>Reconcile Now</button>
       </div>
+      {reportModal && (
+        <div className="qbd-modal-backdrop" onClick={() => setReportModal(null)}>
+          <div className="qbd-modal" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+            <div className="qbd-wtitle">
+              Reconciliation complete
+              <span className="x" onClick={() => setReportModal(null)}>✕</span>
+            </div>
+            <div className="qbd-modal-body" style={{ fontSize: 12, lineHeight: 1.55 }}>
+              <p><strong>{reportModal.accountLabel}</strong></p>
+              <p>Statement ending: <strong>{reportModal.statementDate}</strong></p>
+              <p>{reportModal.reconciledCount} transaction(s) reconciled.</p>
+              <p>Beginning balance: <strong>{fmt(reportModal.beginningBalance)}</strong></p>
+              <p>Ending balance: <strong>{fmt(reportModal.endingBalance)}</strong></p>
+              <p className="qbd-muted" style={{ marginTop: 8 }}>You can view previous reconciliations under Reports → Banking.</p>
+            </div>
+            <div className="qbd-foot">
+              <button type="button" className="qbd-btn" onClick={() => { setReportModal(null); navigate('/reports'); }}>View Reports</button>
+              <span className="sp" />
+              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={() => setReportModal(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

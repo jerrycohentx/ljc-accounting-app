@@ -25,6 +25,7 @@ import {
 } from '../lib/bank-reconcile-session.js';
 import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
 import { prepareReconciliation } from '../lib/reconcile-prepare.js';
+import { postReconcileAdjustment } from '../lib/reconcile-adjustment.js';
 import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/statement-auto-load.js';
 
 const router = express.Router();
@@ -645,6 +646,44 @@ router.post('/reconcile', async (req, res) => {
   } catch (error) {
     console.error('Reconcile error:', error);
     return res.status(500).json({ error: error.message || 'Failed to reconcile' });
+  }
+});
+
+// POST /api/reconciliation/bank/adjustment — QBD "Enter Adjustment" (last resort)
+router.post('/adjustment', async (req, res) => {
+  try {
+    const {
+      entityId,
+      accountId,
+      statementDate,
+      difference,
+      glIds = [],
+      serviceCharge = 0,
+      interestEarned = 0,
+      statementEndingBalance,
+    } = req.body;
+    if (!entityId || !accountId) {
+      return res.status(400).json({ error: 'entityId and accountId required' });
+    }
+    if (difference == null || Number.isNaN(Number(difference))) {
+      return res.status(400).json({ error: 'difference required' });
+    }
+    const db = await getDatabase();
+    const result = await postReconcileAdjustment(db, {
+      entityId,
+      accountId,
+      statementDate: statementDate || new Date().toISOString().split('T')[0],
+      difference: Number(difference),
+      glIds: Array.isArray(glIds) ? glIds : [],
+      serviceCharge: Number(serviceCharge) || 0,
+      interestEarned: Number(interestEarned) || 0,
+      statementEndingBalance: statementEndingBalance != null ? Number(statementEndingBalance) : undefined,
+      userId: req.user?.id || 'usr-admin',
+    });
+    return res.json(result);
+  } catch (error) {
+    console.error('Reconcile adjustment error:', error);
+    return res.status(500).json({ error: error.message || 'Adjustment failed' });
   }
 });
 
