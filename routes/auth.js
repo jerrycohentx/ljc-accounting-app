@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../config/database.js';
 import { issuePasswordResetCode, verifyPasswordResetCode } from '../lib/password-reset-store.js';
 import { isSmsConfigured, sendPasswordResetSms, maskPhone } from '../lib/outbound-sms.js';
-import { isEmailConfigured, sendPasswordResetCode } from '../lib/outbound-mail.js';
+import { sendPasswordResetCode, isPasswordResetEmailAvailable } from '../lib/outbound-mail.js';
 import { resolvePhoneForUser } from '../lib/user-phone.js';
 import { parseJsonField } from '../lib/parse-json-field.js';
 import { verifyPassword } from '../lib/password-verify.js';
@@ -31,17 +31,18 @@ router.post('/forgot-password/request', async (req, res) => {
 
     const phone = await resolvePhoneForUser(db, email);
     const smsReady = isSmsConfigured() && !!phone;
-    const emailReady = isEmailConfigured();
-
-    if (!smsReady && !emailReady) {
-      if (!phone) {
-        return res.status(400).json({
-          error: 'No mobile number on file for this account. Contact support to add your phone number.',
-        });
-      }
-    }
+    const emailReady = await isPasswordResetEmailAvailable(db);
 
     const { code, expiresMinutes } = await issuePasswordResetCode(db, email);
+
+    if (!smsReady && emailReady) {
+      await sendPasswordResetCode({ to: email, code, expiresMinutes, db });
+      return res.json({
+        message: `Verification code sent to ${email}.`,
+        channel: 'email',
+        sentTo: email,
+      });
+    }
 
     if (smsReady) {
       await sendPasswordResetSms({ to: phone, code, expiresMinutes });
@@ -53,9 +54,9 @@ router.post('/forgot-password/request', async (req, res) => {
     }
 
     if (emailReady) {
-      await sendPasswordResetCode({ to: email, code, expiresMinutes });
+      await sendPasswordResetCode({ to: email, code, expiresMinutes, db });
       return res.json({
-        message: `Text messaging is not set up yet. Verification code sent to ${email}.`,
+        message: `Verification code sent to ${email}.`,
         channel: 'email',
         sentTo: email,
       });
@@ -65,15 +66,15 @@ router.post('/forgot-password/request', async (req, res) => {
     if (process.env.NODE_ENV !== 'production') {
       console.warn('[password-reset] DEV code:', code, 'phone:', phone);
       return res.json({
-        message: `Dev mode — code for ${maskPhone(phone)} / ${email}`,
+        message: `Dev mode — code for ${maskPhone(phone || 'n/a')} / ${email}`,
         devCode: code,
         channel: 'dev',
-        sentTo: maskPhone(phone),
+        sentTo: phone ? maskPhone(phone) : email,
       });
     }
 
     return res.status(503).json({
-      error: 'Password reset is not fully configured yet. Try again later or contact support.',
+      error: 'Password reset is not fully configured yet. Try signing in with your current password, or contact support.',
     });
   } catch (error) {
     console.error('Forgot password request error:', error);

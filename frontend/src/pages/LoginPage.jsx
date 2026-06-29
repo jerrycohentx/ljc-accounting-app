@@ -208,7 +208,12 @@ export default function LoginPage() {
       setSuccess(msg);
       setView('forgot-reset');
     } catch (err) {
-      setError(err.response?.data?.error || 'Could not send verification code');
+      const msg = err.response?.data?.error || 'Could not send verification code';
+      if (msg.includes('not fully configured')) {
+        setError('Password reset email/text is not set up on the server yet. Go back to Login and sign in with your current password.');
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }

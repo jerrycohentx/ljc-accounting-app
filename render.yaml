@@ -42,6 +42,14 @@ services:
         sync: false
       - key: RESEND_FROM
         value: "LJC Accounting <onboarding@resend.dev>"
+      - key: GRAPH_TENANT_ID
+        sync: false
+      - key: GRAPH_CLIENT_ID
+        sync: false
+      - key: GRAPH_CLIENT_SECRET
+        sync: false
+      - key: GRAPH_MAILBOX_USER
+        value: jerry@ljcfinancial.com
       - key: PLAID_CLIENT_ID
         sync: false
       - key: PLAID_SECRET
