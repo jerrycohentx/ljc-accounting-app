@@ -4,8 +4,10 @@ import { getDatabase } from '../config/database.js';
 import { entityAccessMiddleware } from '../middleware/auth.js';
 
 import { POSTED_GL_SUBQUERY, calculateAccountBalance } from '../lib/posted-gl.js';
+import reportAnalyticsRoutes from './report-analytics.js';
 
 const router = express.Router({ mergeParams: true });
+router.use(reportAnalyticsRoutes);
 
 /** @deprecated use POSTED_GL_SUBQUERY from lib/posted-gl.js */
 const POSTED_GL = POSTED_GL_SUBQUERY;

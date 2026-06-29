@@ -83,3 +83,40 @@ export function statementDisplayAmounts(line, account) {
   }
   return { col1: line.deposit ?? (amt > 0 ? amt : null), col2: line.payment ?? (amt < 0 ? Math.abs(amt) : null) };
 }
+
+/** QBD reconcile totals (spec §5). */
+export function computeReconcileTotals({
+  beginningBalance,
+  serviceCharge = 0,
+  interestEarned = 0,
+  markedDeposits = 0,
+  markedPayments = 0,
+  endingBalance,
+}) {
+  const clearedBalance = beginningBalance - serviceCharge + interestEarned + markedDeposits - markedPayments;
+  const difference = endingBalance - clearedBalance;
+  return { clearedBalance, difference, balanced: Math.abs(difference) < 0.005 };
+}
+
+export function entrySide(entry, account) {
+  const signed = signedGlDelta(entry, account);
+  if (Math.abs(signed) < 0.005) return null;
+  return signed < 0 ? 'payment' : 'deposit';
+}
+
+export function fmtVariance(n, isPct = false) {
+  if (n == null || Number.isNaN(n)) return '—';
+  if (isPct) return `${n >= 0 ? '+' : ''}${n.toFixed(1)}pp`;
+  return fmt(n);
+}
+
+export function fmtVariancePct(n) {
+  if (n == null || Number.isNaN(n)) return '—';
+  return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
+}
+
+export function matchStatusChip(status) {
+  if (status === 'matched') return { label: '● matched', cls: 'match-ok' };
+  if (status === 'needs_review') return { label: '◐ review', cls: 'match-warn' };
+  return { label: '○ not in books', cls: 'match-none' };
+}

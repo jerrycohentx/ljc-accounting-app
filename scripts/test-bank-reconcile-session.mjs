@@ -78,7 +78,7 @@ async function testRefusesOutOfBalanceClose(db) {
     [ENTITY, acctId]
   );
   assert(session?.status === 'OPEN', 'session must stay OPEN');
-  assert(Math.abs(session.difference - 50) < 0.01, 'difference should be 50');
+  assert(Math.abs(session.difference - (-50)) < 0.01, 'difference should be -50 (ending − cleared)');
   console.log('✓ refuses out-of-balance close');
 }
 

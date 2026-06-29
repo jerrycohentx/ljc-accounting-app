@@ -73,7 +73,11 @@ export const reportAPI = {
   cashFlow: (entityId, startDate, endDate) => client.get(`/api/entities/${entityId}/reports/cash-flow`, { params: { startDate, endDate } }),
   generalLedger: (entityId, accountId, startDate, endDate) => client.get(`/api/entities/${entityId}/ledger/account/${accountId}`, { params: { startDate, endDate } }),
   trialBalance: (entityId, asOfDate) => client.get(`/api/entities/${entityId}/reports/trial-balance`, { params: { asOfDate } }),
-  ledgerAll: (entityId, startDate, endDate, limit = 1000) => client.get(`/api/entities/${entityId}/ledger`, { params: { startDate, endDate, limit } })
+  ledgerAll: (entityId, startDate, endDate, limit = 1000) => client.get(`/api/entities/${entityId}/ledger`, { params: { startDate, endDate, limit } }),
+  comparison: (entityId, params) => client.get(`/api/entities/${entityId}/reports/comparison`, { params }),
+  kpiDashboard: (entityId, params) => client.get(`/api/entities/${entityId}/reports/kpi-dashboard`, { params }),
+  segments: (entityId) => client.get(`/api/entities/${entityId}/reports/segments`),
+  benchmarkTargets: (entityId, segment) => client.get(`/api/entities/${entityId}/reports/benchmark-targets`, { params: { segment } }),
 };
 
 export const bankReconAPI = {
