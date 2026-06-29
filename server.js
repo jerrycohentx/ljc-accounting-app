@@ -70,7 +70,7 @@ app.get('/health', async (req, res) => {
     const payload = await buildHealthPayload({
       statementEmailIngest: emailIngest,
       users: Number(row?.count ?? 0),
-    });
+    }, db);
     // Legacy flat fields for older clients
     payload.version = payload.app?.version;
     payload.gitSha = payload.app?.gitSha;
