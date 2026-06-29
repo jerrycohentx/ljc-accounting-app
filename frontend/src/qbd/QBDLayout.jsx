@@ -27,6 +27,7 @@ export default function QBDLayout() {
   const [toast, setToast] = useState('');
   const [backupOpen, setBackupOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [exiting, setExiting] = useState(false);
   const toastTimer = useRef(null);
   const { info: backupInfo, refresh: refreshBackup } = useBackupStatus();
   const { info: emailInfo, refresh: refreshEmail } = useEmailIngestStatus();
@@ -43,6 +44,24 @@ export default function QBDLayout() {
     backupAPI.run()
       .then((r) => { showToast(r.data.message || 'Backup complete ✓'); refreshBackup(); })
       .catch((e) => showToast('Backup failed: ' + (e.response?.data?.error || e.message)));
+  };
+
+  // Back up the company data, then sign out (mirrors the loan app's "Save & Exit").
+  const saveAndExit = async () => {
+    if (exiting) return;
+    setExiting(true);
+    showToast('Saving backup…');
+    try {
+      const r = await backupAPI.run();
+      showToast(r.data?.message || 'Backup saved ✓ — signing out…');
+    } catch (e) {
+      showToast('Backup failed — signing out anyway: ' + (e.response?.data?.error || e.message));
+    }
+    setTimeout(() => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }, 1100);
   };
 
   const showAbout = () => {
@@ -113,6 +132,15 @@ export default function QBDLayout() {
         </select>
         <span style={{ color: '#9fb6d2' }}>— Cohen Entities AI Accounting</span>
         <span className="sp" />
+        <button
+          type="button"
+          className="qbd-saveexit"
+          onClick={saveAndExit}
+          disabled={exiting}
+          title="Back up your data and sign out"
+        >
+          💾 {exiting ? 'Saving…' : 'Save & Exit'}
+        </button>
         <span className="qbd-wc">—  ▢  ✕</span>
       </div>
 

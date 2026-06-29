@@ -5,6 +5,9 @@
 .qbd-qb{width:18px;height:18px;background:#2ca01c;border-radius:3px;color:#fff;font-weight:bold;text-align:center;line-height:18px;font-size:12px}
 .qbd-titlebar select{background:#173a5e;color:#fff;border:1px solid #2c517a;border-radius:2px;font-size:12px;padding:1px 4px}
 .qbd-titlebar .sp{flex:1}.qbd-wc{color:#9fb6d2;letter-spacing:2px}
+.qbd-saveexit{display:inline-flex;align-items:center;gap:5px;background:#2ca01c;color:#fff;border:1px solid #248516;border-radius:3px;padding:3px 12px;font-size:12px;font-weight:bold;cursor:pointer;font-family:inherit;margin-right:8px;white-space:nowrap}
+.qbd-saveexit:hover{background:#25901a}
+.qbd-saveexit:disabled{opacity:.6;cursor:default}
 .qbd-menubar{background:#16456f;color:#d6e3f2;display:flex;gap:2px;padding:1px 6px;border-bottom:1px solid #0c2747;position:relative}
 .qbd-menubar span{padding:3px 8px;cursor:pointer;border-radius:2px}
 .qbd-menubar span:hover{background:#205d92}
