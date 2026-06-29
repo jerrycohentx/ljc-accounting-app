@@ -20,9 +20,11 @@ import {
 } from './helpers';
 
 const SPLIT_STORAGE_KEY = 'qbd-recon-split-pct';
+const REGISTER_SPLIT_STORAGE_KEY = 'qbd-recon-register-split-pct';
 const HIDE_AFTER_END_KEY = 'qbd-recon-hide-after-end';
 const SHOW_STMT_KEY = 'qbd-recon-show-statement';
 const DEFAULT_SPLIT = 48;
+const DEFAULT_REGISTER_SPLIT = 36;
 
 function isAfterStatementEnd(postingDate, statementEndDate) {
   if (!postingDate || !statementEndDate) return false;
@@ -91,6 +93,74 @@ function StmtTable({ lines, account, labels, highlightGlId, onSelect, onHover })
         })}
       </tbody>
     </table>
+  );
+}
+
+function StatementPdfMarkup({ lines, account, highlightGlId, onSelect, onHover, pdfPreviewUrl }) {
+  const unmatched = lines.filter((line) => !line.matchedGlId || line.matchStatus === 'needs_review');
+  if (!pdfPreviewUrl) return null;
+
+  return (
+    <div className="qbd-stmt-markup">
+      <div className="qbd-stmt-pdf qbd-stmt-pdf-full">
+        <iframe title="Bank statement PDF" src={pdfPreviewUrl} />
+        <div className="qbd-stmt-overlay">
+          {lines.map((line, idx) => {
+            const matched = !!line.matchedGlId;
+            const chip = matchStatusChip(line.matchStatus || (matched ? 'matched' : 'unmatched'));
+            const { col1, col2 } = statementDisplayAmounts(line, account);
+            const amount = Math.abs(+(col1 ?? col2 ?? 0));
+            const topPct = lines.length > 1 ? (idx / (lines.length - 1)) * 100 : 50;
+            const hl = highlightGlId && line.matchedGlId === highlightGlId;
+            return (
+              <button
+                key={line.id}
+                type="button"
+                className={`qbd-stmt-marker ${chip.cls}${hl ? ' hl' : ''}`}
+                style={{ top: `calc(${topPct}% - 9px)` }}
+                onMouseEnter={() => onHover && onHover(line.matchedGlId || null)}
+                onMouseLeave={() => onHover && onHover(null)}
+                onClick={() => onSelect && onSelect(line)}
+                title={`${fmtReconDate(line.date)} · ${line.description || ''}`}
+              >
+                <span className="mk-dot" />
+                <span className="mk-text">{fmtReconDate(line.date)} {amount ? fmt(amount) : ''}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="qbd-stmt-markup-meta">
+        <span className="qbd-muted">
+          Marked on statement: {lines.length - unmatched.length} matched, {unmatched.length} unmatched/review
+        </span>
+      </div>
+      {!!unmatched.length && (
+        <div className="qbd-stmt-unmatched">
+          <div className="qbd-stmt-unmatched-head">Unmatched / needs review</div>
+          <div className="qbd-stmt-unmatched-list">
+            {unmatched.map((line) => {
+              const { col1, col2 } = statementDisplayAmounts(line, account);
+              const amount = Math.abs(+(col1 ?? col2 ?? 0));
+              return (
+                <button
+                  type="button"
+                  key={line.id}
+                  className="qbd-stmt-unmatched-row"
+                  onMouseEnter={() => onHover && onHover(line.matchedGlId || null)}
+                  onMouseLeave={() => onHover && onHover(null)}
+                  onClick={() => onSelect && onSelect(line)}
+                >
+                  <span className="d">{fmtReconDate(line.date)}</span>
+                  <span className="m">{line.description || ''}</span>
+                  <span className="a">{amount ? fmt(amount) : ''}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -175,7 +245,7 @@ function RegisterTable({
   );
 }
 
-function useSplitResize(splitRef, setSplitPct) {
+function useSplitResize(splitRef, setSplitPct, minPct = 25, maxPct = 75) {
   const dragging = useRef(false);
 
   useEffect(() => {
@@ -183,7 +253,7 @@ function useSplitResize(splitRef, setSplitPct) {
       if (!dragging.current || !splitRef.current) return;
       const rect = splitRef.current.getBoundingClientRect();
       const pct = ((e.clientX - rect.left) / rect.width) * 100;
-      setSplitPct(Math.min(75, Math.max(25, pct)));
+      setSplitPct(Math.min(maxPct, Math.max(minPct, pct)));
     };
     const onUp = () => {
       dragging.current = false;
@@ -196,7 +266,7 @@ function useSplitResize(splitRef, setSplitPct) {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [splitRef, setSplitPct]);
+  }, [maxPct, minPct, splitRef, setSplitPct]);
 
   return useCallback(() => {
     dragging.current = true;
@@ -261,8 +331,13 @@ export default function QBDReconcile() {
     const saved = parseFloat(localStorage.getItem(SPLIT_STORAGE_KEY) || '');
     return Number.isFinite(saved) ? saved : DEFAULT_SPLIT;
   });
+  const [registerSplitPct, setRegisterSplitPct] = useState(() => {
+    const saved = parseFloat(localStorage.getItem(REGISTER_SPLIT_STORAGE_KEY) || '');
+    return Number.isFinite(saved) ? saved : DEFAULT_REGISTER_SPLIT;
+  });
 
   const splitRef = useRef(null);
+  const registerSplitRef = useRef(null);
   const stmtScrollRef = useRef(null);
   const regScrollRef = useRef(null);
   const importFileRef = useRef(null);
@@ -283,11 +358,16 @@ export default function QBDReconcile() {
   const [beginningOverride, setBeginningOverride] = useState('');
   const [reportModal, setReportModal] = useState(null);
   const startResize = useSplitResize(splitRef, setSplitPct);
+  const startRegisterResize = useSplitResize(registerSplitRef, setRegisterSplitPct, 18, 82);
   const { onStmtScroll, onRegScroll } = useSyncScroll(syncScroll, stmtScrollRef, regScrollRef);
 
   useEffect(() => {
     localStorage.setItem(SPLIT_STORAGE_KEY, String(Math.round(splitPct)));
   }, [splitPct]);
+
+  useEffect(() => {
+    localStorage.setItem(REGISTER_SPLIT_STORAGE_KEY, String(Math.round(registerSplitPct)));
+  }, [registerSplitPct]);
 
   useEffect(() => {
     localStorage.setItem(HIDE_AFTER_END_KEY, hideAfterEndDate ? 'true' : 'false');
@@ -903,6 +983,17 @@ export default function QBDReconcile() {
           Sync scroll
         </label>
         <button type="button" className="qbd-btn" style={{ fontSize: 10, padding: '2px 6px' }} onClick={() => setSplitPct(DEFAULT_SPLIT)}>Reset split</button>
+        {!isCard && (
+          <button
+            type="button"
+            className="qbd-btn"
+            style={{ fontSize: 10, padding: '2px 6px' }}
+            onClick={() => setRegisterSplitPct(DEFAULT_REGISTER_SPLIT)}
+            title="Reset checks vs deposits width"
+          >
+            Reset checks split
+          </button>
+        )}
         <span className="sp" />
         {buildInfo?.app?.buildLabel && <span className="qbd-muted">{buildInfo.app.buildLabel}</span>}
       </div>
@@ -934,22 +1025,28 @@ export default function QBDReconcile() {
             <span className="qbd-muted">{stmtMeta.bankName || stmtMeta.cardName || 'Import or loaded'}</span>
             {pdfPreviewUrl && <span className="qbd-pill">PDF</span>}
           </div>
-          <div className={`qbd-recon-panebody${pdfPreviewUrl ? ' stmt-with-pdf' : ''}`} ref={stmtScrollRef} onScroll={onStmtScroll}>
-            {pdfPreviewUrl && (
-              <div className="qbd-stmt-pdf">
-                <iframe title="Bank statement PDF" src={pdfPreviewUrl} />
-              </div>
-            )}
-            <div className="qbd-stmt-lines">
-              <StmtTable
+          <div className={`qbd-recon-panebody${pdfPreviewUrl ? ' stmt-markup-mode' : ''}`} ref={stmtScrollRef} onScroll={onStmtScroll}>
+            {pdfPreviewUrl ? (
+              <StatementPdfMarkup
                 lines={visibleStatementLines}
                 account={account}
-                labels={labels}
                 highlightGlId={highlightGlId}
                 onSelect={onStatementSelect}
                 onHover={setHighlightGlId}
+                pdfPreviewUrl={pdfPreviewUrl}
               />
-            </div>
+            ) : (
+              <div className="qbd-stmt-lines">
+                <StmtTable
+                  lines={visibleStatementLines}
+                  account={account}
+                  labels={labels}
+                  highlightGlId={highlightGlId}
+                  onSelect={onStatementSelect}
+                  onHover={setHighlightGlId}
+                />
+              </div>
+            )}
           </div>
         </div>
         )}
@@ -965,14 +1062,22 @@ export default function QBDReconcile() {
         )}
         <div className="qbd-recon-pane qbd-recon-dual" style={{ width: showStatementPanel ? `${100 - splitPct}%` : '100%' }}>
           {!isCard ? (
-            <div className="qbd-recon-register-split">
-              <div className="qbd-recon-subpane">
+            <div className="qbd-recon-register-split" ref={registerSplitRef}>
+              <div className="qbd-recon-subpane" style={{ width: `calc(${registerSplitPct}% - 3px)` }}>
                 <div className="qbd-recon-panehead">Checks and Payments <span className="qbd-muted">{paymentCount} cleared · {fmt(markedPayments)}</span></div>
                 <div className="qbd-recon-panebody" ref={regScrollRef} onScroll={onRegScroll}>
                   <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} onEntryDblClick={openRegisterEntry} compact amountSide="payment" />
                 </div>
               </div>
-              <div className="qbd-recon-subpane">
+              <div
+                className="qbd-recon-gutter qbd-recon-gutter-inner"
+                role="separator"
+                aria-orientation="vertical"
+                aria-valuenow={Math.round(registerSplitPct)}
+                title="Drag to resize checks vs deposits"
+                onMouseDown={startRegisterResize}
+              />
+              <div className="qbd-recon-subpane" style={{ width: `calc(${100 - registerSplitPct}% - 3px)` }}>
                 <div className="qbd-recon-panehead">Deposits and Other Credits <span className="qbd-muted">{depositCount} cleared · {fmt(markedDeposits)}</span></div>
                 <div className="qbd-recon-panebody">
                   <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} onEntryDblClick={openRegisterEntry} compact amountSide="deposit" />
