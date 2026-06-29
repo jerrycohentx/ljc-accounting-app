@@ -76,6 +76,8 @@
 .qbd-stmt-lines{flex:1;overflow:auto;min-height:0}
 .qbd-recon-split .qbd-reg th{top:0;font-size:10px;padding:3px 6px}
 .qbd-recon-split .qbd-reg td{font-size:11px;padding:2px 6px}
+.qbd-recon-split .qbd-d{width:54px;max-width:54px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.qbd-recon-register-split .qbd-recon-amt{min-width:76px;width:76px;white-space:nowrap}
 .qbd-recon-stmt tr.hl td,.qbd-recon-reg tr.hl td{background:#fff6cf!important;outline:1px solid #e6c200;scroll-margin-top:28px}
 .qbd-recon-stmt tr.matched td{background:#f0f7ff}
 .qbd-recon-reg tr.cleared td{background:#eaf6ec!important}
