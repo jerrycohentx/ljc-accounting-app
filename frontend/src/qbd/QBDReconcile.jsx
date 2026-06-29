@@ -240,6 +240,11 @@ export default function QBDReconcile() {
   const prepareTimerRef = useRef(null);
   const prepareRequestRef = useRef(0);
   const dateInputFocusedRef = useRef(false);
+  // True once the user (or a URL param / uploaded statement) has chosen an explicit
+  // statement date, so we stop auto-suggesting the next period after that.
+  const userPickedDateRef = useRef(!!(searchParams.get('date') || searchParams.get('asOf')));
+  const statementFileRef = useRef(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
   const [dateDraft, setDateDraft] = useState(stmtDate);
   const [hideAfterEndDate, setHideAfterEndDate] = useState(() => {
     const saved = localStorage.getItem(HIDE_AFTER_END_KEY);
@@ -283,6 +288,13 @@ export default function QBDReconcile() {
       .then((r) => {
         if (prepareRequestRef.current !== requestId) return;
         const p = r.data;
+        // Default to the month after the last completed reconciliation, unless the
+        // user has explicitly chosen a date.
+        if (!userPickedDateRef.current && p.suggestedStatementDate
+            && /^\d{4}-\d{2}-\d{2}$/.test(p.suggestedStatementDate)) {
+          setStmtDate((prev) => (prev === p.suggestedStatementDate ? prev : p.suggestedStatementDate));
+          setDateDraft(p.suggestedStatementDate);
+        }
         if (p.endingBalance != null) setEndBal(String(p.endingBalance));
         else setEndBal('');
         if (p.beginningBalance != null) setBeginBal(String(p.beginningBalance));
@@ -332,12 +344,56 @@ export default function QBDReconcile() {
     }
     if (prepareTimerRef.current) clearTimeout(prepareTimerRef.current);
     prepareTimerRef.current = setTimeout(() => {
-      runPrepare(stmtDate || undefined);
+      // Until the user picks a date, ask the server for the suggested next period
+      // (month after the last completed reconciliation).
+      runPrepare(userPickedDateRef.current ? (stmtDate || undefined) : undefined);
     }, 500);
     return () => {
       if (prepareTimerRef.current) clearTimeout(prepareTimerRef.current);
     };
   }, [entityId, accountId, stmtDate, runPrepare]);
+
+  // Upload a bank statement (PDF or OFX). The server parses it and returns the
+  // statement date plus beginning / ending balances, which auto-fill the form.
+  const handleStatementUpload = useCallback((file) => {
+    if (!file || !entityId || !accountId) return;
+    const isPdf = /\.pdf$/i.test(file.name);
+    const reader = new FileReader();
+    setUploadBusy(true);
+    reader.onload = () => {
+      const payload = { entityId, accountId, fileName: file.name, autoPost: true };
+      if (isPdf) {
+        const res = String(reader.result || '');
+        payload.pdfBase64 = res.includes(',') ? res.split(',')[1] : res;
+      } else {
+        payload.ofxContent = String(reader.result || '');
+      }
+      bankReconAPI.importStatement(payload)
+        .then((r) => {
+          const d = r.data || {};
+          if (d.statementDate && /^\d{4}-\d{2}-\d{2}$/.test(d.statementDate)) {
+            userPickedDateRef.current = true;
+            setStmtDate(d.statementDate);
+            setDateDraft(d.statementDate);
+          }
+          if (d.endingBalance != null) setEndBal(String(d.endingBalance));
+          if (d.beginningBalance != null) setBeginBal(String(d.beginningBalance));
+          showToast && showToast(d.message || 'Statement imported — dates and balances read from your statement');
+          if (d.statementDate) runPrepare(d.statementDate);
+        })
+        .catch((e) => showToast && showToast('Statement upload failed: ' + (e.response?.data?.error || e.message)))
+        .finally(() => {
+          setUploadBusy(false);
+          if (statementFileRef.current) statementFileRef.current.value = '';
+        });
+    };
+    reader.onerror = () => {
+      setUploadBusy(false);
+      showToast && showToast('Could not read file');
+    };
+    if (isPdf) reader.readAsDataURL(file);
+    else reader.readAsText(file);
+  }, [entityId, accountId, showToast, runPrepare]);
 
   const applyAutoChecked = useCallback((worksheet) => {
     const ids = worksheet?.suggestedCheckedGlIds || [];
@@ -637,11 +693,34 @@ export default function QBDReconcile() {
                 onBlur={(e) => {
                   dateInputFocusedRef.current = false;
                   const v = e.target.value;
-                  if (v) setStmtDate(v);
+                  if (v) { userPickedDateRef.current = true; setStmtDate(v); }
                   else setDateDraft(stmtDate);
                 }}
                 onChange={(e) => setDateDraft(e.target.value)}
               />
+            </div>
+            <div className="frow"><label>Bank statement</label>
+              <div>
+                <input
+                  ref={statementFileRef}
+                  type="file"
+                  accept=".pdf,.ofx,.qfx"
+                  style={{ display: 'none' }}
+                  onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleStatementUpload(f); }}
+                />
+                <button
+                  type="button"
+                  className="qbd-btn"
+                  disabled={uploadBusy || !accountId}
+                  onClick={() => statementFileRef.current && statementFileRef.current.click()}
+                  style={{ fontWeight: 'bold' }}
+                >
+                  {uploadBusy ? 'Reading statement…' : '⬆ Upload statement (PDF / OFX)'}
+                </button>
+                <div className="qbd-muted" style={{ fontSize: 10, marginTop: 4 }}>
+                  Reads the statement date and beginning / ending balances automatically.
+                </div>
+              </div>
             </div>
             <div className="frow"><label>Beginning balance</label>
               <input type="text" readOnly value={prepareBusy && !beginBal ? '…' : (beginBal ? fmt(+beginBal) : '—')} style={{ textAlign: 'right', width: 180, background: '#f5f7fa' }} />
