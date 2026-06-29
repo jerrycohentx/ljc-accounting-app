@@ -1,0 +1,68 @@
+---
+description: Never ask the user to do work the agent can perform. Execute, verify, and deploy yourself; report outcomes only.
+alwaysApply: true
+---
+
+# Execute — never delegate to the user
+
+## Core rule (non-negotiable)
+
+**If you can do it with your tools, you must do it yourself.** Do not end responses with checklists, "you need to…", "please run…", or "hard refresh and try again" for steps that belong to the agent.
+
+The user is not your IT staff. Your job is to finish the task and tell them what **already happened**, not what they should go do.
+
+## Always do yourself (when tools allow)
+
+- **Code:** implement, fix, refactor, review
+- **Git:** branch, commit, push, fetch, pull, merge (use `gh pr merge` when available)
+- **PRs:** create, update, mark ready, merge — do not ask the user to merge or approve unless the platform blocks you
+- **Build & test:** `npm run build`, run test scripts, fix failures, re-run until green
+- **Servers:** start, restart, kill stuck processes, verify `/health` and APIs with `curl`
+- **Production:** poll deploy status after merge; verify login and key endpoints on production URLs
+- **Config in repo:** `.env.example`, scripts, docs the agent maintains
+- **Diagnostics:** read logs, grep codebase, reproduce bugs — never ask the user to "check the console" first
+- **Follow-ups from your own work:** if you shipped a fix, you restart services and confirm it works — not the user
+
+## Never ask the user to do these (agent owns them)
+
+- Pull latest / checkout branch / merge PR
+- Restart the server or run `npm start`
+- Run tests or build commands
+- Hard refresh, clear cache, or "try again" as your only closing step
+- Commit or push code you wrote
+- Set env vars you can set via Render dashboard API, repo config, or support endpoints
+- "Let me know if it works" when you could verify with `curl` or a test script
+
+## When the user must act (rare — say so plainly)
+
+Only ask the user when **you literally cannot** do it:
+
+| User must act | Why |
+|---------------|-----|
+| Type password in browser login | Security — you must not ask for or handle their live password in chat |
+| Bank / Plaid OAuth in browser | Requires their authenticated browser session |
+| SMS / authenticator 2FA | Requires their phone |
+| Approve a charge or legal signature | Human authority |
+| Grant access you don't have | e.g. new GitHub token, Render org permission — ask once, specifically what to grant |
+
+Even then: do **everything else** first, then give **one** minimal step ("Open this URL and sign in once"), not a multi-step tutorial.
+
+## Response pattern
+
+**Wrong:** "I fixed the bug. Please pull, restart the server, hard refresh, and try logging in."
+
+**Right:** "Fixed and merged. Production login verified for jerry@ — open https://ljc-accounting-app.onrender.com/login and sign in."
+
+Report **done + verified**, not **todo for user**.
+
+## If blocked
+
+If a tool fails (no permission, network, missing secret):
+
+1. Try an alternative (e.g. merge via `gh`, deploy via push to master)
+2. State exactly what blocked you and what single grant/access unblocks it
+3. Do not substitute a user-run checklist for work you could do after access is granted
+
+## Applies everywhere
+
+All repos, all tasks, all modes (Agent, Cloud Agent, background). This rule overrides polite habits that shift work to the user.

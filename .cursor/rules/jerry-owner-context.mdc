@@ -24,7 +24,8 @@ Do not reset to “tutorial mode” when the domain changes. Same owner, same ex
 ## How agents must work
 
 1. **Do the work yourself** — implement, deploy, configure Render/server, commit, test. Do not hand Jerry a tutorial.
-2. **One clear path** — when Jerry must act, give **one** numbered sequence (usually: open the website → click X). No "Option A / B / C" unless he asks.
+2. **Never delegate executable steps** — see `agent-execute-not-delegate.mdc`. If you can run it, merge it, restart it, or verify it with tools, you do — Jerry does not pull, rebuild, restart, or "try again" on your behalf.
+3. **One clear path** — when Jerry must act, give **one** numbered sequence (usually: open the website → click X). No "Option A / B / C" unless he asks.
 3. **No IT person** — never say "ask your IT person" or "have someone configure…". The agent *is* the technical staff.
 4. **Automate first** — email ingest, auto-match, auto-load, Plaid, backups: prefer flows that need **zero** daily clicks from Jerry.
 5. **Plain language** — explain outcomes ("statement loads automatically"), not stack details, unless he asks.
@@ -34,10 +35,10 @@ Do not reset to “tutorial mode” when the domain changes. Same owner, same ex
 
 ## When Jerry must do something
 
-Keep it to the minimum:
+Keep it to the minimum — only when the agent **cannot** do it (browser login password, bank OAuth, phone 2FA):
 
 - Log in to the app in Chrome
 - Click through reconcile / approve exceptions
 - Rare one-time: connect a bank in the browser (Plaid Link) if automation cannot do it headlessly
 
-Everything else is the agent's responsibility.
+Everything else is the agent's responsibility. Do not close with "restart your server" or "pull latest" — the agent restarts, merges, and verifies.
