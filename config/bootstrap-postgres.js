@@ -1,4 +1,5 @@
 import { seedDatabaseContent } from './bootstrap-seed.js';
+import { repairPlainTextPasswordHashes } from '../lib/password-verify.js';
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS entities (
@@ -212,5 +213,9 @@ export async function bootstrapPostgres(db) {
     'ALTER TABLE general_ledger ADD COLUMN IF NOT EXISTS reconciliation_session_id TEXT'
   );
   await seedDatabaseContent(db);
+  const repaired = await repairPlainTextPasswordHashes(db);
+  if (repaired > 0) {
+    console.log(`✓ Repaired ${repaired} legacy plain-text password hash(es)`);
+  }
   console.log('✓ PostgreSQL bootstrap complete (demo@ljcfinancial.com / demo123)');
 }

@@ -7,6 +7,7 @@ import { issuePasswordResetCode, verifyPasswordResetCode } from '../lib/password
 import { isSmsConfigured, sendPasswordResetSms, maskPhone } from '../lib/outbound-sms.js';
 import { isEmailConfigured, sendPasswordResetCode } from '../lib/outbound-mail.js';
 import { resolvePhoneForUser } from '../lib/user-phone.js';
+import { verifyPassword } from '../lib/password-verify.js';
 
 const router = express.Router();
 
@@ -164,23 +165,31 @@ router.post('/register', async (req, res) => {
 // POST /auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
     const db = await getDatabase();
-    const user = await db.get('SELECT * FROM users WHERE email = ? AND is_active = 1', email);
+    const user = await db.get('SELECT * FROM users WHERE LOWER(email) = ? AND is_active = 1', email);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const isValid = await bcryptjs.compare(password, user.password_hash);
+    const { ok, upgradedHash } = await verifyPassword(password, user.password_hash);
 
-    if (!isValid) {
+    if (!ok) {
       return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    if (upgradedHash) {
+      await db.run(
+        'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [upgradedHash, user.id]
+      );
     }
 
     const token = jwt.sign(
