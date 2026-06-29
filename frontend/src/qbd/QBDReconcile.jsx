@@ -7,6 +7,7 @@ import {
   fmt,
   leafLabel,
   todayISO,
+  fmtReconDate,
   isCreditCardAccount,
   reconColumnLabels,
   signedGlDelta,
@@ -73,7 +74,7 @@ function StmtTable({ lines, account, labels, highlightGlId, onSelect, onHover })
               onClick={() => onSelect && onSelect(line)}
             >
               <td><span className={`qbd-match-chip ${chip.cls}`}>{chip.label}</span></td>
-              <td className="qbd-d">{line.date}</td>
+              <td className="qbd-d">{fmtReconDate(line.date)}</td>
               <td>{line.description}</td>
               <td className="qbd-amt">{col1 ? fmt(col1) : ''}</td>
               <td className="qbd-amt">{col2 ? fmt(col2) : ''}</td>
@@ -85,10 +86,13 @@ function StmtTable({ lines, account, labels, highlightGlId, onSelect, onHover })
   );
 }
 
-function RegisterTable({ entries, account, labels, checked, confirmed, highlightGlId, onToggle, onHover, onEntryDblClick, compact }) {
+function RegisterTable({
+  entries, account, labels, checked, confirmed, highlightGlId, onToggle, onHover, onEntryDblClick, compact, amountSide,
+}) {
   if (!entries.length) {
     return <div className="qbd-empty">{compact ? 'None' : 'No uncleared register items.'}</div>;
   }
+  const compactAmtLabel = amountSide === 'deposit' ? labels.col1 : labels.col2;
   return (
     <table className="qbd-reg qbd-recon-reg">
       <thead>
@@ -97,8 +101,14 @@ function RegisterTable({ entries, account, labels, checked, confirmed, highlight
           <th className="qbd-d">DATE</th>
           {!compact && <th className="qbd-je">ENTRY</th>}
           <th>MEMO</th>
-          <th className="qbd-amt">{labels.col2}</th>
-          {!compact && <th className="qbd-amt">{labels.col1}</th>}
+          {compact ? (
+            <th className="qbd-amt qbd-recon-amt">{compactAmtLabel}</th>
+          ) : (
+            <>
+              <th className="qbd-amt qbd-recon-amt">{labels.col2}</th>
+              <th className="qbd-amt qbd-recon-amt">{labels.col1}</th>
+            </>
+          )}
         </tr>
       </thead>
       <tbody>
@@ -107,6 +117,7 @@ function RegisterTable({ entries, account, labels, checked, confirmed, highlight
           const isPending = isChecked && !confirmed[e.id];
           const hl = highlightGlId === e.id;
           const { col1, col2 } = registerDisplayAmounts(e, account);
+          const compactAmount = amountSide === 'deposit' ? col1 : col2;
           return (
             <tr
               key={e.id}
@@ -128,11 +139,17 @@ function RegisterTable({ entries, account, labels, checked, confirmed, highlight
                   onClick={(ev) => ev.stopPropagation()}
                 />
               </td>
-              <td className="qbd-d">{e.posting_date}</td>
+              <td className="qbd-d">{fmtReconDate(e.posting_date)}</td>
               {!compact && <td className="qbd-je">{e.je_number}</td>}
               <td>{e.je_description || e.description || ''}</td>
-              <td className="qbd-amt">{col2 ? fmt(col2) : ''}</td>
-              {!compact && <td className="qbd-amt">{col1 ? fmt(col1) : ''}</td>}
+              {compact ? (
+                <td className="qbd-amt qbd-recon-amt">{compactAmount ? fmt(compactAmount) : ''}</td>
+              ) : (
+                <>
+                  <td className="qbd-amt qbd-recon-amt">{col2 ? fmt(col2) : ''}</td>
+                  <td className="qbd-amt qbd-recon-amt">{col1 ? fmt(col1) : ''}</td>
+                </>
+              )}
             </tr>
           );
         })}
@@ -935,13 +952,13 @@ export default function QBDReconcile() {
               <div className="qbd-recon-subpane">
                 <div className="qbd-recon-panehead">Checks and Payments <span className="qbd-muted">{paymentCount} cleared · {fmt(markedPayments)}</span></div>
                 <div className="qbd-recon-panebody" ref={regScrollRef} onScroll={onRegScroll}>
-                  <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} onEntryDblClick={openRegisterEntry} compact />
+                  <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} onEntryDblClick={openRegisterEntry} compact amountSide="payment" />
                 </div>
               </div>
               <div className="qbd-recon-subpane">
                 <div className="qbd-recon-panehead">Deposits and Other Credits <span className="qbd-muted">{depositCount} cleared · {fmt(markedDeposits)}</span></div>
                 <div className="qbd-recon-panebody">
-                  <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} onEntryDblClick={openRegisterEntry} compact />
+                  <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} onEntryDblClick={openRegisterEntry} compact amountSide="deposit" />
                 </div>
               </div>
             </div>

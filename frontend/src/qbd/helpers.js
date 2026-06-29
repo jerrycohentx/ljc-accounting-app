@@ -46,6 +46,20 @@ export function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Reconcile tables: m/d/yr only (e.g. 1/5/26) — no timestamps. */
+export function fmtReconDate(value) {
+  if (value == null || value === '') return '';
+  const raw = String(value).trim();
+  const d = raw.includes('T')
+    ? new Date(raw)
+    : new Date(`${raw.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return raw.slice(0, 10);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const yr = String(d.getFullYear()).slice(-2);
+  return `${m}/${day}/${yr}`;
+}
+
 /** Credit card / liability accounts use Charge + Payment columns (QBD style). */
 export function isCreditCardAccount(account) {
   if (!account) return false;
