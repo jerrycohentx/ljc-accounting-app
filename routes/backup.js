@@ -7,9 +7,7 @@ import { getStatementEmailIngestStatus } from '../lib/statement-email-ingest.js'
 
 const router = express.Router();
 
-router.use(authMiddleware);
-
-/** GET /api/backup/status — version + backup + email (loan tracker sidebar pattern) */
+/** GET /api/backup/status — public (login screen shows version before sign-in) */
 router.get('/status', async (req, res) => {
   try {
     const db = await getDatabase();
@@ -27,7 +25,7 @@ router.get('/status', async (req, res) => {
   }
 });
 
-/** GET /api/backup/list */
+/** GET /api/backup/list — public (login screen shows backup history before sign-in) */
 router.get('/list', async (req, res) => {
   try {
     const limit = Math.min(100, Number(req.query.limit) || 20);
@@ -37,8 +35,8 @@ router.get('/list', async (req, res) => {
   }
 });
 
-/** POST /api/backup/run — manual "Back Up Company" */
-router.post('/run', async (req, res) => {
+/** POST /api/backup/run — manual "Back Up Company" (auth required) */
+router.post('/run', authMiddleware, async (req, res) => {
   try {
     const result = await runBackup({ reason: 'manual', userId: req.user?.id });
     if (result.skipped) {

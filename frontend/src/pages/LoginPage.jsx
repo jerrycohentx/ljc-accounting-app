@@ -5,7 +5,7 @@ import {
   Tabs, Tab, CircularProgress, Link, InputAdornment
 } from '@mui/material';
 import { authAPI } from '../services/api';
-import AppStatusPanel, { useServerStatus } from '../components/AppStatusPanel';
+import LoginStatusPanel from '../components/LoginStatusPanel';
 
 const EMPTY_FORM = {
   email: '',
@@ -17,8 +17,17 @@ const EMPTY_FORM = {
 };
 
 const LAST_EMAIL_KEY = 'ljc_last_login_email';
+const DEMO_EMAIL = 'demo@ljcfinancial.com';
 const IS_PRODUCTION_HOST = typeof window !== 'undefined'
   && !/localhost|127\.0\.0\.1/.test(window.location.hostname);
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function isDemoEmail(email) {
+  return normalizeEmail(email) === DEMO_EMAIL;
+}
 
 function PasswordField({
   name, label, value, onChange, disabled, show, onToggleShow, helperText, autoComplete, autoFocus,
@@ -62,7 +71,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { data: serverStatus } = useServerStatus(60000);
   const [resetChannel, setResetChannel] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -77,11 +85,16 @@ export default function LoginPage() {
     localStorage.removeItem('user');
 
     try {
-      const saved = localStorage.getItem(LAST_EMAIL_KEY)
+      const saved = normalizeEmail(
+        localStorage.getItem(LAST_EMAIL_KEY)
         || sessionStorage.getItem('ljc_login_email')
-        || '';
-      if (saved) {
+        || ''
+      );
+      if (saved && !isDemoEmail(saved)) {
         setFormData((prev) => ({ ...prev, email: saved, password: '' }));
+      } else if (isDemoEmail(saved)) {
+        localStorage.removeItem(LAST_EMAIL_KEY);
+        sessionStorage.removeItem('ljc_login_email');
       }
     } catch {
       // ignore
@@ -102,7 +115,8 @@ export default function LoginPage() {
   }, []);
 
   const persistEmail = (email) => {
-    const normalized = String(email || '').trim().toLowerCase();
+    const normalized = normalizeEmail(email);
+    if (!normalized || isDemoEmail(normalized)) return;
     try {
       localStorage.setItem(LAST_EMAIL_KEY, normalized);
       sessionStorage.setItem('ljc_login_email', normalized);
@@ -126,8 +140,14 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const email = formData.email.trim().toLowerCase();
-    const password = formData.password;
+    const fd = new FormData(e.currentTarget);
+    const email = normalizeEmail(fd.get('email') || formData.email);
+    const password = String(fd.get('password') ?? formData.password);
+    if (isDemoEmail(email) && IS_PRODUCTION_HOST) {
+      setError('Use your LJC account (e.g. jerry@ljcfinancial.com), not the demo user.');
+      setLoading(false);
+      return;
+    }
     try {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -256,7 +276,7 @@ export default function LoginPage() {
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        pb: { xs: '280px', sm: '240px' },
+        py: 3,
       }}
     >
       <Container maxWidth="sm">
@@ -276,6 +296,8 @@ export default function LoginPage() {
               </Tabs>
 
               <form onSubmit={tab === 0 ? handleLogin : handleRegister} autoComplete="off">
+                <input type="text" name="fake_user" autoComplete="username" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
+                <input type="password" name="fake_pass" autoComplete="current-password" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
                 {tab === 1 && (
                   <TextField
                     fullWidth
@@ -297,8 +319,12 @@ export default function LoginPage() {
                   onChange={handleInputChange}
                   margin="normal"
                   disabled={loading}
-                  autoComplete="username"
-                  inputProps={{ readOnly: emailReadOnly, 'data-lpignore': 'true' }}
+                  autoComplete="off"
+                  inputProps={{
+                    readOnly: emailReadOnly,
+                    'data-lpignore': 'true',
+                    'data-form-type': 'other',
+                  }}
                   onFocus={() => setEmailReadOnly(false)}
                 />
 
@@ -310,7 +336,7 @@ export default function LoginPage() {
                   disabled={loading}
                   show={showPassword}
                   onToggleShow={() => setShowPassword((v) => !v)}
-                  autoComplete={tab === 0 ? 'new-password' : 'new-password'}
+                  autoComplete="off"
                 />
 
                 {tab === 0 && (
@@ -447,12 +473,10 @@ export default function LoginPage() {
               Sign in with your LJC account (e.g. jerry@ljcfinancial.com). Use <strong>Forgot password?</strong> if needed.
             </Typography>
           )}
+
+          <LoginStatusPanel />
         </Paper>
       </Container>
-
-      <Box sx={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
-        <AppStatusPanel data={serverStatus} defaultCollapsed />
-      </Box>
     </Box>
   );
 }

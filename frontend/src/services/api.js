@@ -21,6 +21,10 @@ client.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
+      const url = String(error.config?.url || '');
+      if (url.includes('/auth/login') || url.includes('/auth/register')) {
+        return Promise.reject(error);
+      }
       const path = window.location.pathname || '';
       const onLoginPage = path === '/login' || path.endsWith('/login');
       localStorage.removeItem('token');
