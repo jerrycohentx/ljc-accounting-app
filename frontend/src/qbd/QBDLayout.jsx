@@ -3,7 +3,6 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import QBDBackupDialog, { useBackupStatus, formatBackupShort } from './QBDBackupDialog';
 import QBEmailIngestDialog, { useEmailIngestStatus, formatEmailScanShort } from './QBEmailIngestDialog';
-import AppStatusPanel, { useServerStatus } from '../components/AppStatusPanel';
 import { backupAPI } from '../services/api';
 import './qbd.css';
 
@@ -31,7 +30,6 @@ export default function QBDLayout() {
   const toastTimer = useRef(null);
   const { info: backupInfo, refresh: refreshBackup } = useBackupStatus();
   const { info: emailInfo, refresh: refreshEmail } = useEmailIngestStatus();
-  const { data: statusData, refresh: refreshStatus } = useServerStatus(60000);
 
   const showToast = (m) => {
     setToast(m);
@@ -133,13 +131,6 @@ export default function QBDLayout() {
 
       <div className="qbd-work"><Outlet context={{ showToast }} /></div>
 
-      <AppStatusPanel
-        defaultCollapsed
-        data={statusData}
-        onBackupClick={() => setBackupOpen(true)}
-        onEmailClick={() => setEmailOpen(true)}
-      />
-
       {openMenu && (
         <div className="qbd-topmenu" style={{ left: menuPos.left, top: menuPos.top }}>
           {menuDefs(openMenu).map((it, i) => {
@@ -154,14 +145,14 @@ export default function QBDLayout() {
         open={backupOpen}
         onClose={() => setBackupOpen(false)}
         showToast={showToast}
-        onStatusChange={() => { refreshBackup(); refreshStatus(); }}
+        onStatusChange={refreshBackup}
       />
 
       <QBEmailIngestDialog
         open={emailOpen}
         onClose={() => setEmailOpen(false)}
         showToast={showToast}
-        onStatusChange={() => { refreshEmail(); refreshStatus(); }}
+        onStatusChange={refreshEmail}
       />
 
       {toast && <div className="qbd-toast">{toast}</div>}

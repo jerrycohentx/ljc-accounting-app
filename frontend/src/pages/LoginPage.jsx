@@ -5,7 +5,7 @@ import {
   Tabs, Tab, CircularProgress, Link, InputAdornment
 } from '@mui/material';
 import { authAPI } from '../services/api';
-import AppStatusPanel, { useServerStatus } from '../components/AppStatusPanel';
+import LoginStatusPanel from '../components/LoginStatusPanel';
 
 const EMPTY_FORM = {
   email: '',
@@ -62,7 +62,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { data: serverStatus } = useServerStatus(60000);
   const [resetChannel, setResetChannel] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -256,7 +255,7 @@ export default function LoginPage() {
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        pb: { xs: '280px', sm: '240px' },
+        py: 3,
       }}
     >
       <Container maxWidth="sm">
@@ -447,12 +446,10 @@ export default function LoginPage() {
               Sign in with your LJC account (e.g. jerry@ljcfinancial.com). Use <strong>Forgot password?</strong> if needed.
             </Typography>
           )}
+
+          <LoginStatusPanel />
         </Paper>
       </Container>
-
-      <Box sx={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
-        <AppStatusPanel data={serverStatus} defaultCollapsed />
-      </Box>
     </Box>
   );
 }
