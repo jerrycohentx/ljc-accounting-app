@@ -78,12 +78,12 @@
 .qbd-stmt-markup{display:flex;flex-direction:column;flex:1;min-height:0}
 .qbd-stmt-pdf.qbd-stmt-pdf-full{flex:1 1 auto;min-height:240px;position:relative;border-bottom:1px solid #c9d3df}
 .qbd-stmt-overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.qbd-stmt-marker{position:absolute;right:6px;display:flex;align-items:center;gap:5px;background:rgba(245,249,255,.96);border:1px solid #9fb4c8;border-radius:12px;padding:1px 7px;font-size:10px;line-height:1.2;color:#203a57;pointer-events:auto;max-width:168px}
+.qbd-stmt-marker{position:absolute;left:44px;display:flex;align-items:center;gap:4px;background:rgba(245,249,255,.98);border:1px solid #9fb4c8;border-radius:10px;padding:1px 5px;font-size:9px;line-height:1.2;color:#203a57;pointer-events:auto;min-width:24px}
 .qbd-stmt-marker .mk-dot{width:8px;height:8px;border-radius:50%;background:#8395aa;flex-shrink:0}
 .qbd-stmt-marker.match-ok .mk-dot{background:#2f6b3a}
 .qbd-stmt-marker.match-warn .mk-dot{background:#b45309}
 .qbd-stmt-marker.match-none .mk-dot{background:#b3261e}
-.qbd-stmt-marker .mk-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qbd-stmt-marker .mk-tag{font-weight:bold;color:#3a5068;min-width:9px;text-align:center}
 .qbd-stmt-marker.hl{box-shadow:0 0 0 2px #e6c200}
 .qbd-stmt-markup-meta{background:#f5f8fc;border-bottom:1px solid #d7e0ea;padding:4px 8px;font-size:10px}
 .qbd-stmt-unmatched{display:flex;flex-direction:column;max-height:34%;min-height:90px}

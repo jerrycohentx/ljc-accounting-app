@@ -99,6 +99,8 @@ function StmtTable({ lines, account, labels, highlightGlId, onSelect, onHover })
 function StatementPdfMarkup({ lines, account, highlightGlId, onSelect, onHover, pdfPreviewUrl }) {
   const unmatched = lines.filter((line) => !line.matchedGlId || line.matchStatus === 'needs_review');
   if (!pdfPreviewUrl) return null;
+  const laneStartPct = 26;
+  const laneHeightPct = 68;
 
   return (
     <div className="qbd-stmt-markup">
@@ -110,7 +112,9 @@ function StatementPdfMarkup({ lines, account, highlightGlId, onSelect, onHover, 
             const chip = matchStatusChip(line.matchStatus || (matched ? 'matched' : 'unmatched'));
             const { col1, col2 } = statementDisplayAmounts(line, account);
             const amount = Math.abs(+(col1 ?? col2 ?? 0));
-            const topPct = lines.length > 1 ? (idx / (lines.length - 1)) * 100 : 50;
+            const topPct = lines.length > 1
+              ? laneStartPct + ((idx / (lines.length - 1)) * laneHeightPct)
+              : laneStartPct + (laneHeightPct / 2);
             const hl = highlightGlId && line.matchedGlId === highlightGlId;
             return (
               <button
@@ -121,10 +125,10 @@ function StatementPdfMarkup({ lines, account, highlightGlId, onSelect, onHover, 
                 onMouseEnter={() => onHover && onHover(line.matchedGlId || null)}
                 onMouseLeave={() => onHover && onHover(null)}
                 onClick={() => onSelect && onSelect(line)}
-                title={`${fmtReconDate(line.date)} · ${line.description || ''}`}
+                title={`${fmtReconDate(line.date)} · ${line.description || ''} · ${amount ? fmt(amount) : ''}`}
               >
                 <span className="mk-dot" />
-                <span className="mk-text">{fmtReconDate(line.date)} {amount ? fmt(amount) : ''}</span>
+                <span className="mk-tag">{chip.cls === 'match-ok' ? 'M' : (chip.cls === 'match-warn' ? '?' : 'U')}</span>
               </button>
             );
           })}
