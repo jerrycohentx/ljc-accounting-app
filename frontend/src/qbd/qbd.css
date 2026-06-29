@@ -85,6 +85,22 @@
 .qbd-recon-summary .lbl{color:#6a7889;font-size:9px;text-transform:uppercase;letter-spacing:.3px}
 .qbd-recon-summary .val{font-weight:bold;font-variant-numeric:tabular-nums;color:#1f3550}
 .qbd-recon-summary .diff-ok{color:#2f6b3a}.qbd-recon-summary .diff-bad{color:#b3261e}
+.qbd-recon-header{background:linear-gradient(#eef2f7,#e2eaf4);border-bottom:1px solid #b9c4d2;padding:6px 10px;flex-shrink:0}
+.qbd-recon-header-main{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:11px}
+.qbd-recon-header .hdr-item{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.qbd-recon-header .hdr-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.35px;color:#6a7889}
+.qbd-recon-header .hdr-val{font-weight:bold;color:#1f3550;font-variant-numeric:tabular-nums}
+.qbd-recon-end-input,.qbd-recon-fee-input{width:88px;text-align:right;font-size:11px;font-weight:bold;padding:2px 6px;border:1px solid #b9c4d2;border-radius:3px}
+.qbd-recon-footer-totals{background:#f0f4f8;border-top:2px solid #b9c4d2;border-bottom:1px solid #c9d3df;padding:5px 10px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;flex-shrink:0;font-size:11px}
+.qbd-recon-footer-totals .tot-item{display:flex;gap:6px;align-items:baseline}
+.qbd-recon-footer-totals .tot-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.35px;color:#6a7889}
+.qbd-recon-footer-totals .tot-val{font-weight:bold;font-variant-numeric:tabular-nums;color:#1f3550}
+.qbd-recon-footer-totals .tot-diff .tot-val{font-size:13px}
+.qbd-recon-footer-totals .diff-ok .tot-val{color:#2f6b3a}
+.qbd-recon-footer-totals .diff-bad .tot-val{color:#b3261e}
+.qbd-recon-register-split{display:flex;flex:1;min-height:0;flex-direction:row}
+.qbd-recon-register-split>.qbd-recon-subpane{flex:1;min-width:0;border-bottom:none;border-right:1px solid #c9d3df}
+.qbd-recon-register-split>.qbd-recon-subpane:last-child{border-right:none}
 .qbd-recon-banner{padding:4px 10px!important;font-size:11px!important}
 .qbd-recon-tools{padding:4px 8px!important;flex-shrink:0}
 .qbd-recon-modify{background:#fff8e6;border-bottom:1px solid #e6d9a8;padding:6px 10px;font-size:11px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;flex-shrink:0}

@@ -18,7 +18,13 @@ import {
 } from './helpers';
 
 const SPLIT_STORAGE_KEY = 'qbd-recon-split-pct';
+const HIDE_AFTER_END_KEY = 'qbd-recon-hide-after-end';
 const DEFAULT_SPLIT = 48;
+
+function isAfterStatementEnd(postingDate, statementEndDate) {
+  if (!postingDate || !statementEndDate) return false;
+  return String(postingDate).slice(0, 10) > String(statementEndDate).slice(0, 10);
+}
 
 function flat(nodes, out) {
   (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flat(n.children, out); });
@@ -229,12 +235,20 @@ export default function QBDReconcile() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
   const [importFileName, setImportFileName] = useState('');
   const [showUnmatchedOnly, setShowUnmatchedOnly] = useState(false);
+  const [hideAfterEndDate, setHideAfterEndDate] = useState(() => {
+    const saved = localStorage.getItem(HIDE_AFTER_END_KEY);
+    return saved !== 'false';
+  });
   const startResize = useSplitResize(splitRef, setSplitPct);
   const { onStmtScroll, onRegScroll } = useSyncScroll(syncScroll, stmtScrollRef, regScrollRef);
 
   useEffect(() => {
     localStorage.setItem(SPLIT_STORAGE_KEY, String(Math.round(splitPct)));
   }, [splitPct]);
+
+  useEffect(() => {
+    localStorage.setItem(HIDE_AFTER_END_KEY, hideAfterEndDate ? 'true' : 'false');
+  }, [hideAfterEndDate]);
 
   useEffect(() => () => {
     if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
@@ -533,9 +547,13 @@ export default function QBDReconcile() {
   const autoMatchInfo = data?.autoMatch;
 
   const visibleEntries = useMemo(() => {
-    if (!showUnmatchedOnly) return entries;
-    return entries.filter((e) => !matchedGlSet.has(e.id) && !checked[e.id]);
-  }, [entries, showUnmatchedOnly, matchedGlSet, checked]);
+    let list = entries;
+    if (hideAfterEndDate && stmtDate) {
+      list = list.filter((e) => !isAfterStatementEnd(e.posting_date, stmtDate));
+    }
+    if (!showUnmatchedOnly) return list;
+    return list.filter((e) => !matchedGlSet.has(e.id) && !checked[e.id]);
+  }, [entries, hideAfterEndDate, stmtDate, showUnmatchedOnly, matchedGlSet, checked]);
 
   const paymentEntries = useMemo(() => visibleEntries.filter((e) => entrySide(e, account) === 'payment'), [visibleEntries, account]);
   const depositEntries = useMemo(() => visibleEntries.filter((e) => entrySide(e, account) === 'deposit'), [visibleEntries, account]);
@@ -589,9 +607,9 @@ export default function QBDReconcile() {
         <div className="qbd-form">
           <div className="fhd">Begin Reconciliation</div>
           <div className="qbd-muted" style={{ padding: '0 12px 10px', fontSize: 11, lineHeight: 1.45 }}>
-            QuickBooks-style reconcile: statement lines on the left, register checkboxes on the right.
-            Pick the account and <strong>statement ending date</strong> — beginning and ending balances load from
-            your saved statements, email imports, or a file you upload below.
+            <strong>Banking → Reconcile</strong> — select your bank or credit card account, enter the
+            <strong> statement ending date</strong> and <strong>ending balance</strong> exactly as shown on your
+            bank statement, then click <strong>Continue</strong>.
           </div>
           <div className="frow"><label>Account</label>
             <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
@@ -647,7 +665,7 @@ export default function QBDReconcile() {
               Manual: use <strong>Import statement</strong> above.
             </span>
             <span className="sp" />
-            <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold' }}>Start reconciling →</button>
+            <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold' }}>Continue →</button>
           </div>
         </div>
       </>
@@ -698,17 +716,31 @@ export default function QBDReconcile() {
           {autoMatchInfo.unmatchedRegisterCount > 0 && ` · ${autoMatchInfo.unmatchedRegisterCount} register item(s) unmatched`}
         </div>
       )}
-      <div className="qbd-recon-summary">
-        <span className="item"><span className="lbl">Period</span><span className="val">{stmtPeriod.periodStart || '—'} → {stmtPeriod.periodEnd || data.statementDate}</span></span>
-        <span className="item"><span className="lbl">Beginning</span><span className="val">{fmt(beginning)}</span></span>
-        <span className="item"><span className="lbl">{labels.cleared1}</span><span className="val">{depositCount} · {fmt(markedDeposits)}</span></span>
-        <span className="item"><span className="lbl">{labels.cleared2}</span><span className="val">{paymentCount} · {fmt(markedPayments)}</span></span>
-        <span className="item"><span className="lbl">Cleared bal</span><span className="val">{fmt(calc.clearedBalance)}</span></span>
-        <span className="item"><span className="lbl">Ending</span><span className="val">{fmt(target) || '0.00'}</span></span>
-        <span className="item">
-          <span className="lbl">Difference</span>
-          <span className={`val ${balanced ? 'diff-ok' : 'diff-bad'}`}>{fmt(difference) || '0.00'} {balanced ? '✓' : ''}</span>
-        </span>
+      <div className="qbd-recon-header">
+        <div className="qbd-recon-header-main">
+          <span className="hdr-item"><span className="hdr-lbl">Account</span><span className="hdr-val">{data.account.account_number} · {leafLabel(data.account.account_name)}</span></span>
+          <span className="hdr-item"><span className="hdr-lbl">Statement ending</span><span className="hdr-val">{data.statementDate || stmtDate}</span></span>
+          <span className="hdr-item"><span className="hdr-lbl">Beginning balance</span><span className="hdr-val">{fmt(beginning)}</span></span>
+          <span className="hdr-item">
+            <span className="hdr-lbl">Ending balance</span>
+            <input
+              type="number"
+              step="0.01"
+              className="qbd-recon-end-input"
+              value={endBal}
+              onChange={(e) => setEndBal(e.target.value)}
+              title="Ending balance from bank statement"
+            />
+          </span>
+          <span className="hdr-item">
+            <span className="hdr-lbl">Service charge</span>
+            <input type="number" step="0.01" className="qbd-recon-fee-input" value={serviceCharge} onChange={(e) => setServiceCharge(e.target.value)} />
+          </span>
+          <span className="hdr-item">
+            <span className="hdr-lbl">Interest earned</span>
+            <input type="number" step="0.01" className="qbd-recon-fee-input" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} />
+          </span>
+        </div>
       </div>
       <div className="qbd-tools qbd-recon-tools" style={{ gap: 8 }}>
         <button className="qbd-btn" onClick={() => { setStarted(false); setData(null); }}>← Change</button>
@@ -732,6 +764,10 @@ export default function QBDReconcile() {
             {(importFileName || stmtMeta.statementLabel).slice(0, 36)}
           </span>
         )}
+        <label className="qbd-recon-tools-chk" title="QuickBooks Desktop: hide future-dated register items">
+          <input type="checkbox" checked={hideAfterEndDate} onChange={(e) => setHideAfterEndDate(e.target.checked)} />
+          Hide after statement end date
+        </label>
         <label className="qbd-recon-tools-chk">
           <input type="checkbox" checked={showUnmatchedOnly} onChange={(e) => setShowUnmatchedOnly(e.target.checked)} />
           Unmatched only
@@ -746,9 +782,8 @@ export default function QBDReconcile() {
       </div>
       {showModify && (
         <div className="qbd-recon-modify">
-          <label>Service charge <input type="number" step="0.01" value={serviceCharge} onChange={(e) => setServiceCharge(e.target.value)} style={{ width: 90, marginLeft: 6 }} /></label>
-          <label style={{ marginLeft: 12 }}>Interest earned <input type="number" step="0.01" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} style={{ width: 90, marginLeft: 6 }} /></label>
-          <span className="qbd-muted" style={{ marginLeft: 12 }}>Suggestions only — not posted until Reconcile Now</span>
+          <span className="qbd-muted">Statement period: {stmtPeriod.periodStart || '—'} → {stmtPeriod.periodEnd || data.statementDate}</span>
+          <span className="qbd-muted" style={{ marginLeft: 12 }}>Cleared balance: {fmt(calc.clearedBalance)}</span>
         </div>
       )}
       <div className="qbd-recon-split" ref={splitRef}>
@@ -786,20 +821,20 @@ export default function QBDReconcile() {
         />
         <div className="qbd-recon-pane qbd-recon-dual" style={{ width: `${100 - splitPct}%` }}>
           {!isCard ? (
-            <>
+            <div className="qbd-recon-register-split">
               <div className="qbd-recon-subpane">
-                <div className="qbd-recon-panehead">Checks and Payments <span className="qbd-muted">{paymentCount} marked</span></div>
+                <div className="qbd-recon-panehead">Checks and Payments <span className="qbd-muted">{paymentCount} cleared · {fmt(markedPayments)}</span></div>
                 <div className="qbd-recon-panebody" ref={regScrollRef} onScroll={onRegScroll}>
                   <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} compact />
                 </div>
               </div>
               <div className="qbd-recon-subpane">
-                <div className="qbd-recon-panehead">Deposits and Other Credits</div>
+                <div className="qbd-recon-panehead">Deposits and Other Credits <span className="qbd-muted">{depositCount} cleared · {fmt(markedDeposits)}</span></div>
                 <div className="qbd-recon-panebody">
                   <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} confirmed={confirmed} highlightGlId={highlightGlId} onToggle={toggle} onHover={setHighlightGlId} compact />
                 </div>
               </div>
-            </>
+            </div>
           ) : (
             <>
               <div className="qbd-recon-panehead">
@@ -813,9 +848,20 @@ export default function QBDReconcile() {
           )}
         </div>
       </div>
+      <div className="qbd-recon-footer-totals">
+        <span className="tot-item"><span className="tot-lbl">Total deposits</span><span className="tot-val">{depositCount} · {fmt(markedDeposits)}</span></span>
+        <span className="tot-item"><span className="tot-lbl">Total checks &amp; payments</span><span className="tot-val">{paymentCount} · {fmt(markedPayments)}</span></span>
+        <span className="tot-item"><span className="tot-lbl">Cleared balance</span><span className="tot-val">{fmt(calc.clearedBalance)}</span></span>
+        <span className="tot-item"><span className="tot-lbl">Ending balance</span><span className="tot-val">{fmt(target) || '0.00'}</span></span>
+        <span className={`tot-item tot-diff ${balanced ? 'diff-ok' : 'diff-bad'}`}>
+          <span className="tot-lbl">Difference</span>
+          <span className="tot-val">{fmt(difference) || '0.00'} {balanced ? '✓' : ''}</span>
+        </span>
+      </div>
       <div className="qbd-foot">
-        <span className="qbd-muted">{checkedIds.length} marked · cleared {fmt(calc.clearedBalance)}</span>
+        <span className="qbd-muted">{checkedIds.length} transaction(s) marked cleared</span>
         {!balanced && <span className="qbd-muted" style={{ color: '#b3261e', marginLeft: 12 }}>Difference must be $0.00 to reconcile</span>}
+        {balanced && <span className="qbd-muted" style={{ color: '#2f6b3a', marginLeft: 12 }}>Ready to reconcile</span>}
         <span className="sp" />
         <button className="qbd-btn" disabled={busy} onClick={() => { setStarted(false); showToast && showToast('Progress saved — nothing posted to the ledger'); }}>Leave</button>
         <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={finish} style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dff3e2,#bfe6c8)' : undefined }}>Reconcile Now</button>
