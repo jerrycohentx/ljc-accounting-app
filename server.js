@@ -33,6 +33,7 @@ import { authMiddleware } from './middleware/auth.js';
 import { startAutoBackup } from './lib/app-backup.js';
 import { buildHealthPayload } from './lib/health-status.js';
 import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
+import { removeDeprecatedRules } from './lib/categorization-rules.js';
 import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
 import { syncAdminPhoneFromEnv } from './lib/user-phone.js';
 import { ensurePlaywrightBrowsers, getPlaywrightBrowsersPath } from './lib/playwright-browsers.js';
@@ -205,6 +206,9 @@ async function start() {
       console.warn('Playwright Chromium preload skipped:', err.message);
     });
     await syncAdminPhoneFromEnv(db);
+    // Self-heal: remove the deprecated "Wire Transfer Debit" -> Lone Star (1001) rule that
+    // contaminated the Lone Star bank account, BEFORE any statement auto-load runs.
+    await removeDeprecatedRules(db).catch((e) => console.warn('Rule cleanup skipped:', e.message));
     startAutoBackup();
     startStatementAutoLoad(getDatabase);
     startStatementEmailIngest(getDatabase);
