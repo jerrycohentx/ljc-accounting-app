@@ -7,7 +7,7 @@ import { issuePasswordResetCode, verifyPasswordResetCode } from '../lib/password
 import { isSmsConfigured, sendPasswordResetSms, maskPhone } from '../lib/outbound-sms.js';
 import { isEmailConfigured, sendPasswordResetCode } from '../lib/outbound-mail.js';
 import { resolvePhoneForUser } from '../lib/user-phone.js';
-import { verifyPassword } from '../lib/password-verify.js';
+import { parseJsonField } from '../lib/parse-json-field.js';
 
 const router = express.Router();
 
@@ -210,7 +210,7 @@ router.post('/login', async (req, res) => {
         email: user.email,
         fullName: user.full_name,
         role: user.role,
-        entitiesAccess: user.entities_access ? JSON.parse(user.entities_access) : []
+        entitiesAccess: parseJsonField(user.entities_access, [])
       }
     });
   } catch (error) {
@@ -250,7 +250,7 @@ router.post('/loan-tracker-token', async (req, res) => {
         email: user.email,
         fullName: user.full_name,
         role: user.role,
-        entitiesAccess: user.entities_access ? JSON.parse(user.entities_access) : [],
+        entitiesAccess: parseJsonField(user.entities_access, []),
       },
     });
   } catch (error) {

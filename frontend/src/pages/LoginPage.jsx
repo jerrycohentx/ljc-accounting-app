@@ -16,6 +16,10 @@ const EMPTY_FORM = {
   confirmPassword: '',
 };
 
+const LAST_EMAIL_KEY = 'ljc_last_login_email';
+const IS_PRODUCTION_HOST = typeof window !== 'undefined'
+  && !/localhost|127\.0\.0\.1/.test(window.location.hostname);
+
 function PasswordField({
   name, label, value, onChange, disabled, show, onToggleShow, helperText, autoComplete, autoFocus,
 }) {
@@ -65,19 +69,43 @@ export default function LoginPage() {
   const forgotOpenedAt = useRef(0);
 
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [emailReadOnly, setEmailReadOnly] = useState(true);
 
   useEffect(() => {
+    // Fresh login screen — drop stale demo session so a new sign-in sticks
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+
     try {
-      const saved = sessionStorage.getItem('ljc_login_email');
-      if (saved) setFormData((prev) => ({ ...prev, email: saved }));
+      const saved = localStorage.getItem(LAST_EMAIL_KEY)
+        || sessionStorage.getItem('ljc_login_email')
+        || '';
+      if (saved) {
+        setFormData((prev) => ({ ...prev, email: saved, password: '' }));
+      }
     } catch {
       // ignore
     }
+
+    const t = setTimeout(() => setEmailReadOnly(false), 150);
+
+    try {
+      if (sessionStorage.getItem('ljc_session_expired')) {
+        sessionStorage.removeItem('ljc_session_expired');
+        setError('Your session expired — please sign in again with your account (not the demo user).');
+      }
+    } catch {
+      // ignore
+    }
+
+    return () => clearTimeout(t);
   }, []);
 
   const persistEmail = (email) => {
+    const normalized = String(email || '').trim().toLowerCase();
     try {
-      sessionStorage.setItem('ljc_login_email', email);
+      localStorage.setItem(LAST_EMAIL_KEY, normalized);
+      sessionStorage.setItem('ljc_login_email', normalized);
     } catch {
       // ignore
     }
@@ -97,17 +125,30 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+    const email = formData.email.trim().toLowerCase();
+    const password = formData.password;
     try {
-      const response = await authAPI.login(formData.email.trim(), formData.password);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      const response = await authAPI.login(email, password);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      persistEmail(formData.email);
-      navigate('/');
+      persistEmail(email);
+      setFormData((prev) => ({ ...prev, email, password: '' }));
+      navigate('/', { replace: true });
     } catch (err) {
       const msg = err.response?.data?.error || 'Login failed';
-      setError(msg === 'Invalid email or password'
-        ? 'Invalid email or password — clear the password field and type it fresh (browser autofill may be wrong).'
-        : msg);
+      if (msg === 'Invalid email or password') {
+        setError(
+          email.includes('jerry@')
+            ? 'Invalid password for jerry@ljcfinancial.com. Click Show on the password field to verify what you typed, or use Forgot password? to reset via text.'
+            : 'Invalid email or password. Clear the password field and type it again — browser autofill often inserts the demo password by mistake.'
+        );
+      } else {
+        setError(msg);
+      }
+      setFormData((prev) => ({ ...prev, password: '' }));
     } finally {
       setLoading(false);
     }
@@ -234,7 +275,7 @@ export default function LoginPage() {
                 <Tab label="Register" />
               </Tabs>
 
-              <form onSubmit={tab === 0 ? handleLogin : handleRegister}>
+              <form onSubmit={tab === 0 ? handleLogin : handleRegister} autoComplete="off">
                 {tab === 1 && (
                   <TextField
                     fullWidth
@@ -256,7 +297,9 @@ export default function LoginPage() {
                   onChange={handleInputChange}
                   margin="normal"
                   disabled={loading}
-                  autoComplete="email"
+                  autoComplete="username"
+                  inputProps={{ readOnly: emailReadOnly, 'data-lpignore': 'true' }}
+                  onFocus={() => setEmailReadOnly(false)}
                 />
 
                 <PasswordField
@@ -267,7 +310,7 @@ export default function LoginPage() {
                   disabled={loading}
                   show={showPassword}
                   onToggleShow={() => setShowPassword((v) => !v)}
-                  autoComplete={tab === 0 ? 'current-password' : 'new-password'}
+                  autoComplete={tab === 0 ? 'new-password' : 'new-password'}
                 />
 
                 {tab === 0 && (
@@ -394,9 +437,14 @@ export default function LoginPage() {
             </>
           )}
 
-          {view === 'auth' && (
+          {view === 'auth' && !IS_PRODUCTION_HOST && (
             <Typography variant="caption" align="center" display="block" sx={{ mt: 2, color: 'text.secondary' }}>
-              Demo login: demo@ljcfinancial.com / demo123
+              Dev demo: demo@ljcfinancial.com / demo123
+            </Typography>
+          )}
+          {view === 'auth' && IS_PRODUCTION_HOST && (
+            <Typography variant="caption" align="center" display="block" sx={{ mt: 2, color: 'text.secondary' }}>
+              Sign in with your LJC account (e.g. jerry@ljcfinancial.com). Use <strong>Forgot password?</strong> if needed.
             </Typography>
           )}
         </Paper>
