@@ -21,11 +21,17 @@ client.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
       const path = window.location.pathname || '';
       const onLoginPage = path === '/login' || path.endsWith('/login');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       if (!onLoginPage) {
-        window.location.href = '/login';
+        try {
+          sessionStorage.setItem('ljc_session_expired', '1');
+        } catch {
+          /* ignore */
+        }
+        window.location.assign('/login');
       }
     }
     return Promise.reject(error);
@@ -33,7 +39,10 @@ client.interceptors.response.use(
 );
 
 export const authAPI = {
-  login: (email, password) => client.post('/auth/login', { email, password }),
+  login: (email, password) => client.post('/auth/login', {
+    email: String(email || '').trim().toLowerCase(),
+    password,
+  }),
   register: (email, password, fullName) => client.post('/auth/register', { email, password, fullName }),
   refresh: (token) => client.post('/auth/refresh', { token }),
   forgotPasswordRequest: (email) => client.post('/auth/forgot-password/request', { email }),

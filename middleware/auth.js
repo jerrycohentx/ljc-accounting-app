@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { getDatabase } from '../config/database.js';
+import { parseJsonField } from '../lib/parse-json-field.js';
 
 export async function authMiddleware(req, res, next) {
   try {
@@ -22,7 +23,7 @@ export async function authMiddleware(req, res, next) {
       id: user.id,
       email: user.email,
       role: user.role,
-      entitiesAccess: user.entities_access ? JSON.parse(user.entities_access) : []
+      entitiesAccess: parseJsonField(user.entities_access, [])
     };
 
     next();
