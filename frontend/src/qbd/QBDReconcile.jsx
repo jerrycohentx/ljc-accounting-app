@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, bankReconAPI, journalAPI } from '../services/api';
 import { useBackupStatus } from './QBDBackupDialog';
@@ -209,7 +209,6 @@ function TxnDetailModal({ entry, entityId, onClose }) {
 
 export default function QBDReconcile() {
   const { entityId } = useEntity();
-  const navigate = useNavigate();
   const { showToast } = useOutletContext() || {};
   const [searchParams] = useSearchParams();
   const [accounts, setAccounts] = useState([]);
@@ -248,6 +247,7 @@ export default function QBDReconcile() {
   });
   const [beginningOverride, setBeginningOverride] = useState('');
   const [reportModal, setReportModal] = useState(null);
+  const [reportMode, setReportMode] = useState('select');
   const [drillEntry, setDrillEntry] = useState(null);
   const [highlightMarked, setHighlightMarked] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
@@ -362,12 +362,10 @@ export default function QBDReconcile() {
           setEndBal(String(r.data.endingBalance));
         }
         if (r.data.displayBeginning != null) setBeginBal(String(r.data.displayBeginning));
-        if (r.data.feeSuggestions?.serviceCharge?.amount != null) {
-          setServiceCharge(String(r.data.feeSuggestions.serviceCharge.amount));
-        }
-        if (r.data.feeSuggestions?.interestEarned?.amount != null) {
-          setInterestEarned(String(r.data.feeSuggestions.interestEarned.amount));
-        }
+        // QuickBooks rule: only enter a service charge / interest here if it is
+        // not already recorded. Statement transactions are auto-imported, so we
+        // do NOT auto-fill these (that would double-count). The detected amounts
+        // remain available in feeSuggestions for reference only.
       })
       .catch((e) => showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message)))
       .finally(() => setBusy(false));
@@ -536,13 +534,32 @@ export default function QBDReconcile() {
       interestEarned: int,
     })
       .then((r) => {
+        const toRow = (e) => ({
+          id: e.id,
+          date: e.posting_date,
+          num: e.je_number,
+          memo: e.je_description || e.description || '',
+          amount: reconRegisterAmount(e, account) || 0,
+        });
+        const allPayments = entries.filter((e) => entrySide(e, account) === 'payment');
+        const allDeposits = entries.filter((e) => entrySide(e, account) === 'deposit');
         setReportModal({
           reconciledCount: r.data.reconciledCount,
           beginningBalance: r.data.beginningBalance,
           endingBalance: r.data.endingBalance,
+          serviceCharge: svc,
+          interestEarned: int,
+          clearedBalance: calc.clearedBalance,
           statementDate: stmtDate,
           accountLabel: `${data.account.account_number} · ${leafLabel(data.account.account_name)}`,
+          clearedDeposits: allDeposits.filter((e) => checked[e.id]).map(toRow),
+          clearedPayments: allPayments.filter((e) => checked[e.id]).map(toRow),
+          unclearedDeposits: allDeposits.filter((e) => !checked[e.id]).map(toRow),
+          unclearedPayments: allPayments.filter((e) => !checked[e.id]).map(toRow),
+          clearedDepositTotal: markedDeposits,
+          clearedPaymentTotal: markedPayments,
         });
+        setReportMode('select');
         setStarted(false);
         setData(null);
         setEndBal('');
@@ -556,8 +573,44 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   };
 
+  const reportOverlay = (
+    <>
+      {reportModal && reportMode === 'select' && (
+        <div className="qbd-modal-backdrop" onClick={() => setReportModal(null)}>
+          <div className="qbd-modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+            <div className="qbd-wtitle">
+              Select Reconciliation Report
+              <span className="x" onClick={() => setReportModal(null)}>✕</span>
+            </div>
+            <div className="qbd-modal-body" style={{ fontSize: 12, lineHeight: 1.55 }}>
+              <p style={{ color: '#2f6b3a', fontWeight: 'bold' }}>✓ Congratulations! Your account is balanced.</p>
+              <p><strong>{reportModal.accountLabel}</strong> — statement ending <strong>{reportModal.statementDate}</strong></p>
+              <p>{reportModal.reconciledCount} transaction(s) reconciled. Select the type of reconciliation report you would like to see.</p>
+            </div>
+            <div className="qbd-foot" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <button type="button" className="qbd-btn" onClick={() => setReportMode('summary')}>Summary</button>
+              <button type="button" className="qbd-btn" onClick={() => setReportMode('detail')}>Detail</button>
+              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={() => setReportMode('both')}>Both</button>
+              <span className="sp" />
+              <button type="button" className="qbd-btn" onClick={() => setReportModal(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {reportModal && reportMode !== 'select' && (
+        <ReconcileReport
+          report={reportModal}
+          mode={reportMode}
+          onBack={() => setReportMode('select')}
+          onClose={() => setReportModal(null)}
+        />
+      )}
+    </>
+  );
+
   if (!started) {
     return (
+      <>
       <div className="qbd-form">
         <div className="fhd">Begin Reconciliation</div>
         <div className="qbd-muted" style={{ padding: '0 12px 10px', fontSize: 11, lineHeight: 1.45 }}>
@@ -614,6 +667,8 @@ export default function QBDReconcile() {
           <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold' }}>Continue →</button>
         </div>
       </div>
+      {reportOverlay}
+      </>
     );
   }
 
@@ -775,29 +830,83 @@ export default function QBDReconcile() {
       {drillEntry && (
         <TxnDetailModal entry={drillEntry} entityId={entityId} onClose={() => setDrillEntry(null)} />
       )}
-      {reportModal && (
-        <div className="qbd-modal-backdrop" onClick={() => setReportModal(null)}>
-          <div className="qbd-modal" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-            <div className="qbd-wtitle">
-              Reconciliation complete
-              <span className="x" onClick={() => setReportModal(null)}>✕</span>
-            </div>
-            <div className="qbd-modal-body" style={{ fontSize: 12, lineHeight: 1.55 }}>
-              <p><strong>{reportModal.accountLabel}</strong></p>
-              <p>Statement ending: <strong>{reportModal.statementDate}</strong></p>
-              <p>{reportModal.reconciledCount} transaction(s) reconciled.</p>
-              <p>Beginning balance: <strong>{fmt(reportModal.beginningBalance)}</strong></p>
-              <p>Ending balance: <strong>{fmt(reportModal.endingBalance)}</strong></p>
-              <p className="qbd-muted" style={{ marginTop: 8 }}>You can view previous reconciliations under Reports → Banking.</p>
-            </div>
-            <div className="qbd-foot">
-              <button type="button" className="qbd-btn" onClick={() => { setReportModal(null); navigate('/reports'); }}>View Reports</button>
-              <span className="sp" />
-              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={() => setReportModal(null)}>Close</button>
-            </div>
-          </div>
+      {reportOverlay}
+    </div>
+  );
+}
+
+/** QuickBooks-style reconciliation report (Summary / Detail / Both). */
+function ReconcileReport({ report, mode, onBack, onClose }) {
+  const showSummary = mode === 'summary' || mode === 'both';
+  const showDetail = mode === 'detail' || mode === 'both';
+
+  const Section = ({ title, rows, total }) => (
+    <div className="qbd-recon-rep-section">
+      <div className="qbd-recon-rep-h">{title}{rows.length ? ` (${rows.length})` : ''}</div>
+      {rows.length ? (
+        <table className="qbd-reg">
+          <thead>
+            <tr><th className="qbd-d">DATE</th><th className="qbd-je">NUM</th><th>PAYEE / MEMO</th><th className="qbd-amt">AMOUNT</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td className="qbd-d">{fmtReconDate(r.date)}</td>
+                <td className="qbd-je">{r.num}</td>
+                <td>{r.memo}</td>
+                <td className="qbd-amt">{r.amount ? fmt(r.amount) : ''}</td>
+              </tr>
+            ))}
+            <tr style={{ fontWeight: 'bold', background: '#eef4fb' }}>
+              <td colSpan={3}>Total {title}</td>
+              <td className="qbd-amt">{fmt(total)}</td>
+            </tr>
+          </tbody>
+        </table>
+      ) : <div className="qbd-muted" style={{ padding: '4px 6px' }}>None</div>}
+    </div>
+  );
+
+  return (
+    <div className="qbd-modal-backdrop" onClick={onClose}>
+      <div className="qbd-window" style={{ width: 760, maxHeight: '86vh', margin: 0, display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
+        <div className="qbd-wtitle">
+          Reconciliation Report — {mode === 'both' ? 'Summary + Detail' : (mode === 'summary' ? 'Summary' : 'Detail')}
+          <span className="x" onClick={onClose}>✕</span>
         </div>
-      )}
+        <div className="qbd-recon-rep-body">
+          <div className="qbd-recon-rep-title">
+            <div><strong>{report.accountLabel}</strong></div>
+            <div className="qbd-muted">Reconciliation as of statement ending {report.statementDate}</div>
+          </div>
+          {showSummary && (
+            <div className="qbd-recon-rep-summary">
+              <div className="sum-row"><span>Beginning Balance</span><span>{fmt(report.beginningBalance)}</span></div>
+              <div className="sum-row"><span>Checks and Payments cleared ({report.clearedPayments.length})</span><span>{fmt(-report.clearedPaymentTotal)}</span></div>
+              <div className="sum-row"><span>Deposits and Credits cleared ({report.clearedDeposits.length})</span><span>{fmt(report.clearedDepositTotal)}</span></div>
+              {report.serviceCharge > 0 && <div className="sum-row"><span>Service Charge</span><span>{fmt(-report.serviceCharge)}</span></div>}
+              {report.interestEarned > 0 && <div className="sum-row"><span>Interest Earned</span><span>{fmt(report.interestEarned)}</span></div>}
+              <div className="sum-row sum-total"><span>Cleared Balance</span><span>{fmt(report.clearedBalance)}</span></div>
+              <div className="sum-row sum-total"><span>Statement Ending Balance</span><span>{fmt(report.endingBalance)}</span></div>
+              <div className="sum-row"><span>Difference</span><span>{fmt(report.endingBalance - report.clearedBalance) || '0.00'}</span></div>
+            </div>
+          )}
+          {showDetail && (
+            <>
+              <Section title="Cleared Checks and Payments" rows={report.clearedPayments} total={report.clearedPaymentTotal} />
+              <Section title="Cleared Deposits and Credits" rows={report.clearedDeposits} total={report.clearedDepositTotal} />
+              <Section title="Uncleared Checks and Payments" rows={report.unclearedPayments} total={report.unclearedPayments.reduce((s, r) => s + r.amount, 0)} />
+              <Section title="Uncleared Deposits and Credits" rows={report.unclearedDeposits} total={report.unclearedDeposits.reduce((s, r) => s + r.amount, 0)} />
+            </>
+          )}
+        </div>
+        <div className="qbd-foot">
+          <button type="button" className="qbd-btn" onClick={onBack}>← Report type</button>
+          <span className="sp" />
+          <button type="button" className="qbd-btn" onClick={() => window.print()}>Print</button>
+          <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={onClose}>Close</button>
+        </div>
+      </div>
     </div>
   );
 }
