@@ -115,6 +115,7 @@ export const backupAPI = {
   status: () => client.get('/api/backup/status'),
   list: (limit = 20) => client.get('/api/backup/list', { params: { limit } }),
   run: () => client.post('/api/backup/run'),
+  download: (id) => client.get(`/api/backup/download/${id}`, { responseType: 'blob' }),
 };
 
 export const taxAPI = {

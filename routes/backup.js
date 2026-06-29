@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { runBackup, listBackups, getBackupStatus } from '../lib/app-backup.js';
+import { runBackup, listBackups, getBackupStatus, getBackupContent } from '../lib/app-backup.js';
 import { getAppInfo } from '../lib/app-info.js';
 import { getDatabase, isPostgres } from '../config/database.js';
 import { getStatementEmailIngestStatus } from '../lib/statement-email-ingest.js';
@@ -30,6 +30,20 @@ router.get('/list', async (req, res) => {
   try {
     const limit = Math.min(100, Number(req.query.limit) || 20);
     res.json({ backups: listBackups(limit), ...getBackupStatus() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** GET /api/backup/download/:id — download a stored backup off-site (auth required) */
+router.get('/download/:id', authMiddleware, async (req, res) => {
+  try {
+    const item = await getBackupContent(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Backup not found' });
+    const isJson = String(item.filename).endsWith('.json');
+    res.setHeader('Content-Type', isJson ? 'application/json' : 'application/sql');
+    res.setHeader('Content-Disposition', `attachment; filename="${item.filename}"`);
+    res.send(item.content);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

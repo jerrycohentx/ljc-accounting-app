@@ -47,6 +47,21 @@ export default function QBDBackupDialog({ open, onClose, showToast, onStatusChan
       .finally(() => setBusy(false));
   };
 
+  const downloadBackup = (b) => {
+    backupAPI.download(b.id)
+      .then((r) => {
+        const url = URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = b.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      })
+      .catch((e) => showToast && showToast('Download failed: ' + (e.response?.data?.error || e.message)));
+  };
+
   return (
     <div className="qbd-modal-backdrop" onClick={onClose}>
       <div className="qbd-modal qbd-backup-modal" onClick={(e) => e.stopPropagation()}>
@@ -58,6 +73,7 @@ export default function QBDBackupDialog({ open, onClose, showToast, onStatusChan
           <div><span className="lbl">Auto backup</span> every {status?.intervalMinutes || 60} min</div>
           <div><span className="lbl">Last backup</span> {fmtWhen(status?.lastBackupAt)}</div>
           <div><span className="lbl">Stored</span> {status?.backupCount ?? 0} (keep {status?.retentionCount ?? 30})</div>
+          <div><span className="lbl">Storage</span> {status?.storageLabel || (status?.durable ? 'Durable' : 'local file')}</div>
         </div>
         <div className="qbd-backup-actions">
           <button className="qbd-btn" disabled={busy} onClick={runBackup} style={{ fontWeight: 'bold' }}>
@@ -76,6 +92,7 @@ export default function QBDBackupDialog({ open, onClose, showToast, onStatusChan
                   <th>Type</th>
                   <th>File</th>
                   <th className="qbd-amt">Size</th>
+                  <th className="qbd-amt">Save off-site</th>
                 </tr>
               </thead>
               <tbody>
@@ -85,6 +102,13 @@ export default function QBDBackupDialog({ open, onClose, showToast, onStatusChan
                     <td>{b.reason === 'auto' ? 'Auto' : 'Manual'}</td>
                     <td style={{ fontSize: 11 }}>{b.filename}</td>
                     <td className="qbd-amt">{b.sizeLabel || ''}</td>
+                    <td className="qbd-amt">
+                      {b.id ? (
+                        <button className="qbd-btn" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => downloadBackup(b)}>
+                          ⬇ Download
+                        </button>
+                      ) : null}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -92,7 +116,11 @@ export default function QBDBackupDialog({ open, onClose, showToast, onStatusChan
           )}
         </div>
         <div className="qbd-foot">
-          <span className="qbd-muted">Backups saved server-side in db/backups/</span>
+          <span className="qbd-muted">
+            {status?.durable
+              ? 'Backups stored in the cloud database (survive restarts). Use Download to keep an off-site copy.'
+              : 'Backups saved server-side in db/backups/.'}
+          </span>
           <span className="sp" />
           <button className="qbd-btn" onClick={onClose}>Close</button>
         </div>
