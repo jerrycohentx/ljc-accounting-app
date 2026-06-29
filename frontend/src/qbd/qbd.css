@@ -104,7 +104,28 @@
 .qbd-recon-stmt tr.hl td,.qbd-recon-reg tr.hl td{background:#fff6cf!important;outline:1px solid #e6c200;scroll-margin-top:28px}
 .qbd-recon-stmt tr.matched td{background:#f0f7ff}
 .qbd-recon-reg tr.cleared td{background:#eaf6ec!important}
+.qbd-recon-reg tr.selected td{background:#dbe9fb}
 .qbd-recon-reg tr.matched td:first-child{box-shadow:inset 3px 0 0 #2f6b3a}
+.qbd-type{width:52px;min-width:52px;max-width:52px;font-size:10px;color:#42566f;text-align:center}
+.qbd-recon-reg td,.qbd-recon-reg th{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* QBD reconcile: period strip, action bar, summary blocks */
+.qbd-recon-period{display:flex;align-items:center;gap:14px;padding:4px 10px;background:linear-gradient(#eef2f7,#e2eaf4);border-bottom:1px solid #b9c4d2;font-size:11px;flex-shrink:0}
+.qbd-recon-period-lbl{color:#1f3550}
+.qbd-recon-actionbar{display:flex;align-items:center;gap:6px;padding:5px 10px;background:#eef2f7;border-top:1px solid #c9d3df;border-bottom:1px solid #c9d3df;flex-shrink:0}
+.qbd-cols-wrap{position:relative;display:inline-block}
+.qbd-cols-menu{position:absolute;bottom:100%;left:0;z-index:60;background:#fff;border:1px solid #9fb4c8;border-radius:4px;box-shadow:0 -4px 12px rgba(0,0,0,.18);padding:6px 8px;display:flex;flex-direction:column;gap:5px;min-width:160px;margin-bottom:2px}
+.qbd-cols-menu label{display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap;cursor:pointer}
+.qbd-recon-summary-bar{display:flex;gap:24px;align-items:flex-start;padding:8px 14px;background:#f0f4f8;border-top:2px solid #b9c4d2;border-bottom:1px solid #c9d3df;flex-shrink:0;font-size:11px}
+.qbd-recon-summary-bar .sum-block{display:flex;flex-direction:column;gap:2px;min-width:300px}
+.qbd-recon-summary-bar .sum-block-right{margin-left:auto}
+.qbd-recon-summary-bar .sum-row{display:flex;justify-content:space-between;gap:24px}
+.qbd-recon-summary-bar .sum-lbl{color:#42566f}
+.qbd-recon-summary-bar .sum-val{font-weight:bold;font-variant-numeric:tabular-nums;color:#1f3550;min-width:96px;text-align:right}
+.qbd-recon-summary-bar .sum-sub{font-weight:bold;color:#2a5596;margin-top:4px}
+.qbd-recon-summary-bar .sum-mid{display:flex;align-items:flex-start;justify-content:center;padding-top:2px}
+.qbd-recon-summary-bar .sum-diff .sum-val{font-size:13px}
+.qbd-recon-summary-bar .sum-diff.bad .sum-val{color:#b3261e}
+.qbd-recon-summary-bar .sum-diff.ok .sum-val{color:#2f6b3a}
 .qbd-recon-tools-chk{font-size:11px;color:#42566f;display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none}
 .qbd-recon-summary{background:#f8fafc;border-bottom:1px solid #c9d3df;padding:4px 8px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:10px;flex-shrink:0;align-items:center}
 .qbd-recon-summary .item{display:flex;gap:4px;align-items:baseline;white-space:nowrap}
