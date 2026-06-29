@@ -78,6 +78,12 @@ router.post('/forgot-password/request', async (req, res) => {
     });
   } catch (error) {
     console.error('Forgot password request error:', error);
+    const msg = String(error.message || '');
+    if (msg.includes('not configured') || msg.includes('All email channels failed')) {
+      return res.status(503).json({
+        error: 'Password reset is not fully configured yet. Try signing in with your current password, or contact support.',
+      });
+    }
     return res.status(500).json({ error: 'Could not send verification code' });
   }
 });
