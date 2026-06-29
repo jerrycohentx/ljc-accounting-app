@@ -141,7 +141,15 @@ const frontendIndexPath = path.join(frontendDistPath, 'index.html');
 const serveBuiltFrontend = NODE_ENV === 'production' || fs.existsSync(frontendIndexPath);
 
 if (serveBuiltFrontend) {
-  app.use(express.static(frontendDistPath));
+  app.use(express.static(frontendDistPath, {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      } else if (filePath.includes('/assets/')) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
   app.get('*', (req, res) => {
     res.sendFile(frontendIndexPath);
   });

@@ -12,6 +12,7 @@ import {
   reconColumnLabels,
   signedGlDelta,
   registerDisplayAmounts,
+  reconRegisterAmount,
   statementDisplayAmounts,
   computeReconcileTotals,
   entrySide,
@@ -48,6 +49,13 @@ function StmtTable({ lines, account, labels, highlightGlId, onSelect, onHover })
   }
   return (
     <table className="qbd-reg qbd-recon-stmt">
+      <colgroup>
+        <col style={{ width: 72 }} />
+        <col style={{ width: 52 }} />
+        <col />
+        <col style={{ width: 88 }} />
+        <col style={{ width: 88 }} />
+      </colgroup>
       <thead>
         <tr>
           <th style={{ width: 72 }}>STATUS</th>
@@ -92,9 +100,18 @@ function RegisterTable({
   if (!entries.length) {
     return <div className="qbd-empty">{compact ? 'None' : 'No uncleared register items.'}</div>;
   }
-  const compactAmtLabel = amountSide === 'deposit' ? labels.col1 : labels.col2;
+  const compactAmtLabel = amountSide === 'deposit'
+    ? (isCreditCardAccount(account) ? 'Charge' : 'Deposit')
+    : 'Payment';
   return (
     <table className="qbd-reg qbd-recon-reg">
+      <colgroup>
+        <col style={{ width: 28 }} />
+        <col style={{ width: 52 }} />
+        {!compact && <col style={{ width: 88 }} />}
+        <col />
+        <col style={{ width: 92 }} />
+      </colgroup>
       <thead>
         <tr>
           <th style={{ width: 30 }}>✓</th>
@@ -117,7 +134,7 @@ function RegisterTable({
           const isPending = isChecked && !confirmed[e.id];
           const hl = highlightGlId === e.id;
           const { col1, col2 } = registerDisplayAmounts(e, account);
-          const compactAmount = amountSide === 'deposit' ? col1 : col2;
+          const compactAmount = compact ? reconRegisterAmount(e, account) : null;
           return (
             <tr
               key={e.id}
@@ -528,12 +545,12 @@ export default function QBDReconcile() {
   let paymentCount = 0;
   entries.filter((e) => checked[e.id]).forEach((e) => {
     const side = entrySide(e, account);
-    const { col1, col2 } = registerDisplayAmounts(e, account);
+    const amt = reconRegisterAmount(e, account) || 0;
     if (side === 'deposit') {
-      markedDeposits += +(col1 || 0);
+      markedDeposits += amt;
       depositCount += 1;
     } else if (side === 'payment') {
-      markedPayments += +(col2 || 0);
+      markedPayments += amt;
       paymentCount += 1;
     }
   });
