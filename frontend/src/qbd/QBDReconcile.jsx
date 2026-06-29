@@ -547,7 +547,7 @@ export default function QBDReconcile() {
         }
         const am = r.data.autoMatch;
         if (am && showToast) {
-          showToast(`Auto-matched ${am.matchedStmtCount} of ${am.totalStmtLines} statement lines — review ${am.unmatchedRegisterCount} register item(s)`);
+          showToast(`Exact-matched ${am.matchedStmtCount} of ${am.totalStmtLines} statement lines — verify flagged items before posting`);
         }
       })
       .catch((e) => showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message)))
@@ -798,6 +798,8 @@ export default function QBDReconcile() {
             Enter the <strong>statement ending date</strong> and verify the <strong>beginning balance</strong> matches your statement.
             Enter the <strong>ending balance</strong> and any <strong>service charge</strong> or <strong>interest</strong> not already in QuickBooks.
             If you use bank feeds, you can usually leave service charge and interest blank.
+            <br />
+            <strong>Routine:</strong> Import Statement → Exact Match Check → User Verification → Flag &amp; Post.
           </div>
           <div className="frow"><label>Account</label>
             <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
@@ -906,7 +908,8 @@ export default function QBDReconcile() {
       {sessionBanner}
       {autoMatchInfo && (
         <div className="qbd-recon-banner" style={{ background: '#e8f4fc', color: '#1f3550', borderBottom: '1px solid #c9d3df' }}>
-          Review summary: {reviewSummary?.autoMatched ?? autoMatchInfo.matchedStmtCount} auto-matched · {reviewSummary?.needsReview ?? 0} need review · {reviewSummary?.onStatementOnly ?? autoMatchInfo.unmatchedStmtCount} on statement only
+          4-step routine: Import Statement → Exact Match Check → User Verification → Flag &amp; Post.
+          {' '}Summary: {reviewSummary?.autoMatched ?? autoMatchInfo.matchedStmtCount} exact-matched · {reviewSummary?.needsReview ?? 0} need review · {reviewSummary?.onStatementOnly ?? autoMatchInfo.unmatchedStmtCount} on statement only
           {autoMatchInfo.unmatchedRegisterCount > 0 && ` · ${autoMatchInfo.unmatchedRegisterCount} register item(s) unmatched`}
         </div>
       )}
@@ -940,16 +943,16 @@ export default function QBDReconcile() {
         <button className="qbd-btn" onClick={() => { setStarted(false); setData(null); }}>← Change</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={markAll}>Mark All</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={unmarkAll}>Unmark All</button>
-        <button type="button" className="qbd-btn" disabled={busy} onClick={rerunAutoMatch}>Auto-Match</button>
+        <button type="button" className="qbd-btn" disabled={busy} onClick={rerunAutoMatch}>Exact Match Check</button>
         <button
           type="button"
           className="qbd-btn"
           disabled={busy}
           onClick={runMatched}
           style={{ fontWeight: 'bold' }}
-          title="Bank feeds: check off all downloaded transactions that match your statement"
+          title="Flag exact matched transactions for posting"
         >
-          Matched
+          Flag matched
         </button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={acceptAllMatches}>Accept matches</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={() => setShowModify((v) => !v)}>Modify</button>
