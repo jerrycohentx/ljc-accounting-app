@@ -399,6 +399,13 @@ export default function QBDReconcile() {
     const ids = worksheet?.suggestedCheckedGlIds || [];
     const next = {};
     ids.forEach((id) => { next[id] = true; });
+    // Always pre-check lines already reconciled in this period so a closed/reopened
+    // reconciliation loads balanced ($0.00) with its cleared items checked (QBD behavior).
+    (worksheet?.entries || []).forEach((e) => {
+      if (e.alreadyReconciled || e.clearState === 'reconciled' || e.reconciliation_status === 'RECONCILED') {
+        next[e.id] = true;
+      }
+    });
     setChecked(next);
   }, []);
 
