@@ -167,6 +167,11 @@ export const importAPI = {
   reject: (entityId, fitids) => client.post('/api/import/reject', { entityId, fitids }),
 };
 
+export const achJeAPI = {
+  preview: (data) => client.post('/api/ach-je-import/preview', data),
+  commit: (data) => client.post('/api/ach-je-import/commit', data),
+};
+
 export const receiptAPI = {
   providers: () => client.get('/api/receipts/providers'),
   listConnections: (entityId) => client.get('/api/receipts/connections', { params: { entityId } }),

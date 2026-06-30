@@ -26,6 +26,7 @@ import lonestarCatchupRoutes from './routes/lonestar-catchup.js';
 import amexCatchupRoutes from './routes/amex-catchup.js';
 import simmonsOfxCatchupRoutes from './routes/simmons-ofx-catchup.js';
 import qboPlCatchupRoutes from './routes/qbo-pl-catchup.js';
+import achJeImportRoutes from './routes/ach-je-import.js';
 import backupRoutes from './routes/backup.js';
 import emailIngestRoutes from './routes/email-ingest.js';
 import gmailOAuthRoutes, { gmailOAuthCallbackHandler } from './routes/gmail-oauth.js';
@@ -117,6 +118,7 @@ app.get('/api/entities', async (req, res) => {
 
 // Import, Plaid, holdback draws, and bank reconciliation routes (top level)
 app.use('/api/import', importRoutes);
+app.use('/api/ach-je-import', achJeImportRoutes);
 app.use('/api/intercompany', intercompanyRoutes);
 app.use('/api/tax-financials', taxFinancialsRoutes);
 app.use('/api/plaid', plaidRoutes);

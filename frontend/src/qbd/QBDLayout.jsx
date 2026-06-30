@@ -101,11 +101,11 @@ export default function QBDLayout() {
       case 'View': return [['Home Page', () => nav('/')], ['Open Window List', t('Live app')]];
       case 'Lists': return [['Chart of Accounts', () => nav('/accounts')], ['Item List', t('Item List — live app')], ['Class List', t('Live app')]];
       case 'Favorites': return [['Customize Favorites…', t('Live app')]];
-      case 'Company': return [['Home Page', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')], '-', ['Make General Journal Entries…', () => nav('/journal')], ['Set Closing Date…', () => nav('/period-close')], ['Company Information…', t('Live app')]];
+      case 'Company': return [['Home Page', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')], '-', ['Make General Journal Entries…', () => nav('/journal')], ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Set Closing Date…', () => nav('/period-close')], ['Company Information…', t('Live app')]];
       case 'Customers': return [['Customer Center', t('Live app')], '-', ['Create Invoices', t('Live app')], ['Receive Payments', t('Live app')], ['Create Sales Receipts', t('Live app')]];
       case 'Vendors': return [['Vendor Center', t('Live app')], '-', ['Enter Bills', t('Live app')], ['Pay Bills', t('Live app')]];
       case 'Employees': return [['Employee Center', t('Live app')], '-', ['Enter Time', t('Live app')]];
-      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], '-', ['Connect bank email…', () => setEmailOpen(true)], ['Bank Feeds', () => nav('/bank-feeds')]];
+      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], '-', ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Connect bank email…', () => setEmailOpen(true)], ['Bank Feeds', () => nav('/bank-feeds')]];
       case 'Reports': return [['Report Center', () => nav('/reports')], ['Tax Year Financials…', () => nav('/tax-financials')], '-', ['H', 'Company & Financial'], ['Balance Sheet', () => nav('/reports?r=bs')], ['Profit & Loss', () => nav('/reports?r=pl')], '-', ['H', 'Accountant & Lists'], ['Account Listing', () => nav('/accounts')], ['Journal', () => nav('/journal')]];
       case 'Window': return [['Home', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')]];
       case 'Help': return [['About…', showAbout]];
