@@ -11,6 +11,8 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '1010', name: 'Cash - Simmons Sub-Accounts (4177/4790/7036)', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1100', name: 'Undeposited Funds', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1200', name: 'Accounts Receivable', type: 'ASSET' },
+  // Sub-account of 1200 (parent linkage set on the account row); holds ACH interest in transit from the bank.
+  { entity: 'ent-ljc', number: '1201', name: 'ACH collections due from bank', type: 'ASSET', parent: '1200' },
   { entity: 'ent-ljc', number: '1300', name: 'Notes Receivable', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1310', name: 'Notes Receivable - Simmons DLOC', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1350', name: 'Holdbacks - Simmons Bank', type: 'ASSET' },
