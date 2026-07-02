@@ -81,15 +81,7 @@ const BankImport = () => {
 
     if (/lone\s*star|lonestar/.test(instName)) {
       setError(
-        'Lone Star Bank cannot be connected through Plaid. Only Simmons Bank is supported for automatic feeds. Use OFX upload for Lone Star Bank.'
-      );
-      setPlaidLinkToken(null);
-      return;
-    }
-
-    if (!instName.includes('simmons')) {
-      setError(
-        `${institution?.name || 'This bank'} is not supported. Only Simmons Bank can be linked automatically. Use OFX file upload for other banks.`
+        'Lone Star Bank cannot be connected through Plaid. Only Simmons Bank and American Express are supported for automatic feeds. Use OFX upload for Lone Star Bank.'
       );
       setPlaidLinkToken(null);
       return;
@@ -99,11 +91,11 @@ const BankImport = () => {
     setError(null);
     try {
       await plaidAPI.exchangePublicToken(selectedEntity, publicToken, institution);
-      setSuccess(`Simmons Bank connected successfully.`);
+      setSuccess(`${institution?.name || 'Bank'} connected successfully.`);
       setPlaidLinkToken(null);
       await loadLinkedBanks();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to link Simmons Bank');
+      setError(err.response?.data?.error || `Failed to link ${institution?.name || 'bank'}`);
     } finally {
       setLoading(false);
     }
@@ -337,7 +329,7 @@ const BankImport = () => {
     <div className="bank-import-container">
       <div className="import-header">
         <h1>Bank Import</h1>
-        <p>Connect Simmons Bank with Plaid or upload OFX files to import transactions as draft journal entries</p>
+        <p>Connect Simmons Bank or American Express with Plaid, or upload OFX files, to import transactions as draft journal entries</p>
       </div>
 
       {error && (
@@ -376,9 +368,9 @@ const BankImport = () => {
 
           {plaidConfigured && (
             <div className="plaid-section">
-              <h3>Connect Simmons Bank (Plaid)</h3>
+              <h3>Connect Bank Account (Plaid)</h3>
               <p className="upload-hint">
-                Automatic Simmons Bank feeds only. Lone Star Bank and other banks — use OFX upload below.
+                Automatic Simmons Bank and American Express feeds. Lone Star Bank and other banks — use OFX upload below.
               </p>
               <button
                 type="button"
@@ -386,20 +378,20 @@ const BankImport = () => {
                 onClick={handleConnectSimmonsBank}
                 disabled={loading || importSession != null}
               >
-                Connect Simmons Bank
+                Connect Bank Account
               </button>
               {linkedBanks.length > 0 && (
                 <ul className="linked-banks-list">
                   {linkedBanks.map((bank) => (
                     <li key={bank.item_id}>
-                      <span>{bank.institution_name || 'Simmons Bank'}</span>
+                      <span>{bank.institution_name || 'Bank'}</span>
                       <button
                         type="button"
                         className="btn-secondary btn-small"
                         onClick={() => handlePlaidSync(bank.item_id)}
                         disabled={loading || importSession != null}
                       >
-                        Sync Simmons Bank
+                        Sync {bank.institution_name || 'Bank'}
                       </button>
                     </li>
                   ))}
