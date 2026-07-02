@@ -91,6 +91,18 @@ export default function QBDBankFeeds() {
 
   const selectedRows = pending.filter((r) => sel.has(r.fitid));
 
+  const groupedPending = React.useMemo(() => {
+    const groups = new Map();
+    for (const r of pending) {
+      const key = r.accountId || 'uncategorized-account';
+      if (!groups.has(key)) {
+        groups.set(key, { accountId: r.accountId, accountNumber: r.accountNumber, accountName: r.accountName, rows: [] });
+      }
+      groups.get(key).rows.push(r);
+    }
+    return [...groups.values()].sort((a, b) => (a.accountNumber || 'zzzz').localeCompare(b.accountNumber || 'zzzz'));
+  }, [pending]);
+
   const postSelected = async () => {
     if (!selectedRows.length) { toast('Check the transactions to add first.'); return; }
     const jeIds = selectedRows.map((r) => r.jeId).filter(Boolean);
@@ -169,34 +181,44 @@ export default function QBDBankFeeds() {
       <div className="qbd-form">
         <div className="fhd">Transactions to Review {pending.length ? `(${pending.length})` : ''}</div>
         <div className="qbd-wbody">
-          <table className="qbd-coa">
+          <table className="qbd-coa qbd-review-table">
             <thead>
               <tr>
-                <th style={{ width: 28 }}><input type="checkbox" checked={allChecked} onChange={toggleAll} /></th>
-                <th style={{ width: 90 }}>DATE</th>
+                <th style={{ width: 26 }}><input type="checkbox" checked={allChecked} onChange={toggleAll} /></th>
+                <th style={{ width: 76 }}>DATE</th>
                 <th>DESCRIPTION</th>
-                <th className="qbd-bal" style={{ width: 110 }}>PAYMENT</th>
-                <th className="qbd-bal" style={{ width: 110 }}>DEPOSIT</th>
-                <th style={{ width: 260 }}>ACCOUNT</th>
+                <th className="qbd-bal" style={{ width: 80 }}>PAYMENT</th>
+                <th className="qbd-bal" style={{ width: 80 }}>DEPOSIT</th>
+                <th style={{ width: 200 }}>ACCOUNT</th>
               </tr>
             </thead>
             <tbody>
               {pending.length === 0 ? (
                 <tr><td colSpan={6}><div className="qbd-empty">No transactions waiting for review. Download from a connected bank above.</div></td></tr>
-              ) : pending.map((r) => (
-                <tr key={r.fitid}>
-                  <td><input type="checkbox" checked={sel.has(r.fitid)} onChange={() => toggle(r.fitid)} /></td>
-                  <td className="qbd-num">{r.date}</td>
-                  <td>{r.description}</td>
-                  <td className="qbd-bal">{r.payment ? fmt(+r.payment) : ''}</td>
-                  <td className="qbd-bal">{r.deposit ? fmt(+r.deposit) : ''}</td>
-                  <td>
-                    <select value={r.offsetAccountId || ''} onChange={(e) => changeAccount(r, e.target.value)} style={{ width: '100%' }}>
-                      <option value="">— uncategorized —</option>
-                      {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-                    </select>
-                  </td>
-                </tr>
+              ) : groupedPending.map((g) => (
+                <React.Fragment key={g.accountId || 'uncategorized-account'}>
+                  <tr className="qbd-group-row">
+                    <td colSpan={6}>
+                      {g.accountName ? `${g.accountNumber ? g.accountNumber + ' · ' : ''}${leafLabel(g.accountName)}` : 'Uncategorized account'}
+                      <span className="qbd-group-count">{g.rows.length}</span>
+                    </td>
+                  </tr>
+                  {g.rows.map((r) => (
+                    <tr key={r.fitid}>
+                      <td><input type="checkbox" checked={sel.has(r.fitid)} onChange={() => toggle(r.fitid)} /></td>
+                      <td className="qbd-num">{r.date}</td>
+                      <td className="desc" title={r.description}>{r.description}</td>
+                      <td className="qbd-bal">{r.payment ? fmt(+r.payment) : ''}</td>
+                      <td className="qbd-bal">{r.deposit ? fmt(+r.deposit) : ''}</td>
+                      <td>
+                        <select value={r.offsetAccountId || ''} onChange={(e) => changeAccount(r, e.target.value)} style={{ width: '100%' }}>
+                          <option value="">— uncategorized —</option>
+                          {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
