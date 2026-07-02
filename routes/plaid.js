@@ -137,7 +137,7 @@ router.post('/exchange-public-token', async (req, res) => {
       await db.run(
         `UPDATE plaid_items SET
           entity_id = ?, access_token_encrypted = ?, institution_id = ?, institution_name = ?,
-          sync_cursor = NULL, is_active = 1, updated_at = CURRENT_TIMESTAMP
+          sync_cursor = NULL, is_active = true, updated_at = CURRENT_TIMESTAMP
          WHERE item_id = ?`,
         [
           entityId,
@@ -152,7 +152,7 @@ router.post('/exchange-public-token', async (req, res) => {
         `INSERT INTO plaid_items (
           id, entity_id, item_id, access_token_encrypted, institution_id, institution_name,
           created_by, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, true)`,
         [
           rowId,
           entityId,
