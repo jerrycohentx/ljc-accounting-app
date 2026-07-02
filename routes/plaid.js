@@ -167,8 +167,8 @@ router.post('/exchange-public-token', async (req, res) => {
 
     return res.json({
       itemId,
-      institutionName: resolvedName || institution?.name || 'Simmons Bank',
-      message: 'Simmons Bank linked successfully',
+      institutionName: resolvedName || institution?.name || 'Financial institution',
+      message: `${resolvedName || institution?.name || 'Bank'} linked successfully`,
     });
   } catch (error) {
     console.error('Plaid token exchange error:', error.response?.data || error.message);
@@ -228,7 +228,7 @@ router.post('/sync', async (req, res) => {
       [entityId, itemId]
     );
     if (!item) {
-      return res.status(404).json({ error: 'Linked Simmons Bank account not found for this entity' });
+      return res.status(404).json({ error: 'Linked bank account not found for this entity' });
     }
 
     if (!isSimmonsInstitution({ institution_id: item.institution_id, name: item.institution_name })) {
@@ -271,7 +271,7 @@ router.post('/sync', async (req, res) => {
       importId,
       entityId,
       itemId,
-      fileName: `Simmons Bank (Plaid): ${item.institution_name || itemId}`,
+      fileName: `${item.institution_name || 'Bank'} (Plaid): ${item.institution_name || itemId}`,
       institutionName: item.institution_name,
       dateRange: {
         start: dates[0] || null,
@@ -327,7 +327,7 @@ router.post('/import', async (req, res) => {
       transactions: session.transactions,
       importId: session.importId,
       userId: req.user.id,
-      sourceLabel: 'Simmons Bank (Plaid)',
+      sourceLabel: `${session.institutionName || 'Bank'} (Plaid)`,
     });
 
     session.status = 'COMPLETED';
