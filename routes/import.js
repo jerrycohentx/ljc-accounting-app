@@ -207,6 +207,58 @@ router.post('/reapply-rules', async (req, res) => {
   }
 });
 
+/**
+ * One-time data repair: correct the bank/card-side GL account on already-
+ * imported pending transactions that were booked to the wrong account
+ * (e.g. before per-institution account mapping existed for Plaid feeds).
+ * Only touches DRAFT import_transactions / DRAFT journal_entries whose
+ * journal entry description starts with the given prefix. Never touches
+ * posted entries. Safe to leave in place for future one-off corrections.
+ */
+router.post('/fix-bank-account', async (req, res) => {
+  try {
+    const { entityId, descriptionPrefix, correctAccountNumber } = req.body;
+    if (!entityId || !descriptionPrefix || !correctAccountNumber) {
+      return res.status(400).json({ error: 'entityId, descriptionPrefix, correctAccountNumber required' });
+    }
+
+    const db = await getDatabase();
+    const correctAccount = await db.get(
+      'SELECT id, account_name FROM accounts WHERE entity_id = ? AND account_number = ?',
+      [entityId, correctAccountNumber]
+    );
+    if (!correctAccount) {
+      return res.status(404).json({ error: `Account ${correctAccountNumber} not found for entity` });
+    }
+
+    const rows = await db.all(
+      `SELECT it.id, it.journal_entry_id AS journalEntryId
+       FROM import_transactions it
+       JOIN journal_entries je ON je.id = it.journal_entry_id
+       WHERE it.entity_id = ? AND it.status = 'DRAFT' AND je.status = 'DRAFT'
+         AND je.description LIKE ?`,
+      [entityId, `${descriptionPrefix}%`]
+    );
+
+    let fixed = 0;
+    for (const row of rows) {
+      const bankLine = await db.get(
+        'SELECT id FROM journal_entry_lines WHERE journal_entry_id = ? AND line_number = 1',
+        [row.journalEntryId]
+      );
+      if (!bankLine) continue;
+      await db.run('UPDATE journal_entry_lines SET account_id = ? WHERE id = ?', [correctAccount.id, bankLine.id]);
+      await db.run('UPDATE import_transactions SET account_id = ? WHERE id = ?', [correctAccount.id, row.id]);
+      fixed += 1;
+    }
+
+    res.json({ scanned: rows.length, fixed, correctAccount: { number: correctAccountNumber, name: correctAccount.account_name } });
+  } catch (error) {
+    console.error('Fix bank account error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /** Bank Feeds review queue — DRAFT imports awaiting categorization/post. */
 router.get('/pending', async (req, res) => {
   try {
@@ -216,9 +268,11 @@ router.get('/pending', async (req, res) => {
     const db = await getDatabase();
     const rows = await db.all(
       `SELECT it.fitid, it.date, it.amount, it.description, it.journal_entry_id AS jeId,
-              it.offset_account_id AS offsetAccountId, je.je_number AS jeNumber
+              it.offset_account_id AS offsetAccountId, je.je_number AS jeNumber,
+              it.account_id AS accountId, a.account_number AS accountNumber, a.account_name AS accountName
        FROM import_transactions it
        JOIN journal_entries je ON je.id = it.journal_entry_id
+       LEFT JOIN accounts a ON a.id = it.account_id
        WHERE it.entity_id = ? AND it.status = 'DRAFT' AND je.status = 'DRAFT'
        ORDER BY it.date DESC, it.created_at DESC`,
       entityId
@@ -236,6 +290,9 @@ router.get('/pending', async (req, res) => {
         payment: isDeposit ? null : amt.toFixed(2),
         deposit: isDeposit ? amt.toFixed(2) : null,
         offsetAccountId: r.offsetAccountId,
+        accountId: r.accountId,
+        accountNumber: r.accountNumber,
+        accountName: r.accountName,
       };
     });
 
