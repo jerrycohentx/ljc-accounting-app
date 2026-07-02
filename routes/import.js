@@ -16,7 +16,7 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../config/database.js';
 import { parseOFX, validateTransactions, deduplicateTransactions } from '../lib/ofx-parser.js';
-import { commitBankImportTransactions, updateImportOffsetAccount } from '../lib/import-commit.js';
+import { commitBankImportTransactions, updateImportOffsetAccount, reapplyRulesToPending } from '../lib/import-commit.js';
 import { postJournalEntryToGl } from '../lib/post-journal.js';
 
 const router = express.Router();
@@ -163,7 +163,7 @@ router.post('/transactions', async (req, res) => {
     if (!session) return res.status(404).json({ error: 'Import session not found' });
 
     const db = await getDatabase();
-    const { createdJECount } = await commitBankImportTransactions(db, {
+    const { createdJECount, reapply } = await commitBankImportTransactions(db, {
       entityId: session.entityId,
       transactions: session.transactions,
       importId,
@@ -175,16 +175,35 @@ router.post('/transactions', async (req, res) => {
     session.importedCount = createdJECount;
     session.completedAt = new Date().toISOString();
 
+    const sweepNote = reapply?.updated
+      ? ` ${reapply.updated} older pending transaction${reapply.updated === 1 ? '' : 's'} also auto-categorized from recently learned rules.`
+      : '';
     return res.json({
       importId,
       status: 'COMPLETED',
       transactionsProcessed: createdJECount,
       journalEntriesCreated: createdJECount,
-      message: `Imported ${createdJECount} transactions — review in Bank Feeds before posting.`,
+      reapply,
+      message: `Imported ${createdJECount} transactions — review in Bank Feeds before posting.${sweepNote}`,
     });
   } catch (error) {
     console.error('Transaction import error:', error);
     return res.status(500).json({ error: 'Failed to import transactions', details: error.message });
+  }
+});
+
+/** Manually re-sweep the pending review queue with current categorization rules. */
+router.post('/reapply-rules', async (req, res) => {
+  try {
+    const { entityId } = req.body;
+    if (!entityId) return res.status(400).json({ error: 'entityId required' });
+
+    const db = await getDatabase();
+    const result = await reapplyRulesToPending(db, entityId);
+    res.json(result);
+  } catch (error) {
+    console.error('Reapply rules error:', error);
+    res.status(500).json({ error: 'Failed to re-apply rules', details: error.message });
   }
 });
 
