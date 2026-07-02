@@ -20,10 +20,17 @@ import { mapPlaidTransactions } from '../lib/plaid-transactions.js';
 import { commitBankImportTransactions, getExistingFitidsForEntity } from '../lib/import-commit.js';
 import {
   assertSimmonsInstitution,
+  getInstitutionKey,
   getSimmonsInstitutionConfig,
   isSimmonsInstitution,
   simmonsRejectMessage,
 } from '../lib/plaid-simmons.js';
+
+/** GL account (by account number) that each institution's transactions book against. */
+const PLAID_BANK_ACCOUNT_BY_INSTITUTION_KEY = {
+  simmons: '1000', // Cash & Bank Accounts - Simmons
+  amex: '2010', // Credit Card - American Express (liability)
+};
 
 const router = express.Router();
 const plaidSyncSessions = new Map();
@@ -267,12 +274,14 @@ router.post('/sync', async (req, res) => {
 
     const importId = `plaid-${uuidv4()}`;
     const dates = newTransactions.map((t) => t.date).filter(Boolean).sort();
+    const institutionKey = getInstitutionKey({ institution_id: item.institution_id, name: item.institution_name });
     const session = {
       importId,
       entityId,
       itemId,
       fileName: `${item.institution_name || 'Bank'} (Plaid): ${item.institution_name || itemId}`,
       institutionName: item.institution_name,
+      bankAccountNumber: PLAID_BANK_ACCOUNT_BY_INSTITUTION_KEY[institutionKey] || null,
       dateRange: {
         start: dates[0] || null,
         end: dates[dates.length - 1] || null,
@@ -328,6 +337,7 @@ router.post('/import', async (req, res) => {
       importId: session.importId,
       userId: req.user.id,
       sourceLabel: `${session.institutionName || 'Bank'} (Plaid)`,
+      bankAccountNumber: session.bankAccountNumber || undefined,
     });
 
     session.status = 'COMPLETED';
