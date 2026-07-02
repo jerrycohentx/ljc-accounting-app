@@ -231,8 +231,11 @@ router.post('/fix-bank-account', async (req, res) => {
       return res.status(404).json({ error: `Account ${correctAccountNumber} not found for entity` });
     }
 
+    // NOTE: Postgres folds unquoted SQL aliases to lowercase, so "AS journalEntryId"
+    // comes back as row.journalentryid -- row.journalEntryId reads as undefined. Select
+    // the plain snake_case column instead.
     const rows = await db.all(
-      `SELECT it.id, it.journal_entry_id AS journalEntryId
+      `SELECT it.id, it.journal_entry_id
        FROM import_transactions it
        JOIN journal_entries je ON je.id = it.journal_entry_id
        WHERE it.entity_id = ? AND it.status = 'DRAFT' AND je.status = 'DRAFT'
@@ -244,7 +247,7 @@ router.post('/fix-bank-account', async (req, res) => {
     for (const row of rows) {
       const bankLine = await db.get(
         'SELECT id FROM journal_entry_lines WHERE journal_entry_id = ? AND line_number = 1',
-        [row.journalEntryId]
+        [row.journal_entry_id]
       );
       if (!bankLine) continue;
       await db.run('UPDATE journal_entry_lines SET account_id = ? WHERE id = ?', [correctAccount.id, bankLine.id]);
@@ -265,11 +268,15 @@ router.get('/pending', async (req, res) => {
     const { entityId } = req.query;
     if (!entityId) return res.status(400).json({ error: 'entityId required' });
 
+    // NOTE: Postgres folds unquoted SQL aliases to lowercase (AS jeId -> row.jeid,
+    // not row.jeId), so camelCase aliases here silently read back as undefined and
+    // get dropped from the JSON response. Select plain snake_case/native column
+    // names and map to camelCase in JS instead.
     const db = await getDatabase();
     const rows = await db.all(
-      `SELECT it.fitid, it.date, it.amount, it.description, it.journal_entry_id AS jeId,
-              it.offset_account_id AS offsetAccountId, je.je_number AS jeNumber,
-              it.account_id AS accountId, a.account_number AS accountNumber, a.account_name AS accountName
+      `SELECT it.fitid, it.date, it.amount, it.description, it.journal_entry_id,
+              it.offset_account_id, je.je_number,
+              it.account_id, a.account_number, a.account_name
        FROM import_transactions it
        JOIN journal_entries je ON je.id = it.journal_entry_id
        LEFT JOIN accounts a ON a.id = it.account_id
@@ -283,16 +290,16 @@ router.get('/pending', async (req, res) => {
       const isDeposit = Number(r.amount) > 0;
       return {
         fitid: r.fitid,
-        jeId: r.jeId,
-        jeNumber: r.jeNumber,
+        jeId: r.journal_entry_id,
+        jeNumber: r.je_number,
         date: r.date,
         description: r.description,
         payment: isDeposit ? null : amt.toFixed(2),
         deposit: isDeposit ? amt.toFixed(2) : null,
-        offsetAccountId: r.offsetAccountId,
-        accountId: r.accountId,
-        accountNumber: r.accountNumber,
-        accountName: r.accountName,
+        offsetAccountId: r.offset_account_id,
+        accountId: r.account_id,
+        accountNumber: r.account_number,
+        accountName: r.account_name,
       };
     });
 
