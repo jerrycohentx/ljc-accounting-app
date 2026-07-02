@@ -14,6 +14,7 @@ const TOOLS = [
   ['🚚', 'Vendors', null],
   ['🧑‍💼', 'Employees', null],
   ['🏦', 'Bank Feeds', '/bank-feeds'],
+  ['🔗', 'Bank Import', '/bank-import'],
   ['📊', 'Reports', '/reports'],
   ['🔑', 'User Licenses', null],
 ];
@@ -105,7 +106,7 @@ export default function QBDLayout() {
       case 'Customers': return [['Customer Center', t('Live app')], '-', ['Create Invoices', t('Live app')], ['Receive Payments', t('Live app')], ['Create Sales Receipts', t('Live app')]];
       case 'Vendors': return [['Vendor Center', t('Live app')], '-', ['Enter Bills', t('Live app')], ['Pay Bills', t('Live app')]];
       case 'Employees': return [['Employee Center', t('Live app')], '-', ['Enter Time', t('Live app')]];
-      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], '-', ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Connect bank email…', () => setEmailOpen(true)], ['Bank Feeds', () => nav('/bank-feeds')]];
+      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], '-', ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Connect bank email…', () => setEmailOpen(true)], ['Bank Feeds', () => nav('/bank-feeds')], ['Bank Import (Plaid/OFX)…', () => nav('/bank-import')]];
       case 'Reports': return [['Report Center', () => nav('/reports')], ['Tax Year Financials…', () => nav('/tax-financials')], '-', ['H', 'Company & Financial'], ['Balance Sheet', () => nav('/reports?r=bs')], ['Profit & Loss', () => nav('/reports?r=pl')], '-', ['H', 'Accountant & Lists'], ['Account Listing', () => nav('/accounts')], ['Journal', () => nav('/journal')]];
       case 'Window': return [['Home', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')]];
       case 'Help': return [['About…', showAbout]];
