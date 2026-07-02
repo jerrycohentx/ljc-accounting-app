@@ -82,7 +82,7 @@ async function getOrCreateAccount(db, entityId, { number, name, type, normal }) 
     const accId = `acc-${uuidv4()}`;
     await db.run(
       `INSERT INTO accounts (id, entity_id, account_number, account_name, account_type, normal_balance, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, 1)`,
+       VALUES (?, ?, ?, ?, ?, ?, true)`,
       [accId, entityId, number, name, type, normal]
     );
     account = await db.get('SELECT * FROM accounts WHERE id = ?', accId);
