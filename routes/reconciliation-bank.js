@@ -23,6 +23,7 @@ import {
   closeBankReconciliation,
   reopenBankReconciliation,
 } from '../lib/bank-reconcile-session.js';
+import { buildReconciliationReport, saveReconciliationReport } from '../lib/reconciliation-report.js';
 import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
 import { prepareReconciliation } from '../lib/reconcile-prepare.js';
 import { postReconcileAdjustment } from '../lib/reconcile-adjustment.js';
@@ -635,10 +636,27 @@ router.post('/reconcile', async (req, res) => {
       }
     }
 
+    // Archive a QuickBooks-style Summary + Detail snapshot of this closed
+    // reconciliation so it can be pulled up later for reference even after
+    // the ledger changes further. Non-fatal: the reconciliation itself is
+    // already closed above; a report-generation hiccup shouldn't undo that.
+    let reportId = null;
+    try {
+      const report = await buildReconciliationReport(db, {
+        entityId,
+        accountId,
+        statementDate: recDate,
+      });
+      reportId = await saveReconciliationReport(db, report, { userId: req.user?.id || null });
+    } catch (reportErr) {
+      console.error('Reconciliation report archive failed (non-fatal):', reportErr.message);
+    }
+
     return res.json({
       ...result,
       statementDate: recDate,
       holdbackVerified: verifiedDraws,
+      reportId,
       message: verifiedDraws.length
         ? `${result.reconciledCount} transactions reconciled; ${verifiedDraws.length} holdback draw(s) verified`
         : `${result.reconciledCount} transactions reconciled — session closed`,
