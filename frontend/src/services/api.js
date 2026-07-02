@@ -165,6 +165,7 @@ export const importAPI = {
     client.patch(`/api/import/pending/${fitid}`, { entityId, offsetAccountId }),
   postSelected: (entityId, jeIds) => client.post('/api/import/post-selected', { entityId, jeIds }),
   reject: (entityId, fitids) => client.post('/api/import/reject', { entityId, fitids }),
+  reapplyRules: (entityId) => client.post('/api/import/reapply-rules', { entityId }),
 };
 
 export const achJeAPI = {
