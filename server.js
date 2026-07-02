@@ -14,6 +14,7 @@ import reportsRoutes from './routes/reports.js';
 import reconciliationRoutes from './routes/reconciliation.js';
 import importRoutes from './routes/import.js';
 import bankReconciliationRoutes from './routes/reconciliation-bank.js';
+import reconciliationReportsRoutes from './routes/reconciliation-reports.js';
 import plaidRoutes, { plaidWebhookHandler } from './routes/plaid.js';
 import receiptRoutes, { whatsappWebhookHandler } from './routes/receipts.js';
 import holdbackDrawRoutes from './routes/holdback-draws.js';
@@ -128,6 +129,7 @@ app.use('/api/backup', backupRoutes);
 app.use('/api/email/gmail', gmailOAuthRoutes);
 app.use('/api/email/ingest', emailIngestRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
+app.use('/api/reconciliation/reports', reconciliationReportsRoutes);
 
 // Entity-specific routes
 app.use('/api/entities/:entityId/accounts', accountRoutes);
