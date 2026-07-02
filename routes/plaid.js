@@ -322,7 +322,7 @@ router.post('/import', async (req, res) => {
     }
 
     const db = await getDatabase();
-    const { createdJECount } = await commitBankImportTransactions(db, {
+    const { createdJECount, reapply } = await commitBankImportTransactions(db, {
       entityId: session.entityId,
       transactions: session.transactions,
       importId: session.importId,
@@ -334,12 +334,16 @@ router.post('/import', async (req, res) => {
     session.importedCount = createdJECount;
     session.completedAt = new Date().toISOString();
 
+    const sweepNote = reapply?.updated
+      ? ` ${reapply.updated} older pending transaction${reapply.updated === 1 ? '' : 's'} also auto-categorized from recently learned rules.`
+      : '';
     return res.json({
       importId,
       status: 'COMPLETED',
       transactionsProcessed: createdJECount,
       journalEntriesCreated: createdJECount,
-      message: `Successfully imported ${createdJECount} Plaid transactions as draft journal entries`,
+      reapply,
+      message: `Successfully imported ${createdJECount} Plaid transactions as draft journal entries.${sweepNote}`,
     });
   } catch (error) {
     console.error('Plaid import error:', error);
