@@ -26,6 +26,7 @@ export default function QBDBankFeeds() {
   const [sel, setSel] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [applying, setApplying] = useState(false);
 
   const loadAccounts = useCallback(() => {
     if (!entityId) return;
@@ -66,8 +67,12 @@ export default function QBDBankFeeds() {
       const newCount = sres.data?.summary?.newTransactions ?? 0;
       if (!importId) { toast('Download failed — no session returned.'); return; }
       if (newCount === 0) { toast('No new transactions in that range.'); loadPending(); return; }
-      await plaidAPI.import(importId, true); // draft=true → held for review
-      toast(`Downloaded ${newCount} transaction(s) — review below before posting.`);
+      const ires = await plaidAPI.import(importId, true); // draft=true → held for review
+      const sweepCount = ires.data?.reapply?.updated || 0;
+      const sweepNote = sweepCount
+        ? ` ${sweepCount} older pending transaction${sweepCount === 1 ? '' : 's'} also auto-categorized.`
+        : '';
+      toast(`Downloaded ${newCount} transaction(s) — review below before posting.${sweepNote}`);
       loadPending();
     } catch (err) {
       toast('Download failed: ' + (err.response?.data?.details || err.response?.data?.error || err.message));
@@ -97,6 +102,18 @@ export default function QBDBankFeeds() {
     } catch (err) {
       toast('Post failed: ' + (err.response?.data?.details || err.response?.data?.error || err.message));
     } finally { setBusy(false); }
+  };
+
+  const reapplyRulesNow = async () => {
+    setApplying(true);
+    try {
+      const r = await importAPI.reapplyRules(entityId);
+      const n = r.data?.updated || 0;
+      toast(n ? `${n} transaction(s) auto-categorized from current rules.` : 'No changes — nothing pending matches a rule right now.');
+      loadPending();
+    } catch (err) {
+      toast('Re-apply rules failed: ' + (err.response?.data?.error || err.message));
+    } finally { setApplying(false); }
   };
 
   const discardSelected = async () => {
@@ -187,7 +204,10 @@ export default function QBDBankFeeds() {
         <div className="qbd-botbar">
           <span className="qbd-muted">{sel.size} selected</span>
           <span className="sp" />
-          <button className="qbd-btn" disabled={busy || !sel.size} onClick={discardSelected}>Discard</button>
+          <button className="qbd-btn" disabled={applying || !pending.length} onClick={reapplyRulesNow}>
+            {applying ? 'Applying…' : 'Re-apply Rules Now'}
+          </button>
+          <button className="qbd-btn" disabled={busy || !sel.size} onClick={discardSelected} style={{ marginLeft: 8 }}>Discard</button>
           <button className="qbd-btn" disabled={busy || !sel.size} onClick={postSelected} style={{ fontWeight: 'bold', marginLeft: 8 }}>Add to Register</button>
         </div>
       </div>
