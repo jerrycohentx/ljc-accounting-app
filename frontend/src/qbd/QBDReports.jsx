@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { reportAPI, accountAPI } from '../services/api';
 import { fmt, leafLabel, todayISO, fmtVariance, fmtVariancePct } from './helpers';
+import { DATE_PRESETS, computeRange } from './dateRangePresets';
 
 function flatNums(nodes, map) {
   (nodes || []).forEach((n) => { map[n.account_number] = n.id; if (n.children) flatNums(n.children, map); });
@@ -98,6 +99,7 @@ export default function QBDReports() {
   const [asOf, setAsOf] = useState(today);
   const [from, setFrom] = useState(today.slice(0, 4) + '-01-01');
   const [to, setTo] = useState(today);
+  const [datePreset, setDatePreset] = useState('custom');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -149,6 +151,17 @@ export default function QBDReports() {
   };
   const zoomById = (id, range) => { if (id) nav('/register/' + id + (range ? `?from=${from}&to=${to}` : `?to=${asOf}`)); };
 
+  const applyPreset = (key) => {
+    setDatePreset(key);
+    if (key === 'custom') return;
+    const r = computeRange(key, today);
+    if (!r) return;
+    setFrom(r.from);
+    setTo(r.to);
+    setAsOf(r.to);
+  };
+  const markManual = (setter) => (e) => { setDatePreset('custom'); setter(e.target.value); };
+
   const usesAsOf = rtype === 'bs' || rtype === 'tb';
   const showCompare = (rtype === 'bs' || rtype === 'pl' || rtype === 'kpi') && compareMode !== 'none';
   const title = {
@@ -191,15 +204,19 @@ export default function QBDReports() {
             )}
           </>
         )}
+        <span className="qbd-muted">Date range</span>
+        <select value={datePreset} onChange={(e) => applyPreset(e.target.value)}>
+          {DATE_PRESETS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
         {usesAsOf ? (
           <>
             <span className="qbd-muted">As of</span>
-            <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
+            <input type="date" value={asOf} onChange={markManual(setAsOf)} />
           </>
         ) : (
           <>
-            <span className="qbd-muted">From</span><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-            <span className="qbd-muted">To</span><input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <span className="qbd-muted">From</span><input type="date" value={from} onChange={markManual(setFrom)} />
+            <span className="qbd-muted">To</span><input type="date" value={to} onChange={markManual(setTo)} />
           </>
         )}
         <button className="qbd-btn" onClick={fetchReport}>Run</button>
