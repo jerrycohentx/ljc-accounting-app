@@ -101,3 +101,11 @@ Concretely, this means:
 *This file is the durable source of truth for these standing rules. Any
 assistant working on this codebase should read it before doing reconciliation,
 GL posting, or import work, and must not violate it.*
+
+## Monthly close discipline (added 7/3/2026, owner directive)
+Every month must be FULLY closed before work moves to the next month:
+1. Every bank account reconciled to its statement with $0.00 difference (closed session).
+2. Every credit card reconciled to its statement (analytic tie acceptable where the recon engine cannot handle credit-normal accounts; document cutoff items).
+3. Intercompany balances tied against counterparty books.
+4. Zero uncategorized entries: 1100 Undeposited Funds and all Uncategorized income/expense accounts empty for the month; pending-import queue cleared.
+The monthly loan-servicing (TMO) report is required input for categorizing ACH collection batches, chargebacks, and borrower checks.
