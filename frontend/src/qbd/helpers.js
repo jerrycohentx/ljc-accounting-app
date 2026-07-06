@@ -46,6 +46,17 @@ export function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Activity review / feed tables: m/d/yyyy (e.g. 7/3/2026) — no timestamps. */
+export function fmtShortDate(value) {
+  if (value == null || value === '') return '';
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${+iso[2]}/${+iso[3]}/${iso[1]}`;
+  const d = raw.includes('T') ? new Date(raw) : new Date(`${raw.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return raw.slice(0, 10);
+  return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+}
+
 /** Reconcile tables: m/d/yr only (e.g. 1/5/26) — no timestamps. */
 export function fmtReconDate(value) {
   if (value == null || value === '') return '';

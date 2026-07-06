@@ -239,7 +239,23 @@
 .qbd-review-arrow{font-size:14px}
 
 .qbd-review-table{table-layout:fixed;width:100%}
-.qbd-review-table td.desc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;cursor:help}
+.qbd-review-table td.desc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0}
+.qbd-review-table td.qbd-review-desc{cursor:pointer;color:#1f3550}
+.qbd-review-table td.qbd-review-desc:hover{text-decoration:underline;color:#2a5596}
+.qbd-review-cat-cell{display:flex;align-items:center;gap:4px;min-width:0}
+.qbd-review-cat-suggested{border-color:#7ba3d4!important;background:#f4f8fd}
+.qbd-cat-conf{flex-shrink:0;width:7px;height:7px;border-radius:50%;display:inline-block}
+.qbd-cat-conf-high{background:#2e7d32}
+.qbd-cat-conf-med{background:#c9a227}
+.qbd-review-detail-backdrop{position:fixed;inset:0;background:rgba(20,35,55,.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px}
+.qbd-review-detail{background:#fff;border:1px solid #9fb4c8;border-radius:4px;box-shadow:0 8px 28px rgba(0,0,0,.22);width:min(520px,96vw);max-height:85vh;overflow:auto;font-size:12px}
+.qbd-review-detail-hd{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:linear-gradient(#eef2f7,#e2e9f2);border-bottom:1px solid #c9d3df;font-size:13px}
+.qbd-review-detail-x{background:none;border:none;font-size:16px;cursor:pointer;color:#5a6f88;padding:0 4px}
+.qbd-review-detail-body{margin:0;padding:10px 14px 14px;display:grid;grid-template-columns:110px 1fr;gap:6px 10px}
+.qbd-review-detail-body dt{color:#6a7889;font-weight:normal;margin:0}
+.qbd-review-detail-body dd{margin:0;color:#1f3550;word-break:break-word}
+.qbd-review-detail-full{white-space:pre-wrap}
+.qbd-review-detail-mono{font-family:Consolas,monospace;font-size:10px;color:#5a6f88}
 .qbd-review-table .qbd-group-row td{background:linear-gradient(#e4ecf5,#d6e0ee);font-weight:bold;color:#22364f;padding:5px 8px;border-top:1px solid #9fb4c8;border-bottom:1px solid #9fb4c8;font-size:11px;letter-spacing:.3px}
 .qbd-review-table .qbd-group-row:hover td{background:linear-gradient(#e4ecf5,#d6e0ee)}
 .qbd-group-count{display:inline-block;margin-left:8px;padding:0 7px;border-radius:9px;background:#5a85c4;color:#fff;font-size:10px;font-weight:bold;vertical-align:middle}

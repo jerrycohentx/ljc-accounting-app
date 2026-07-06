@@ -17,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../config/database.js';
 import { parseOFX, validateTransactions, deduplicateTransactions } from '../lib/ofx-parser.js';
 import { commitBankImportTransactions, updateImportOffsetAccount, reapplyRulesToPending } from '../lib/import-commit.js';
+import { learnFromUserCategory } from '../lib/category-learn.js';
 import { postJournalEntryToGl } from '../lib/post-journal.js';
 import { getReviewQueue, getPendingFeedCount } from '../lib/dashboard-entities.js';
 
@@ -369,11 +370,23 @@ router.post('/post-selected', async (req, res) => {
     const db = await getDatabase();
     let posted = 0;
     for (const jeId of jeIds) {
+      const importRow = await db.get(
+        `SELECT it.description, it.offset_account_id FROM import_transactions it
+         WHERE it.journal_entry_id = ? AND it.entity_id = ?`,
+        [jeId, entityId]
+      );
       await postJournalEntryToGl(db, { journalId: jeId, entityId, userId: req.user.id });
       await db.run(
         "UPDATE import_transactions SET status = 'RECONCILED' WHERE journal_entry_id = ? AND entity_id = ?",
         [jeId, entityId]
       );
+      if (importRow?.offset_account_id) {
+        await learnFromUserCategory(db, {
+          entityId,
+          description: importRow.description,
+          offsetAccountId: importRow.offset_account_id,
+        });
+      }
       posted += 1;
     }
 
