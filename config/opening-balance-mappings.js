@@ -30,7 +30,7 @@ export const ENTITY_ROLLUP_CONFIG = {
       { category: 'EXPENSE', accountNumber: '5000' },
     ],
     mappings: [
-      { pattern: /^simmons bank ckg-0260/i, accountNumber: '1000' },
+      { pattern: /^simmons bank ckg-0260/i, accountNumber: '1030' },
       { pattern: /lone star ckg-7367|lone star bank checking|lone star money market/i, accountNumber: '1001' },
       { pattern: /^csb-checking|^b1 bank ckg|^fidelity$|marketable securities|retirement accounts|subsidiaries:/i, accountNumber: '1010' },
       { pattern: /^undeposited funds/i, accountNumber: '1100' },

@@ -21,6 +21,7 @@ import { learnFromUserCategory } from '../lib/category-learn.js';
 import { postJournalEntryToGl } from '../lib/post-journal.js';
 import { getReviewQueue, getPendingFeedCount } from '../lib/dashboard-entities.js';
 import { tryVerifyDrawFromBankTxn } from '../lib/holdback-disbursement.js';
+import { reclassPostedSimmonsPlaidBankAccount } from '../lib/reclass-simmons-plaid.js';
 
 const router = express.Router();
 
@@ -261,6 +262,26 @@ router.post('/fix-bank-account', async (req, res) => {
     res.json({ scanned: rows.length, fixed, correctAccount: { number: correctAccountNumber, name: correctAccount.account_name } });
   } catch (error) {
     console.error('Fix bank account error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * One-time repair: reclass posted Simmons Plaid bank lines from GL 1000 → 1030.
+ * Append-only offsetting JEs; idempotent via memo key per source JE.
+ */
+router.post('/reclass-simmons-plaid-bank', async (req, res) => {
+  try {
+    const { entityId = 'ent-ljc', dryRun = false } = req.body || {};
+    const db = await getDatabase();
+    const result = await reclassPostedSimmonsPlaidBankAccount(db, {
+      entityId,
+      userId: req.user.id,
+      dryRun: Boolean(dryRun),
+    });
+    res.json(result);
+  } catch (error) {
+    console.error('Reclass Simmons Plaid bank error:', error);
     res.status(500).json({ error: error.message });
   }
 });
