@@ -1,0 +1,20 @@
+{
+  "_comment": "Shared automation manifest — both LJC Accounting and Loan Servicing.",
+  "version": 1,
+  "paths": {
+    "achJeInbox": "C:\\Users\\jerry\\Claude\\Projects\\AI accounting\\ACH lists",
+    "achJeArchive": "C:\\Users\\jerry\\Claude\\Projects\\AI accounting\\ACH lists\\imported",
+    "loanPortfolioBackup": "C:\\LJC-LoanTracker\\Backups"
+  },
+  "apps": {
+    "accounting": { "localUrl": "http://localhost:3000", "productionUrl": "https://ljc-accounting-app.onrender.com" },
+    "loanServicing": { "localUrl": "http://localhost:8765" }
+  },
+  "routines": [
+    { "id": "ach-je-inbox-scan", "intervalMinutes": 15, "entityId": "ent-ljc" },
+    { "id": "loan-portfolio-backup", "app": "loanServicing", "browser": true },
+    { "id": "accounting-auto-backup", "app": "accounting", "module": "app-backup.js" },
+    { "id": "statement-email-ingest", "app": "accounting", "module": "statement-email-ingest.js" },
+    { "id": "statement-auto-load", "app": "accounting", "module": "statement-auto-load.js" }
+  ]
+}

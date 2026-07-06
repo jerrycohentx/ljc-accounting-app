@@ -28,6 +28,7 @@ import amexCatchupRoutes from './routes/amex-catchup.js';
 import simmonsOfxCatchupRoutes from './routes/simmons-ofx-catchup.js';
 import qboPlCatchupRoutes from './routes/qbo-pl-catchup.js';
 import achJeImportRoutes from './routes/ach-je-import.js';
+import automationRoutes, { buildPlatformHealthPayload } from './routes/automation.js';
 import backupRoutes from './routes/backup.js';
 import emailIngestRoutes from './routes/email-ingest.js';
 import gmailOAuthRoutes, { gmailOAuthCallbackHandler } from './routes/gmail-oauth.js';
@@ -37,6 +38,9 @@ import { buildHealthPayload } from './lib/health-status.js';
 import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
 import { removeDeprecatedRules } from './lib/categorization-rules.js';
 import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
+import { startAchJeInboxScan } from './lib/ach-je-inbox-worker.js';
+import { ingestLoanTrackerEvent } from './lib/loan-event-ingest.js';
+import { loanTrackerKeyMiddleware } from './middleware/loan-tracker-auth.js';
 import { syncAdminPhoneFromEnv } from './lib/user-phone.js';
 import { ensurePlaywrightBrowsers, getPlaywrightBrowsersPath } from './lib/playwright-browsers.js';
 
@@ -85,6 +89,44 @@ app.get('/health', async (req, res) => {
   }
 });
 
+app.get('/api/automation/platform-health', async (req, res) => {
+  try {
+    const db = await getDatabase();
+    res.json(await buildPlatformHealthPayload(db));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/automation/loan-events', loanTrackerKeyMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const result = await ingestLoanTrackerEvent(db, req.body || {});
+    res.status(result.duplicate ? 200 : 201).json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/automation/ach-je/import', loanTrackerKeyMiddleware, async (req, res) => {
+  try {
+    const { filename, content, csvContent, entityId = 'ent-ljc' } = req.body || {};
+    const csvText = content || csvContent;
+    if (!csvText) return res.status(400).json({ error: 'content or csvContent required' });
+    const db = await getDatabase();
+    const { commitAchJeImport } = await import('./lib/ach-je-import.js');
+    const result = await commitAchJeImport(db, {
+      csvText,
+      fileName: filename,
+      entityId,
+      userId: 'loan-tracker-auto',
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Routes
 app.use('/auth', authRoutes);
 
@@ -120,6 +162,7 @@ app.get('/api/entities', async (req, res) => {
 // Import, Plaid, holdback draws, and bank reconciliation routes (top level)
 app.use('/api/import', importRoutes);
 app.use('/api/ach-je-import', achJeImportRoutes);
+app.use('/api/automation', automationRoutes);
 app.use('/api/intercompany', intercompanyRoutes);
 app.use('/api/tax-financials', taxFinancialsRoutes);
 app.use('/api/plaid', plaidRoutes);
@@ -216,6 +259,7 @@ async function start() {
     startAutoBackup();
     startStatementAutoLoad(getDatabase);
     startStatementEmailIngest(getDatabase);
+    startAchJeInboxScan(getDatabase);
   } catch (error) {
     console.error('Database initialization failed:', error);
     process.exit(1);
