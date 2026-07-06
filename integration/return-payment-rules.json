@@ -1,0 +1,50 @@
+{
+  "entityId": "ent-ljc",
+  "version": "2026-07-05",
+  "rules": [
+    {
+      "id": "ach-nsf-credit",
+      "returnType": "ach_nsf",
+      "label": "ACH debit returned (NSF credit)",
+      "matchType": "regex",
+      "pattern": "(ACH\\s*RETURN|RETURNED\\s*ACH|RETURN\\s*ITEM|CREDIT.*RETURN|R0[1-9]\\b|INSUFFICIENT)",
+      "amountSign": "credit",
+      "minAmountCents": 100,
+      "offsetAccount": "1201",
+      "autoPostWhenMatched": false
+    },
+    {
+      "id": "ach-nsf-bank-fee",
+      "returnType": "ach_nsf_bank_fee",
+      "label": "Bank ACH return / NSF fee",
+      "matchType": "regex",
+      "pattern": "(NSF\\s*FEE|RETURN\\s*ITEM\\s*FEE|ACH\\s*RETURN\\s*FEE|ACHINVOICE|RETURNED\\s*ITEM\\s*CHARGE)",
+      "amountSign": "debit",
+      "minAmountCents": 500,
+      "maxAmountCents": 10000,
+      "offsetAccount": "5200",
+      "autoPostWhenMatched": false
+    },
+    {
+      "id": "wire-return-credit",
+      "returnType": "wire_return",
+      "label": "Outgoing wire returned by bank",
+      "matchType": "regex",
+      "pattern": "(WIRE\\s*RETURN|RETURN\\s*OF\\s*WIRE|WIRE\\s*TRANSFER\\s*RETURN|RETURNED\\s*WIRE)",
+      "amountSign": "credit",
+      "minAmountCents": 10000,
+      "offsetAccount": "1350",
+      "autoPostWhenMatched": false
+    },
+    {
+      "id": "chargeback",
+      "returnType": "ach_nsf",
+      "label": "Card/bank chargeback",
+      "matchType": "contains",
+      "pattern": "CHARGEBACK",
+      "amountSign": "any",
+      "offsetAccount": "1201",
+      "autoPostWhenMatched": false
+    }
+  ]
+}

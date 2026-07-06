@@ -1,42 +1,62 @@
 # LJC Automation — Plain English Summary
 
-**Updated:** July 5, 2026
+**Updated:** July 6, 2026
 
-Both apps share `integration/ljc-automation-manifest.json`. The accounting server already runs auto-backup, statement email ingest, and statement folder auto-load on startup. This pass adds **cross-app ACH journal import** and a **unified health check**.
+Both apps share `integration/ljc-automation-manifest.json`. The accounting server runs auto-backup, statement email ingest, statement folder auto-load, and ACH JE inbox scan on startup.
 
-## What runs automatically
+## NSF / payment returns (active paths)
+
+Jerry **no longer uses TMO**. NSF detection and borrower notices use these paths only:
+
+| Path | Direction | NSF notice email |
+|------|-----------|------------------|
+| **ACH Return Report (PDF)** | Loan Servicing import | Yes — Letter Center NSF notice (checkbox on import) |
+| **Accounting bank feed** | Accounting detects return → loan polls `/api/payment-returns/pending-sync` | Yes — auto after sync |
+| **Loan → accounting** | After NSF posted on loan ledger, POST `/api/automation/loan-events` | N/A (suggestion for accounting match only) |
+
+**Deprecated (no NSF auto-email):** TMO master import, TMO history import, bulk history import.
+
+### Accounting APIs
+
+- `GET /api/payment-returns/pending-sync?entityId=ent-ljc` — loan app poll (JWT)
+- `POST /api/payment-returns/:id/ack-sync` — loan acknowledges sync
+- `GET /api/payment-returns/pending` — accounting review queue
+- `POST /api/payment-returns/:id/draft-je` — DRAFT JE when rule + offset account match (no plugs)
+- `POST /api/payment-returns/:id/post` — post only when bank line + loan/draw match on file
+- `POST /api/automation/loan-events` — loan NSF push (integration key; suggestions only)
+
+Bank imports call `detectPaymentReturn()` on each new Simmons/OFX/Plaid line (`integration/return-payment-rules.json`).
+
+### Loan app behavior
+
+- Polls accounting every 5 minutes while open (`startPaymentReturnSyncPoll`)
+- ACH PDF import: reverse payment, $60 fee, 18% on fee, paid-to rollback, email NSF notice
+- Accounting sync: same ledger treatment + auto email when borrower email on file
+- Pushes `nsf_return` loan-events after ACH PDF import (not on accounting-sync round-trip)
+
+## Other automation
 
 | Routine | When | Where |
 |---------|------|--------|
-| Accounting DB backup | Every 60 min (configurable) | Accounting server startup |
-| Statement email ingest | Scheduled interval | Accounting |
+| Accounting DB backup | Every 60 min | Accounting server |
+| Statement email ingest | Scheduled | Accounting |
 | Statement OFX auto-load | Every 24h | Accounting |
-| **ACH JE inbox scan** | Every 15 min | Accounting (new) |
+| ACH JE inbox scan | Every 15 min | Accounting |
 | Loan portfolio backup | On close / 10 min / after edits | Loan Servicing browser |
-| NSF/wire return sync | While Loan app is open | Loan → Accounting poll |
 
-## ACH batch → accounting (new)
+## ACH batch → accounting
 
-When you generate NACHA in Loan Servicing:
-
-1. `QBO_ACH_JE_YYYY-MM.csv` saves to `AI accounting\ACH lists\`
-2. Loan app pushes the CSV to accounting (`/api/automation/ach-je/import`)
-3. Accounting also scans that folder every 15 minutes (idempotent — same month never duplicates)
+When NACHA is generated in Loan Servicing, `QBO_ACH_JE_YYYY-MM.csv` is pushed to `/api/automation/ach-je/import` and scanned from `ACH lists\` every 15 minutes.
 
 ## Health checks
 
-- Accounting: `/health` (full status + backup)
-- Both apps: `/api/automation/platform-health` (no login)
+- Accounting: `/health` (full status + `gitSha`)
+- Both apps: `/api/automation/platform-health`
 
-## Loan events (scaffold)
+## `.env`
 
-Loan app can POST payment/NSF/payoff events to `/api/automation/loan-events` — **suggestions only**, no auto-posting.
-
-## `.env` (only if missing)
-
-- `LOAN_TRACKER_INTEGRATION_KEY` — same key in Loan app Cohen Accounting settings
+- `LOAN_TRACKER_INTEGRATION_KEY` — same key in Loan app Cohen Accounting settings (default `ljc-cohen-loan-tracker-2026`)
 - `ACH_JE_INBOX_SCAN_ENABLED=false` — disable folder scan
-- `ACH_JE_INBOX_INTERVAL_MINUTES=15` — scan frequency
-- `LOAN_TRACKER_URL=http://localhost:8765` — for platform health
+- `LOAN_TRACKER_URL=http://localhost:8765` — platform health
 
 Never use 1Password CLI (`op`).
