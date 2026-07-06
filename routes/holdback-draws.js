@@ -540,4 +540,29 @@ router.post('/:drawId/wire-resend-fees', async (req, res) => {
   }
 });
 
+
+router.post('/rename-draw-id', async (req, res) => {
+  try {
+    const { fromDrawId, toDrawId } = req.body;
+    if (!fromDrawId || !toDrawId) {
+      return res.status(400).json({ error: 'fromDrawId and toDrawId required' });
+    }
+    const row = await req.db.get('SELECT * FROM holdback_disbursements WHERE draw_id = ?', fromDrawId);
+    if (!row) return res.status(404).json({ error: 'Draw not found' });
+    const clash = await req.db.get('SELECT draw_id FROM holdback_disbursements WHERE draw_id = ?', toDrawId);
+    if (clash) return res.status(409).json({ error: 'Target draw id already exists' });
+    const memo = String(row.memo || '').split(fromDrawId).join(toDrawId);
+    await req.db.run(
+      `UPDATE holdback_disbursements SET draw_id = ?, memo = ?, updated_at = CURRENT_TIMESTAMP WHERE draw_id = ?`,
+      [toDrawId, memo, fromDrawId]
+    );
+    const updated = await req.db.get(
+      'SELECT draw_id, status, verified_at, import_transaction_id, net_disbursement FROM holdback_disbursements WHERE draw_id = ?',
+      toDrawId
+    );
+    return res.json({ ok: true, disbursement: updated });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
 export default router;
