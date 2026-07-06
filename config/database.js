@@ -12,6 +12,8 @@ import { ensurePlaidSchema } from './plaid-schema.js';
 import { ensureQboReplacementSchema } from './qbo-replacement-schema.js';
 import { ensureReceiptsSchema } from './receipts-schema.js';
 import { seedDefaultRules } from '../lib/categorization-rules.js';
+import { seedCreCategorizationRules } from '../lib/cre-categorization.js';
+import { reapplyRulesToPending } from '../lib/import-commit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,6 +69,12 @@ export async function getDatabase() {
         await ensureQboReplacementSchema(db);
         await ensureReceiptsSchema(db);
         await seedDefaultRules(db, 'ent-ljc');
+        await seedCreCategorizationRules(db, 'ent-ljc');
+        try {
+          await reapplyRulesToPending(db, 'ent-ljc');
+        } catch (err) {
+          console.warn('reapplyRulesToPending on boot (non-fatal):', err.message);
+        }
 
         console.log('✓ Connected to PostgreSQL (cloud)');
         return db;
@@ -96,6 +104,12 @@ export async function getDatabase() {
     await ensureQboReplacementSchema(db);
     await ensureReceiptsSchema(db);
     await seedDefaultRules(db, 'ent-ljc');
+    await seedCreCategorizationRules(db, 'ent-ljc');
+    try {
+      await reapplyRulesToPending(db, 'ent-ljc');
+    } catch (err) {
+      console.warn('reapplyRulesToPending on boot (non-fatal):', err.message);
+    }
 
     console.log('✓ Connected to SQLite (local)');
   }

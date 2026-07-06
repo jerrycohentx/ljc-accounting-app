@@ -1,0 +1,122 @@
+{
+  "entityId": "ent-ljc",
+  "version": "2026-07-06",
+  "properties": [
+    {
+      "id": "leanne-ct",
+      "name": "1256 Leanne Ct, Kennedale TX",
+      "shortName": "Leanne Ct",
+      "utilityAccounts": { "gas": "6201", "electric": "6202", "water": "6203" }
+    },
+    {
+      "id": "1220-w-18th",
+      "name": "1220 W 18th St",
+      "shortName": "1220 W 18th",
+      "utilityAccounts": { "gas": "6211", "electric": "6212", "water": "6213" }
+    },
+    {
+      "id": "1311-jefferson",
+      "name": "1311 Jefferson",
+      "shortName": "1311 Jefferson",
+      "utilityAccounts": { "gas": "6221", "electric": "6222", "water": "6223" }
+    },
+    {
+      "id": "13923-ivymount",
+      "name": "13923 Ivymount",
+      "shortName": "13923 Ivymount",
+      "utilityAccounts": { "gas": "6231", "electric": "6232", "water": "6233" }
+    },
+    {
+      "id": "6810-heath",
+      "name": "6810 Heath St",
+      "shortName": "6810 Heath",
+      "utilityAccounts": { "gas": "6241", "electric": "6242", "water": "6243" }
+    },
+    {
+      "id": "3427-wentworth",
+      "name": "3427 Wentworth",
+      "shortName": "3427 Wentworth",
+      "utilityAccounts": { "gas": "6251", "electric": "6252", "water": "6253" }
+    }
+  ],
+  "vendorPatterns": [
+    {
+      "patterns": ["CPENERGY ENTEX", "ENTEX CNP", "ENT ACH DR CPENERGY ENTEX"],
+      "utility": "gas",
+      "propertyId": "3427-wentworth",
+      "priority": 12,
+      "label": "Gas — 3427 Wentworth (CenterPoint ENTEX)"
+    },
+    {
+      "patterns": ["CENTERPOINT ENERGY", "CNP "],
+      "utility": "gas",
+      "propertyId": "3427-wentworth",
+      "priority": 13,
+      "label": "Gas — 3427 Wentworth (CenterPoint)"
+    },
+    {
+      "patterns": ["RELIANT ENERGY", "JUST ENERGY", "PENNYWISE POWER"],
+      "utility": "electric",
+      "propertyId": "3427-wentworth",
+      "priority": 14,
+      "label": "Electric — 3427 Wentworth"
+    },
+    {
+      "patterns": ["CITY OF HOUSTON WATER", "HCWCID", "MUD "],
+      "utility": "water",
+      "propertyId": null,
+      "priority": 115,
+      "label": "Water utility (assign property manually)"
+    }
+  ],
+  "holdbackWirePatterns": [
+    {
+      "pattern": "WIRE TRANSFER DEBIT CALACTA",
+      "offset": "1350",
+      "priority": 15,
+      "label": "Holdback rehab draw — Calacta wire out"
+    },
+    {
+      "pattern": "WIRE TRANSFER DEBIT CALCATA",
+      "offset": "1350",
+      "priority": 15,
+      "label": "Holdback rehab draw — Calacta wire out (typo)"
+    },
+    {
+      "pattern": "WIRE TRANSFER CREDIT.*(CALACTA|CALCATA|RTN WIRE|RTN REASON)",
+      "matchType": "regex",
+      "offset": "1350",
+      "priority": 16,
+      "label": "Holdback — returned Calacta wire"
+    },
+    {
+      "pattern": "WIRE TRANSFER CREDIT.*LJC FINANCIAL.*ATTEMPT",
+      "matchType": "regex",
+      "offset": "1350",
+      "priority": 17,
+      "label": "Holdback — wire return credit (failed attempt)"
+    }
+  ],
+  "ownerDrawPatterns": [
+    {
+      "pattern": "EPAY CHASE CREDIT CRD",
+      "offset": "3005",
+      "priority": 38,
+      "label": "Owner's draw — Jerry Cohen (Chase payment from checking)"
+    }
+  ],
+  "wireFeePatterns": [
+    {
+      "pattern": "WIRE TRANSFER FEE",
+      "offset": "5200",
+      "priority": 89,
+      "label": "Wire transfer fee"
+    },
+    {
+      "pattern": "OUTGOING WIRE FEE",
+      "offset": "5200",
+      "priority": 89,
+      "label": "Outgoing wire fee"
+    }
+  ]
+}

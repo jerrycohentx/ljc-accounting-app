@@ -30,7 +30,7 @@
       "returnType": "wire_return",
       "label": "Outgoing wire returned by bank",
       "matchType": "regex",
-      "pattern": "(WIRE\\s*RETURN|RETURN\\s*OF\\s*WIRE|WIRE\\s*TRANSFER\\s*RETURN|RETURNED\\s*WIRE)",
+      "pattern": "(WIRE\\s*RETURN|RETURN\\s*OF\\s*WIRE|WIRE\\s*TRANSFER\\s*RETURN|RETURNED\\s*WIRE|WIRE\\s*TRANSFER\\s*CREDIT.*(CALACTA|CALCATA|RTN\\s*WIRE|RTN\\s*REASON)|WIRE\\s*TRANSFER\\s*CREDIT.*LJC\\s*FINANCIAL.*ATTEMPT)",
       "amountSign": "credit",
       "minAmountCents": 10000,
       "offsetAccount": "1350",

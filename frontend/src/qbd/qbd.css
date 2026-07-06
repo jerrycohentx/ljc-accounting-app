@@ -242,8 +242,9 @@
 .qbd-review-table td.desc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0}
 .qbd-review-table td.qbd-review-desc{cursor:pointer;color:#1f3550}
 .qbd-review-table td.qbd-review-desc:hover{text-decoration:underline;color:#2a5596}
-.qbd-review-cat-cell{display:flex;align-items:center;gap:4px;min-width:0}
+.qbd-review-cat-cell{display:flex;align-items:center;gap:4px;min-width:0;flex-wrap:wrap}
 .qbd-review-cat-suggested{border-color:#7ba3d4!important;background:#f4f8fd}
+.qbd-review-prop-hint{font-size:10px;color:#2a5596;background:#e8f0fb;border-radius:3px;padding:1px 4px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .qbd-cat-conf{flex-shrink:0;width:7px;height:7px;border-radius:50%;display:inline-block}
 .qbd-cat-conf-high{background:#2e7d32}
 .qbd-cat-conf-med{background:#c9a227}

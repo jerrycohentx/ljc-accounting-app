@@ -314,6 +314,11 @@ export default function QBDFeedReview() {
                               title={`Suggested (${row.categorySource || 'rule'}, ${Math.round(conf * 100)}%)`}
                             />
                           )}
+                          {row.propertyHint && (
+                            <span className="qbd-review-prop-hint" title="Property match">
+                              {row.propertyHint}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td><span className="qbd-pill">{row.status}</span></td>
