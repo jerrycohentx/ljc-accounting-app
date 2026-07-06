@@ -411,21 +411,48 @@ router.post('/verify-match', async (req, res) => {
 
 router.post('/verify-from-statement', async (req, res) => {
   try {
-    const { importTransactionId, entityId = 'ent-ljc' } = req.body;
-    if (!importTransactionId) {
-      return res.status(400).json({ error: 'importTransactionId required' });
+    const {
+      importTransactionId,
+      journalEntryId,
+      fitid,
+      drawId: drawIdOverride,
+      entityId = 'ent-ljc',
+    } = req.body;
+
+    if (!importTransactionId && !journalEntryId && !fitid) {
+      return res.status(400).json({ error: 'importTransactionId, journalEntryId, or fitid required' });
     }
 
-    const txn = await req.db.get('SELECT * FROM import_transactions WHERE id = ?', importTransactionId);
+    let txn = null;
+    if (importTransactionId) {
+      txn = await req.db.get('SELECT * FROM import_transactions WHERE id = ?', importTransactionId);
+    } else if (journalEntryId) {
+      txn = await req.db.get(
+        'SELECT * FROM import_transactions WHERE journal_entry_id = ? AND entity_id = ?',
+        [journalEntryId, entityId]
+      );
+    } else if (fitid) {
+      txn = await req.db.get(
+        'SELECT * FROM import_transactions WHERE fitid = ? AND entity_id = ?',
+        [fitid, entityId]
+      );
+    }
+
     if (!txn) {
       return res.status(404).json({ error: 'Bank transaction not found' });
     }
 
-    const amount = Math.abs(Number(txn.amount) || 0);
-    const match = await findHoldbackDrawForBankTxn(req.db, {
+    let match = await findHoldbackDrawForBankTxn(req.db, {
       entityId,
       importTransaction: txn,
     });
+
+    if (!match && drawIdOverride) {
+      match = await req.db.get('SELECT * FROM holdback_disbursements WHERE draw_id = ? AND entity_id = ?', [
+        drawIdOverride,
+        entityId,
+      ]);
+    }
 
     if (!match) {
       return res.status(404).json({ error: 'No matching holdback draw for this bank line' });
@@ -433,18 +460,20 @@ router.post('/verify-from-statement', async (req, res) => {
 
     const updated = await verifyDrawById(req.db, match.draw_id, {
       userId: req.user.id,
-      importTransactionId,
+      importTransactionId: txn.id,
       bankReference: txn.fitid || txn.id,
     });
 
     await req.db.run(
       `UPDATE import_transactions SET status = 'RECONCILED', matched_to_gl_id = COALESCE(matched_to_gl_id, ?) WHERE id = ?`,
-      [match.gl_entry_id, importTransactionId]
+      [match.gl_entry_id, txn.id]
     );
 
     return res.json({
       drawId: updated.draw_id,
       status: updated.status,
+      importTransactionId: txn.id,
+      journalEntryId: txn.journal_entry_id,
       borrowerName: match.borrower_name,
       netDisbursement: match.net_disbursement,
       message: 'Holdback draw verified against bank statement',
