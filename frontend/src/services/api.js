@@ -161,11 +161,21 @@ export const plaidAPI = {
 
 export const importAPI = {
   pending: (entityId) => client.get('/api/import/pending', { params: { entityId } }),
+  pendingCount: (entityId) => client.get('/api/import/pending-count', { params: entityId ? { entityId } : {} }),
+  reviewQueue: (params = {}) => client.get('/api/import/review-queue', { params }),
   setAccount: (fitid, entityId, offsetAccountId) =>
     client.patch(`/api/import/pending/${fitid}`, { entityId, offsetAccountId }),
   postSelected: (entityId, jeIds) => client.post('/api/import/post-selected', { entityId, jeIds }),
   reject: (entityId, fitids) => client.post('/api/import/reject', { entityId, fitids }),
   reapplyRules: (entityId) => client.post('/api/import/reapply-rules', { entityId }),
+};
+
+export const feedsAPI = {
+  status: () => client.get('/api/feeds/status'),
+};
+
+export const dashboardAPI = {
+  entitiesSummary: () => client.get('/api/dashboard/entities-summary'),
 };
 
 export const achJeAPI = {

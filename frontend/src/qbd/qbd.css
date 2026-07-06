@@ -243,3 +243,20 @@
 .qbd-review-table .qbd-group-row td{background:linear-gradient(#e4ecf5,#d6e0ee);font-weight:bold;color:#22364f;padding:5px 8px;border-top:1px solid #9fb4c8;border-bottom:1px solid #9fb4c8;font-size:11px;letter-spacing:.3px}
 .qbd-review-table .qbd-group-row:hover td{background:linear-gradient(#e4ecf5,#d6e0ee)}
 .qbd-group-count{display:inline-block;margin-left:8px;padding:0 7px;border-radius:9px;background:#5a85c4;color:#fff;font-size:10px;font-weight:bold;vertical-align:middle}
+
+/* Multi-entity dashboard */
+.qbd-dash-feeds{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 14px;background:#eef3f9;border-bottom:1px solid #c9d3df;font-size:11px;color:#42566f}
+.qbd-dash-review-link{margin-left:auto;background:#2a5596;color:#fff;border:none;border-radius:3px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit}
+.qbd-dash-review-link:hover{background:#1d4578}
+.qbd-dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:12px 14px}
+.qbd-dash-card{background:#fff;border:1px solid #b9c4d2;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;flex-direction:column}
+.qbd-dash-card-head{display:flex;justify-content:space-between;align-items:baseline;padding:8px 10px;background:linear-gradient(#eef2f7,#e2e9f2);border-bottom:1px solid #c9d3df;font-size:12px}
+.qbd-dash-metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;padding:10px;font-size:11px}
+.qbd-dash-metric{display:flex;flex-direction:column;gap:2px}
+.qbd-dash-metric.wide{grid-column:1/-1}
+.qbd-dash-metric span{color:#6a7889}
+.qbd-dash-metric b{font-size:13px;color:#1f3550;font-variant-numeric:tabular-nums}
+.qbd-warn-num{color:#b3261e!important}
+.qbd-dash-action{margin:0 10px 10px;align-self:flex-start}
+.qbd-nav-badge{position:absolute;top:2px;right:4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#c0392b;color:#fff;font-size:9px;font-weight:bold;line-height:16px;text-align:center}
+.qbd-review-window{display:flex;flex-direction:column;min-height:calc(100vh - 108px)}

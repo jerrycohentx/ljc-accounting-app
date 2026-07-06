@@ -3,12 +3,14 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import QBDBackupDialog, { useBackupStatus, formatBackupShort } from './QBDBackupDialog';
 import QBEmailIngestDialog, { useEmailIngestStatus, formatEmailScanShort } from './QBEmailIngestDialog';
-import { backupAPI } from '../services/api';
+import { backupAPI, importAPI } from '../services/api';
 import './qbd.css';
 
 const MENUS = ['File', 'Edit', 'View', 'Lists', 'Favorites', 'Company', 'Customers', 'Vendors', 'Employees', 'Banking', 'Reports', 'Window', 'Help'];
 const TOOLS = [
   ['🏠', 'Home', '/'],
+  ['📊', 'Dashboard', '/dashboard'],
+  ['✅', 'Review', '/feed-review'],
   ['🏢', 'My Company', '/'],
   ['👥', 'Customers', null],
   ['🚚', 'Vendors', null],
@@ -32,6 +34,19 @@ export default function QBDLayout() {
   const toastTimer = useRef(null);
   const { info: backupInfo, refresh: refreshBackup } = useBackupStatus();
   const { info: emailInfo, refresh: refreshEmail } = useEmailIngestStatus();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const refreshPendingCount = () => {
+    importAPI.pendingCount()
+      .then((r) => setPendingCount(r.data?.count ?? 0))
+      .catch(() => setPendingCount(0));
+  };
+
+  useEffect(() => {
+    refreshPendingCount();
+    const id = setInterval(refreshPendingCount, 60_000);
+    return () => clearInterval(id);
+  }, [loc.pathname]);
 
   const showToast = (m) => {
     setToast(m);
@@ -99,14 +114,14 @@ export default function QBDLayout() {
           ['View Backups…', () => setBackupOpen(true)],
           ['Close Company', closeCompany], '-', ['Exit', closeCompany]];
       case 'Edit': return [['Find…', t('Find — live app')], ['Preferences…', t('Preferences — live app')]];
-      case 'View': return [['Home Page', () => nav('/')], ['Open Window List', t('Live app')]];
+      case 'View': return [['Home Page', () => nav('/')], ['Multi-Entity Dashboard', () => nav('/dashboard')], ['Activity Review', () => nav('/feed-review')], ['Open Window List', t('Live app')]];
       case 'Lists': return [['Chart of Accounts', () => nav('/accounts')], ['Item List', t('Item List — live app')], ['Class List', t('Live app')]];
       case 'Favorites': return [['Customize Favorites…', t('Live app')]];
       case 'Company': return [['Home Page', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')], '-', ['Make General Journal Entries…', () => nav('/journal')], ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Set Closing Date…', () => nav('/period-close')], ['Company Information…', t('Live app')]];
       case 'Customers': return [['Customer Center', t('Live app')], '-', ['Create Invoices', t('Live app')], ['Receive Payments', t('Live app')], ['Create Sales Receipts', t('Live app')]];
       case 'Vendors': return [['Vendor Center', t('Live app')], '-', ['Enter Bills', t('Live app')], ['Pay Bills', t('Live app')]];
       case 'Employees': return [['Employee Center', t('Live app')], '-', ['Enter Time', t('Live app')]];
-      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], '-', ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Connect bank email…', () => setEmailOpen(true)], ['Bank Feeds', () => nav('/bank-feeds')], ['Bank Import (Plaid/OFX)…', () => nav('/bank-import')]];
+      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], '-', ['Activity Review…', () => nav('/feed-review')], ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Connect bank email…', () => setEmailOpen(true)], ['Bank Feeds', () => nav('/bank-feeds')], ['Bank Import (Plaid/OFX)…', () => nav('/bank-import')]];
       case 'Reports': return [['Report Center', () => nav('/reports')], ['Tax Year Financials…', () => nav('/tax-financials')], '-', ['H', 'Company & Financial'], ['Balance Sheet', () => nav('/reports?r=bs')], ['Profit & Loss', () => nav('/reports?r=pl')], '-', ['H', 'Accountant & Lists'], ['Account Listing', () => nav('/accounts')], ['Journal', () => nav('/journal')]];
       case 'Window': return [['Home', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')]];
       case 'Help': return [['About…', showAbout]];
@@ -151,8 +166,12 @@ export default function QBDLayout() {
 
       <div className="qbd-toolbar">
         {TOOLS.map(([ic, label, path]) => (
-          <div key={label} className={'qbd-tbtn' + (toolActive(path) ? ' active' : '')} onClick={() => goOrToast(path, label)}>
-            <span className="ti">{ic}</span>{label}
+          <div key={label} className={'qbd-tbtn' + (toolActive(path) ? ' active' : '')} onClick={() => goOrToast(path, label)} style={{ position: 'relative' }}>
+            <span className="ti">{ic}</span>
+            {label}
+            {label === 'Review' && pendingCount > 0 && (
+              <span className="qbd-nav-badge">{pendingCount > 99 ? '99+' : pendingCount}</span>
+            )}
           </div>
         ))}
         <span className="sp" />

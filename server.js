@@ -40,6 +40,9 @@ import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoa
 import { removeDeprecatedRules } from './lib/categorization-rules.js';
 import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
 import { startAchJeInboxScan } from './lib/ach-je-inbox-worker.js';
+import { startPlaidAutoSync } from './lib/plaid-auto-sync.js';
+import feedsRoutes from './routes/feeds.js';
+import dashboardRoutes from './routes/dashboard.js';
 import { ingestLoanTrackerEvent } from './lib/loan-event-ingest.js';
 import { loanTrackerKeyMiddleware } from './middleware/loan-tracker-auth.js';
 import { syncAdminPhoneFromEnv } from './lib/user-phone.js';
@@ -162,6 +165,8 @@ app.get('/api/entities', async (req, res) => {
 
 // Import, Plaid, holdback draws, and bank reconciliation routes (top level)
 app.use('/api/import', importRoutes);
+app.use('/api/feeds', feedsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/ach-je-import', achJeImportRoutes);
 app.use('/api/automation', automationRoutes);
 app.use('/api/intercompany', intercompanyRoutes);
@@ -262,6 +267,7 @@ async function start() {
     startStatementAutoLoad(getDatabase);
     startStatementEmailIngest(getDatabase);
     startAchJeInboxScan(getDatabase);
+    startPlaidAutoSync(getDatabase);
   } catch (error) {
     console.error('Database initialization failed:', error);
     process.exit(1);

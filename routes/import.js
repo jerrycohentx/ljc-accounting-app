@@ -18,6 +18,7 @@ import { getDatabase } from '../config/database.js';
 import { parseOFX, validateTransactions, deduplicateTransactions } from '../lib/ofx-parser.js';
 import { commitBankImportTransactions, updateImportOffsetAccount, reapplyRulesToPending } from '../lib/import-commit.js';
 import { postJournalEntryToGl } from '../lib/post-journal.js';
+import { getReviewQueue, getPendingFeedCount } from '../lib/dashboard-entities.js';
 
 const router = express.Router();
 
@@ -282,7 +283,7 @@ router.get('/pending', async (req, res) => {
        LEFT JOIN accounts a ON a.id = it.account_id
        WHERE it.entity_id = ? AND it.status = 'DRAFT' AND je.status = 'DRAFT'
        ORDER BY it.date DESC, it.created_at DESC`,
-      entityId
+      [entityId]
     );
 
     const pending = rows.map((r) => {
@@ -304,6 +305,37 @@ router.get('/pending', async (req, res) => {
     });
 
     res.json({ pending, count: pending.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/** Cross-entity activity review queue with filters (Plaid, email, OFX). */
+router.get('/review-queue', async (req, res) => {
+  try {
+    const { entityId, source, startDate, endDate, accountId, limit } = req.query;
+    const db = await getDatabase();
+    const result = await getReviewQueue(db, {
+      entityId: entityId || null,
+      source: source || null,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      accountId: accountId || null,
+      limit: limit ? Number(limit) : 500,
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/** Pending feed count — all entities or one (for nav badge). */
+router.get('/pending-count', async (req, res) => {
+  try {
+    const { entityId } = req.query;
+    const db = await getDatabase();
+    const count = await getPendingFeedCount(db, entityId || null);
+    res.json({ count, entityId: entityId || null });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

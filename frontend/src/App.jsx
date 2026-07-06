@@ -15,6 +15,8 @@ import QBDCashEntry from './qbd/QBDCashEntry';
 import QBDReconcile from './qbd/QBDReconcile';
 import ReconcileRedirect from './qbd/ReconcileRedirect';
 import QBDBankFeeds from './qbd/QBDBankFeeds';
+import QBDEntityDashboard from './qbd/QBDEntityDashboard';
+import QBDFeedReview from './qbd/QBDFeedReview';
 import QBDPeriodClose from './qbd/QBDPeriodClose';
 import QBDTaxFinancials from './qbd/QBDTaxFinancials';
 import Receipts from './pages/Receipts';
@@ -43,6 +45,8 @@ function App() {
             }
           >
             <Route index element={<QBDHome />} />
+            <Route path="dashboard" element={<QBDEntityDashboard />} />
+            <Route path="feed-review" element={<QBDFeedReview />} />
             <Route path="accounts" element={<QBDChartOfAccounts />} />
             <Route path="register/:accountId" element={<QBDRegister />} />
             <Route path="reports" element={<QBDReports />} />

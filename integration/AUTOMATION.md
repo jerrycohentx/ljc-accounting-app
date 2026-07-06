@@ -2,7 +2,7 @@
 
 **Updated:** July 6, 2026
 
-Both apps share `integration/ljc-automation-manifest.json`. The accounting server runs auto-backup, statement email ingest, statement folder auto-load, and ACH JE inbox scan on startup.
+Both apps share `integration/ljc-automation-manifest.json`. The accounting server runs auto-backup, Plaid auto-sync, statement email ingest, statement folder auto-load, and ACH JE inbox scan on startup.
 
 ## NSF / payment returns (active paths)
 
@@ -39,10 +39,23 @@ Bank imports call `detectPaymentReturn()` on each new Simmons/OFX/Plaid line (`i
 | Routine | When | Where |
 |---------|------|--------|
 | Accounting DB backup | Every 60 min | Accounting server |
-| Statement email ingest | Scheduled | Accounting |
+| **Plaid auto-sync** | Every 24h + startup + webhook | `lib/plaid-auto-sync.js` → review queue (DRAFT) |
+| Statement email ingest | Every 6h (configurable) | Accounting |
 | Statement OFX auto-load | Every 24h | Accounting |
 | ACH JE inbox scan | Every 15 min | Accounting |
 | Loan portfolio backup | On close / 10 min / after edits | Loan Servicing browser |
+
+### Daily bank & card feeds (accounting)
+
+1. **Plaid** — `PLAID_AUTO_SYNC_INTERVAL_HOURS` (default 24). On startup (20s delay) and when Plaid sends `SYNC_UPDATES_AVAILABLE` webhook. New transactions land in **Activity Review** as DRAFT; nothing posts without approval.
+2. **Email** — `STATEMENT_EMAIL_INTERVAL_HOURS` (default 6). Simmons, Lone Star, Amex statements from connected mailboxes.
+3. **Folder auto-load** — `STATEMENT_AUTO_LOAD_INTERVAL_HOURS` (default 24). OFX from `data/bank-imports/`.
+
+Status API: `GET /api/feeds/status` (last run, next scheduled, pending review count).
+
+Multi-entity dashboard: `GET /api/dashboard/entities-summary` — UI at **Dashboard** toolbar / `/dashboard`.
+
+Activity review: `GET /api/import/review-queue` — UI at **Review** toolbar / `/feed-review` (badge shows pending count).
 
 ## ACH batch → accounting
 
@@ -58,5 +71,10 @@ When NACHA is generated in Loan Servicing, `QBO_ACH_JE_YYYY-MM.csv` is pushed to
 - `LOAN_TRACKER_INTEGRATION_KEY` — same key in Loan app Cohen Accounting settings (default `ljc-cohen-loan-tracker-2026`)
 - `ACH_JE_INBOX_SCAN_ENABLED=false` — disable folder scan
 - `LOAN_TRACKER_URL=http://localhost:8765` — platform health
+- `PLAID_AUTO_SYNC_INTERVAL_HOURS=24` — Plaid daily sync (set `PLAID_AUTO_SYNC_ENABLED=0` to disable)
+- `PLAID_WEBHOOK_URL` — Render: `https://your-app.onrender.com/api/plaid/webhook` (triggers sync on bank updates)
+- `STATEMENT_EMAIL_INTERVAL_HOURS=6` — email statement scan (use `24` for once-daily)
+- `STATEMENT_AUTO_LOAD_INTERVAL_HOURS=24` — OFX folder auto-load
+- `DAILY_FEED_RUN_HOUR` — optional documentation for preferred daily run hour
 
 Never use 1Password CLI (`op`).

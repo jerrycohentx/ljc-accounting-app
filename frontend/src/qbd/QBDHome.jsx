@@ -59,7 +59,7 @@ export default function QBDHome() {
       {reviewCount !== null && (
         <div
           className={`qbd-review-banner ${reviewCount > 0 ? 'has-items' : 'clear'}`}
-          onClick={() => nav('/bank-feeds')}
+          onClick={() => nav('/feed-review')}
         >
           <span>
             {reviewCount > 0 && <span className="qbd-review-count">{reviewCount}</span>}
@@ -68,7 +68,7 @@ export default function QBDHome() {
                 ? `${reviewCount} downloaded transaction${reviewCount === 1 ? '' : 's'} need${reviewCount === 1 ? 's' : ''} review`
                 : 'All downloaded bank activity reviewed'}
             </b>
-            {reviewCount > 0 ? ' — review & approve in Bank Feeds' : ''}
+            {reviewCount > 0 ? ' — open Activity Review to approve' : ''}
           </span>
           <span className="qbd-review-arrow">▶</span>
         </div>

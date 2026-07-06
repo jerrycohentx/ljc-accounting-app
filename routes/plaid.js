@@ -15,22 +15,17 @@ import { CountryCode, Products } from 'plaid';
 import { getDatabase } from '../config/database.js';
 import { ensurePlaidSchema } from '../config/plaid-schema.js';
 import { getPlaidClient, isPlaidConfigured } from '../lib/plaid-client.js';
-import { encryptSecret, decryptSecret } from '../lib/token-crypto.js';
-import { mapPlaidTransactions } from '../lib/plaid-transactions.js';
-import { commitBankImportTransactions, getExistingFitidsForEntity } from '../lib/import-commit.js';
+import { encryptSecret } from '../lib/token-crypto.js';
+import {
+  syncPlaidItem,
+  commitPlaidImport,
+} from '../lib/plaid-auto-sync.js';
 import {
   assertSimmonsInstitution,
-  getInstitutionKey,
   getSimmonsInstitutionConfig,
   isSimmonsInstitution,
   simmonsRejectMessage,
 } from '../lib/plaid-simmons.js';
-
-/** GL account (by account number) that each institution's transactions book against. */
-const PLAID_BANK_ACCOUNT_BY_INSTITUTION_KEY = {
-  simmons: '1000', // Cash & Bank Accounts - Simmons
-  amex: '2010', // Credit Card - American Express (liability)
-};
 
 const router = express.Router();
 const plaidSyncSessions = new Map();
@@ -244,60 +239,11 @@ router.post('/sync', async (req, res) => {
       });
     }
 
-    const accessToken = decryptSecret(item.access_token_encrypted);
-    const client = getPlaidClient();
-
-    let cursor = item.sync_cursor || undefined;
-    let added = [];
-    let hasMore = true;
-
-    while (hasMore) {
-      const response = await client.transactionsSync({
-        access_token: accessToken,
-        cursor,
-        count: 500,
-      });
-      added = added.concat(response.data.added);
-      cursor = response.data.next_cursor;
-      hasMore = response.data.has_more;
-    }
-
-    await db.run(
-      'UPDATE plaid_items SET sync_cursor = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [cursor, item.id]
-    );
-
-    const mapped = mapPlaidTransactions(added.filter((t) => !t.pending));
-    const existingFitids = await getExistingFitidsForEntity(entityId);
-    const newTransactions = mapped.filter((t) => !existingFitids.has(t.fitid));
-    const duplicateCount = mapped.length - newTransactions.length;
-
-    const importId = `plaid-${uuidv4()}`;
-    const dates = newTransactions.map((t) => t.date).filter(Boolean).sort();
-    const institutionKey = getInstitutionKey({ institution_id: item.institution_id, name: item.institution_name });
-    const session = {
-      importId,
-      entityId,
-      itemId,
-      fileName: `${item.institution_name || 'Bank'} (Plaid): ${item.institution_name || itemId}`,
-      institutionName: item.institution_name,
-      bankAccountNumber: PLAID_BANK_ACCOUNT_BY_INSTITUTION_KEY[institutionKey] || null,
-      dateRange: {
-        start: dates[0] || null,
-        end: dates[dates.length - 1] || null,
-      },
-      totalTransactions: mapped.length,
-      newTransactions: newTransactions.length,
-      duplicateTransactions: duplicateCount,
-      transactions: newTransactions,
-      createdAt: new Date().toISOString(),
-      status: 'PREVIEW',
-    };
-
-    plaidSyncSessions.set(importId, session);
+    const session = await syncPlaidItem(db, { entityId, itemId });
+    plaidSyncSessions.set(session.importId, session);
 
     return res.json({
-      importId,
+      importId: session.importId,
       fileName: session.fileName,
       institutionName: session.institutionName,
       dateRange: session.dateRange,
@@ -306,7 +252,7 @@ router.post('/sync', async (req, res) => {
         newTransactions: session.newTransactions,
         duplicateTransactions: session.duplicateTransactions,
       },
-      preview: newTransactions.slice(0, 10),
+      preview: session.transactions.slice(0, 10),
       totalForImport: session.newTransactions,
     });
   } catch (error) {
@@ -331,14 +277,8 @@ router.post('/import', async (req, res) => {
     }
 
     const db = await getDatabase();
-    const { createdJECount, reapply } = await commitBankImportTransactions(db, {
-      entityId: session.entityId,
-      transactions: session.transactions,
-      importId: session.importId,
-      userId: req.user.id,
-      sourceLabel: `${session.institutionName || 'Bank'} (Plaid)`,
-      bankAccountNumber: session.bankAccountNumber || undefined,
-    });
+    const result = await commitPlaidImport(db, session, req.user.id);
+    const { journalEntriesCreated: createdJECount, reapply } = result;
 
     session.status = 'COMPLETED';
     session.importedCount = createdJECount;
@@ -364,21 +304,6 @@ router.post('/import', async (req, res) => {
   }
 });
 
-export async function plaidWebhookHandler(req, res) {
-  try {
-    const { webhook_type: webhookType, webhook_code: webhookCode, item_id: itemId } = req.body || {};
-    console.log('Plaid webhook received:', webhookType, webhookCode, itemId);
-
-    // Ack immediately; background sync can be added via job queue later.
-    if (webhookType === 'TRANSACTIONS' && webhookCode === 'SYNC_UPDATES_AVAILABLE') {
-      console.log(`Plaid sync available for item ${itemId} — trigger sync from Bank Import or schedule worker`);
-    }
-
-    return res.json({ received: true });
-  } catch (error) {
-    console.error('Plaid webhook error:', error);
-    return res.status(500).json({ error: 'Webhook processing failed' });
-  }
-}
+export { plaidWebhookHandler } from '../lib/plaid-auto-sync.js';
 
 export default router;
