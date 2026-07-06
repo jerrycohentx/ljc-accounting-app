@@ -20,6 +20,7 @@ import { commitBankImportTransactions, updateImportOffsetAccount, reapplyRulesTo
 import { learnFromUserCategory } from '../lib/category-learn.js';
 import { postJournalEntryToGl } from '../lib/post-journal.js';
 import { getReviewQueue, getPendingFeedCount } from '../lib/dashboard-entities.js';
+import { tryVerifyDrawFromBankTxn } from '../lib/holdback-disbursement.js';
 
 const router = express.Router();
 
@@ -369,9 +370,10 @@ router.post('/post-selected', async (req, res) => {
 
     const db = await getDatabase();
     let posted = 0;
+    const holdbackVerified = [];
     for (const jeId of jeIds) {
       const importRow = await db.get(
-        `SELECT it.description, it.offset_account_id FROM import_transactions it
+        `SELECT it.* FROM import_transactions it
          WHERE it.journal_entry_id = ? AND it.entity_id = ?`,
         [jeId, entityId]
       );
@@ -387,12 +389,33 @@ router.post('/post-selected', async (req, res) => {
           offsetAccountId: importRow.offset_account_id,
         });
       }
+      if (importRow) {
+        try {
+          const verified = await tryVerifyDrawFromBankTxn(db, {
+            importTransaction: importRow,
+            userId: req.user.id,
+            entityId,
+          });
+          if (verified) {
+            holdbackVerified.push(verified.draw_id);
+            await db.run(
+              `UPDATE import_transactions SET matched_to_gl_id = COALESCE(matched_to_gl_id, ?) WHERE id = ?`,
+              [verified.gl_entry_id || null, importRow.id]
+            );
+          }
+        } catch (err) {
+          console.warn('holdback verify on approve (non-fatal):', err.message);
+        }
+      }
       posted += 1;
     }
 
     res.json({
       posted,
-      message: `${posted} transaction(s) added to the register.`,
+      holdbackVerified,
+      message: holdbackVerified.length
+        ? `${posted} transaction(s) posted; holdback draw ${holdbackVerified.join(', ')} wire verified.`
+        : `${posted} transaction(s) added to the register.`,
     });
   } catch (error) {
     res.status(500).json({ error: error.message, details: error.message });

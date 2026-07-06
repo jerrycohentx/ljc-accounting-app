@@ -10,9 +10,9 @@ import {
   ensureFundsReceivedJournal,
   postHoldbackFeeCorrection,
   verifyDrawById,
-  drawMemoContainsId,
   resolveFundingBank,
 } from '../lib/holdback-disbursement.js';
+import { findHoldbackDrawForBankTxn } from '../lib/holdback-bank-match.js';
 
 function holdbackFeesMatch(existing, payload) {
   const eq = (a, b) => Math.abs(Number(a) - Number(b)) < 0.01;
@@ -422,25 +422,10 @@ router.post('/verify-from-statement', async (req, res) => {
     }
 
     const amount = Math.abs(Number(txn.amount) || 0);
-    const rows = await req.db.all(
-      `SELECT * FROM holdback_disbursements
-       WHERE entity_id = ? AND status IN ('exported', 'matched')`,
-      entityId
-    );
-
-    let match = null;
-    for (const row of rows) {
-      const text = `${txn.description || ''} ${txn.check_number || ''} ${row.memo || ''}`;
-      const memoHit = drawMemoContainsId(text, row.draw_id);
-      const amountHit = Math.abs(Number(row.net_disbursement) - amount) < 0.02;
-      if (memoHit && amountHit) {
-        match = row;
-        break;
-      }
-      if (!match && amountHit) {
-        match = row;
-      }
-    }
+    const match = await findHoldbackDrawForBankTxn(req.db, {
+      entityId,
+      importTransaction: txn,
+    });
 
     if (!match) {
       return res.status(404).json({ error: 'No matching holdback draw for this bank line' });
@@ -463,6 +448,63 @@ router.post('/verify-from-statement', async (req, res) => {
       borrowerName: match.borrower_name,
       netDisbursement: match.net_disbursement,
       message: 'Holdback draw verified against bank statement',
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/** Post $35 wire return + $35 resend fees when a holdback wire bounces; reduces expected net wire. */
+router.post('/:drawId/wire-resend-fees', async (req, res) => {
+  try {
+    const { drawId } = req.params;
+    const row = await req.db.get('SELECT * FROM holdback_disbursements WHERE draw_id = ?', drawId);
+    if (!row) return res.status(404).json({ error: 'Draw not found' });
+    if (row.status === 'verified') {
+      return res.status(409).json({ error: 'Draw already verified; cannot adjust wire resend fees' });
+    }
+
+    const wireReturnFee = 35;
+    const wireResendFee = 35;
+    const oldWireFee = Number(row.wire_fee) || 0;
+    const oldNet = Number(row.net_disbursement) || 0;
+    const newWireFee = oldWireFee + wireReturnFee + wireResendFee;
+    const newNet = oldNet - wireReturnFee - wireResendFee;
+
+    if (newNet <= 0) {
+      return res.status(400).json({ error: 'Net disbursement would be zero after wire resend fees' });
+    }
+
+    const correction = await postHoldbackFeeCorrection(req.db, {
+      entityId: row.entity_id,
+      userId: req.user.id,
+      drawId,
+      drawDate: row.draw_date,
+      borrowerName: row.borrower_name,
+      loanNum: row.loan_num,
+      oldInspectionFee: row.inspection_fee,
+      oldWireFee,
+      oldNetDisbursement: oldNet,
+      inspectionFee: row.inspection_fee,
+      wireFee: newWireFee,
+      netDisbursement: newNet,
+      fundingBank: row.funding_bank,
+    });
+
+    await req.db.run(
+      `UPDATE holdback_disbursements
+       SET wire_fee = ?, net_disbursement = ?, status = CASE WHEN status = 'verified' THEN status ELSE 'matched' END,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE draw_id = ?`,
+      [newWireFee, newNet, drawId]
+    );
+
+    return res.json({
+      drawId,
+      wireFee: newWireFee,
+      netDisbursement: newNet,
+      correctionJournalId: correction?.journalId,
+      message: 'Wire return + resend fees posted; net wire reduced by $70',
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
