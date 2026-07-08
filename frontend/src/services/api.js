@@ -114,7 +114,11 @@ export const bankReconAPI = {
 export const backupAPI = {
   status: () => client.get('/api/backup/status'),
   list: (limit = 20) => client.get('/api/backup/list', { params: { limit } }),
-  run: () => client.post('/api/backup/run'),
+  run: (reason = 'manual') => client.post(
+    '/api/backup/run',
+    reason === 'close' ? { reason: 'close', wait: true } : { reason },
+    { timeout: 180000 },
+  ),
   download: (id) => client.get(`/api/backup/download/${id}`, { responseType: 'blob' }),
 };
 

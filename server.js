@@ -35,7 +35,7 @@ import emailIngestRoutes from './routes/email-ingest.js';
 import documentIngestRoutes from './routes/document-ingest.js';
 import gmailOAuthRoutes, { gmailOAuthCallbackHandler } from './routes/gmail-oauth.js';
 import { authMiddleware } from './middleware/auth.js';
-import { startAutoBackup } from './lib/app-backup.js';
+import { startAutoBackup, runBackup, stopAutoBackup } from './lib/app-backup.js';
 import { buildHealthPayload } from './lib/health-status.js';
 import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
 import { removeDeprecatedRules } from './lib/categorization-rules.js';
@@ -227,12 +227,26 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('Shutting down gracefully...');
+// Graceful shutdown — back up before closing the local server
+let shuttingDown = false;
+async function gracefulShutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`Shutting down gracefully (${signal})...`);
+  stopAutoBackup();
+  try {
+    const result = await runBackup({ reason: 'shutdown', wait: true });
+    if (result.ok) {
+      console.log(`✓ Shutdown backup: ${result.backup?.filename || 'recent snapshot'}`);
+    }
+  } catch (err) {
+    console.warn('Shutdown backup failed:', err.message);
+  }
   await closeDatabase();
   process.exit(0);
-});
+}
+process.on('SIGINT', () => { gracefulShutdown('SIGINT'); });
+process.on('SIGTERM', () => { gracefulShutdown('SIGTERM'); });
 
 // Start server ΓÇö listen first so Render health checks pass during DB init
 async function start() {

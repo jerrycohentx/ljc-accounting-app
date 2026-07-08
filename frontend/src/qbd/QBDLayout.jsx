@@ -57,7 +57,7 @@ export default function QBDLayout() {
   const closeCompany = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; };
 
   const runBackupNow = () => {
-    backupAPI.run()
+    backupAPI.run('manual')
       .then((r) => { showToast(r.data.message || 'Backup complete ✓'); refreshBackup(); })
       .catch((e) => showToast('Backup failed: ' + (e.response?.data?.error || e.message)));
   };
@@ -68,16 +68,12 @@ export default function QBDLayout() {
     setExiting(true);
     showToast('Saving backup…');
     try {
-      const r = await backupAPI.run();
+      const r = await backupAPI.run('close');
       showToast(r.data?.message || 'Backup saved ✓ — signing out…');
     } catch (e) {
       showToast('Backup failed — signing out anyway: ' + (e.response?.data?.error || e.message));
     }
-    setTimeout(() => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }, 1100);
+    setTimeout(closeCompany, 1100);
   };
 
   const showAbout = () => {
@@ -112,7 +108,7 @@ export default function QBDLayout() {
           '-',
           ['Back Up Company…', runBackupNow],
           ['View Backups…', () => setBackupOpen(true)],
-          ['Close Company', closeCompany], '-', ['Exit', closeCompany]];
+          ['Close Company', saveAndExit], '-', ['Exit', saveAndExit]];
       case 'Edit': return [['Find…', t('Find — live app')], ['Preferences…', t('Preferences — live app')]];
       case 'View': return [['Home Page', () => nav('/')], ['Multi-Entity Dashboard', () => nav('/dashboard')], ['Activity Review', () => nav('/feed-review')], ['Open Window List', t('Live app')]];
       case 'Lists': return [['Chart of Accounts', () => nav('/accounts')], ['Item List', t('Item List — live app')], ['Class List', t('Live app')]];
