@@ -41,6 +41,7 @@ Bank imports call `detectPaymentReturn()` on each new Simmons/OFX/Plaid line (`i
 | Accounting DB backup | Every 60 min | Accounting server |
 | **Plaid auto-sync** | Every 24h + startup + webhook | `lib/plaid-auto-sync.js` → review queue (DRAFT) |
 | Statement email ingest | Every 6h (configurable) | Accounting |
+| **Document email ingest** | Every 6h (configurable) | `lib/document-email-ingest.js` → Activity Review DRAFT |
 | Statement OFX auto-load | Every 24h | Accounting |
 | ACH JE inbox scan | Every 15 min | Accounting |
 | Loan portfolio backup | On close / 10 min / after edits | Loan Servicing browser |

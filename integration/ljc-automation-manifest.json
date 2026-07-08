@@ -15,6 +15,7 @@
     { "id": "loan-portfolio-backup", "app": "loanServicing", "browser": true },
     { "id": "accounting-auto-backup", "app": "accounting", "module": "app-backup.js" },
     { "id": "statement-email-ingest", "app": "accounting", "module": "statement-email-ingest.js" },
+    { "id": "document-email-ingest", "app": "accounting", "module": "document-email-ingest.js" },
     { "id": "statement-auto-load", "app": "accounting", "module": "statement-auto-load.js" }
   ]
 }
