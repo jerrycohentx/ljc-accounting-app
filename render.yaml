@@ -76,16 +76,6 @@ services:
         value: https://ljc-accounting-app.onrender.com/api/email/gmail/callback
       - key: FRONTEND_URL
         value: https://ljc-accounting-app.onrender.com
-      - key: DOCUMENT_EMAIL_ENABLED
-        value: "1"
-      - key: DOCUMENT_EMAIL_INTERVAL_HOURS
-        value: "6"
-      - key: DOCUMENT_DIGEST_ENABLED
-        value: "1"
-      - key: DOCUMENT_DIGEST_HOUR
-        value: "7"
-      - key: DOCUMENT_DIGEST_TO
-        value: jerry@ljcfinancial.com
       - key: PLAYWRIGHT_BROWSERS_PATH
         value: /opt/render/project/src/.playwright-browsers
     healthCheckPath: /health

@@ -7,7 +7,6 @@ import { getDatabase } from '../config/database.js';
 import { getPlaidAutoSyncStatus } from '../lib/plaid-auto-sync.js';
 import { getStatementAutoLoadStatus } from '../lib/statement-auto-load.js';
 import { getStatementEmailIngestStatus } from '../lib/statement-email-ingest.js';
-import { getDocumentEmailIngestStatus } from '../lib/document-email-ingest.js';
 import { getPendingFeedCount } from '../lib/dashboard-entities.js';
 
 const router = express.Router();
@@ -22,7 +21,6 @@ router.get('/status', async (req, res) => {
     const db = await getDatabase();
     const plaid = getPlaidAutoSyncStatus();
     const email = await getStatementEmailIngestStatus(db);
-    const documents = await getDocumentEmailIngestStatus(db);
     const autoLoad = getStatementAutoLoadStatus();
     const pendingReviewCount = await getPendingFeedCount(db);
 
@@ -41,16 +39,6 @@ router.get('/status', async (req, res) => {
         lastRunError: email.lastRunError,
         lastRunSummary: email.lastRunSummary,
         nextScheduledRun: computeNextRun(email.lastRunAt, email.intervalHours),
-      },
-      documents: {
-        enabled: documents.enabled,
-        intervalHours: documents.intervalHours,
-        lastRunAt: documents.lastRunAt,
-        lastRunError: documents.lastRunError,
-        lastRunSummary: documents.lastRunSummary,
-        digestEnabled: documents.digestEnabled,
-        digestTo: documents.digestTo,
-        nextScheduledRun: computeNextRun(documents.lastRunAt, documents.intervalHours),
       },
       autoLoad: {
         ...autoLoad,
