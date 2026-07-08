@@ -32,7 +32,6 @@ import paymentReturnRoutes from './routes/payment-returns.js';
 import automationRoutes, { buildPlatformHealthPayload } from './routes/automation.js';
 import backupRoutes from './routes/backup.js';
 import emailIngestRoutes from './routes/email-ingest.js';
-import documentIngestRoutes from './routes/document-ingest.js';
 import gmailOAuthRoutes, { gmailOAuthCallbackHandler } from './routes/gmail-oauth.js';
 import { authMiddleware } from './middleware/auth.js';
 import { startAutoBackup } from './lib/app-backup.js';
@@ -40,7 +39,6 @@ import { buildHealthPayload } from './lib/health-status.js';
 import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
 import { removeDeprecatedRules } from './lib/categorization-rules.js';
 import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
-import { startDocumentEmailIngest, getDocumentEmailIngestStatus } from './lib/document-email-ingest.js';
 import { startAchJeInboxScan } from './lib/ach-je-inbox-worker.js';
 import { startPlaidAutoSync } from './lib/plaid-auto-sync.js';
 import feedsRoutes from './routes/feeds.js';
@@ -79,11 +77,9 @@ app.get('/health', async (req, res) => {
   try {
     const db = await getDatabase();
     const emailIngest = await getStatementEmailIngestStatus(db);
-    const documentIngest = await getDocumentEmailIngestStatus(db);
     const row = await db.get('SELECT COUNT(*) as count FROM users');
     const payload = await buildHealthPayload({
       statementEmailIngest: emailIngest,
-      documentEmailIngest: documentIngest,
       users: Number(row?.count ?? 0),
     }, db);
     // Legacy flat fields for older clients
@@ -182,7 +178,6 @@ app.use('/api/payment-returns', paymentReturnRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/email/gmail', gmailOAuthRoutes);
 app.use('/api/email/ingest', emailIngestRoutes);
-app.use('/api/documents/ingest', documentIngestRoutes);
 app.use('/api/reconciliation/bank', bankReconciliationRoutes);
 app.use('/api/reconciliation/reports', reconciliationReportsRoutes);
 
@@ -271,7 +266,6 @@ async function start() {
     startAutoBackup();
     startStatementAutoLoad(getDatabase);
     startStatementEmailIngest(getDatabase);
-    startDocumentEmailIngest(getDatabase);
     startAchJeInboxScan(getDatabase);
     startPlaidAutoSync(getDatabase);
   } catch (error) {

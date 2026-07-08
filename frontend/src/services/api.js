@@ -233,12 +233,6 @@ export const emailIngestAPI = {
   history: (limit = 20) => client.get('/api/email/ingest/history', { params: { limit } }),
 };
 
-export const documentIngestAPI = {
-  status: () => client.get('/api/documents/ingest/status'),
-  run: () => client.post('/api/documents/ingest/run'),
-  history: (limit = 20) => client.get('/api/documents/ingest/history', { params: { limit } }),
-};
-
 export const gmailAPI = {
   status: () => client.get('/api/email/gmail/status'),
   authUrl: (user, label) => client.get('/api/email/gmail/auth-url', { params: { user, label } }),

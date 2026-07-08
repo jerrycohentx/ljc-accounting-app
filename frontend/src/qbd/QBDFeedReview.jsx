@@ -13,7 +13,6 @@ const SOURCE_LABELS = {
   plaid: 'Plaid',
   ofx: 'OFX',
   email: 'Email',
-  email_doc: 'Email doc',
   import: 'Import',
 };
 
@@ -239,7 +238,6 @@ export default function QBDFeedReview() {
           <option value="plaid">Plaid</option>
           <option value="ofx">OFX</option>
           <option value="email">Email</option>
-          <option value="email_doc">Email documents</option>
           <option value="import">Other</option>
         </select>
         <label>Account</label>

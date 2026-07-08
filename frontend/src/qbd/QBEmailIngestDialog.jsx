@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { gmailAPI, emailIngestAPI, documentIngestAPI } from '../services/api';
+import { gmailAPI, emailIngestAPI } from '../services/api';
 
 function fmtWhen(iso) {
   if (!iso) return 'Never';
@@ -86,12 +86,11 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
   const [busy, setBusy] = useState(false);
   const [gmail, setGmail] = useState(null);
   const [ingest, setIngest] = useState(null);
-  const [docIngest, setDocIngest] = useState(null);
 
   const load = useCallback(() => {
     if (!open) return;
-    Promise.all([gmailAPI.status(), emailIngestAPI.status(), documentIngestAPI.status()])
-      .then(([g, i, d]) => { setGmail(g.data); setIngest(i.data); setDocIngest(d.data); })
+    Promise.all([gmailAPI.status(), emailIngestAPI.status()])
+      .then(([g, i]) => { setGmail(g.data); setIngest(i.data); })
       .catch((e) => showToast && showToast('Could not load email status: ' + (e.response?.data?.error || e.message)));
   }, [open, showToast]);
 
@@ -118,7 +117,6 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
         load();
         onStatusChange && onStatusChange();
         emailIngestAPI.run().catch(() => {});
-        documentIngestAPI.run().catch(() => {});
       })
       .catch((e) => showToast && showToast(e.response?.data?.error || e.message))
       .finally(() => setBusy(false));
@@ -126,16 +124,9 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
 
   const scanNow = () => {
     setBusy(true);
-    Promise.allSettled([emailIngestAPI.run(), documentIngestAPI.run()])
-      .then(([stmt, doc]) => {
-        const stmtMsg = stmt.status === 'fulfilled' ? (stmt.value.data?.message || '') : '';
-        const docMsg = doc.status === 'fulfilled' ? (doc.value.data?.message || '') : '';
-        const drafts = doc.status === 'fulfilled' ? (doc.value.data?.draftsCreated || 0) : 0;
-        const parts = [];
-        if (stmtMsg) parts.push(stmtMsg);
-        if (docMsg) parts.push(docMsg);
-        if (drafts > 0) parts.push(`${drafts} receipt/invoice draft(s) → Activity Review`);
-        showToast && showToast(parts.join(' · ') || 'Email scan complete ✓');
+    emailIngestAPI.run()
+      .then((r) => {
+        showToast && showToast(r.data?.message || 'Statement email scan complete ✓');
         load();
         onStatusChange && onStatusChange();
       })
@@ -147,13 +138,12 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
     <div className="qbd-modal-backdrop" onClick={onClose}>
       <div className="qbd-modal qbd-backup-modal" onClick={(e) => e.stopPropagation()}>
         <div className="qbd-wtitle">
-          Email ingest — statements &amp; documents
+          Connect bank email
           <span className="x" onClick={onClose}>✕</span>
         </div>
         <div className="qbd-backup-meta">
           <div><span className="lbl">Auto scan</span> every {ingest?.intervalHours || 6} hours</div>
-          <div><span className="lbl">Statements</span> {fmtWhen(ingest?.lastRunAt)}</div>
-          <div><span className="lbl">Documents</span> {fmtWhen(docIngest?.lastRunAt)}</div>
+          <div><span className="lbl">Last scan</span> {fmtWhen(ingest?.lastRunAt)}</div>
           {ingest?.lonestarPortal && (
             <div>
               <span className="lbl">Lone Star portal</span>{' '}
@@ -196,28 +186,6 @@ export default function QBEmailIngestDialog({ open, onClose, showToast, onStatus
                       <td className="qbd-d">{fmtWhen(row.processed_at)}</td>
                       <td style={{ fontSize: 10 }}>{(row.subject || '').slice(0, 40)}</td>
                       <td style={{ fontSize: 10, color: row.error_message ? '#b00020' : undefined }}>
-                        {row.error_message || row.result_summary || row.status}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
-
-          {(docIngest?.recentImports || []).length > 0 && (
-            <>
-              <div className="fhd" style={{ fontSize: 11, margin: '12px 0 6px' }}>Recent document imports (→ Activity Review)</div>
-              <table className="qbd-reg">
-                <thead>
-                  <tr><th>When</th><th>Subject</th><th>Result</th></tr>
-                </thead>
-                <tbody>
-                  {docIngest.recentImports.slice(0, 5).map((row) => (
-                    <tr key={row.message_id}>
-                      <td className="qbd-d">{fmtWhen(row.processed_at)}</td>
-                      <td style={{ fontSize: 10 }}>{(row.subject || '').slice(0, 40)}</td>
-                      <td style={{ fontSize: 10, color: row.error_message ? '#b00020' : '#1565c0' }}>
                         {row.error_message || row.result_summary || row.status}
                       </td>
                     </tr>

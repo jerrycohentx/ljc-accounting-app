@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { reportAPI, importAPI } from '../services/api';
+import { reportAPI } from '../services/api';
 import { fmt, leafLabel } from './helpers';
 
 const VLANE = [['🧾', 'Enter Bills'], ['→'], ['💵', 'Pay Bills']];
@@ -13,7 +13,6 @@ export default function QBDHome() {
   const nav = useNavigate();
   const [bals, setBals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [reviewCount, setReviewCount] = useState(null);
 
   useEffect(() => {
     if (!entityId) return;
@@ -22,13 +21,6 @@ export default function QBDHome() {
       .then((r) => setBals(Array.isArray(r.data) ? r.data : (r.data?.data || [])))
       .catch(() => setBals([]))
       .finally(() => setLoading(false));
-  }, [entityId]);
-
-  useEffect(() => {
-    if (!entityId) return;
-    importAPI.pending(entityId)
-      .then((r) => setReviewCount(r.data?.count ?? (r.data?.pending?.length || 0)))
-      .catch(() => setReviewCount(null));
   }, [entityId]);
 
   const g = (re, type) => bals.filter((a) => (type ? a.accountType === type : true) && re.test(a.accountName || ''));
@@ -56,23 +48,6 @@ export default function QBDHome() {
   return (
     <div>
       <div style={{ background: 'linear-gradient(#3f6cb0,#2a5596)', color: '#fff', fontWeight: 'bold', padding: '5px 12px', fontSize: 13 }}>Home</div>
-      {reviewCount !== null && (
-        <div
-          className={`qbd-review-banner ${reviewCount > 0 ? 'has-items' : 'clear'}`}
-          onClick={() => nav('/feed-review')}
-        >
-          <span>
-            {reviewCount > 0 && <span className="qbd-review-count">{reviewCount}</span>}
-            <b>
-              {reviewCount > 0
-                ? `${reviewCount} downloaded transaction${reviewCount === 1 ? '' : 's'} need${reviewCount === 1 ? 's' : ''} review`
-                : 'All downloaded bank activity reviewed'}
-            </b>
-            {reviewCount > 0 ? ' — open Activity Review to approve' : ''}
-          </span>
-          <span className="qbd-review-arrow">▶</span>
-        </div>
-      )}
       <div className="qbd-canvas">
         <div className="qbd-lanes">
           <div className="qbd-lane"><div className="qbd-lanehead">VENDORS</div><div className="qbd-lanebody">{VLANE.map((it, i) => it[0] === '→' ? <span key={i} className="qbd-arrow">▶</span> : flow(it[0], it[1], null, i))}</div></div>

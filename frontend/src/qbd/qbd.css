@@ -230,13 +230,6 @@
 .qbd-backup-actions{padding:8px 12px;display:flex;gap:8px;border-bottom:1px solid #c9d3df;background:#f3f6fa}
 .qbd-loading{padding:30px;text-align:center;color:#6a7889}
 
-.qbd-review-banner{display:flex;align-items:center;justify-content:space-between;margin:10px 14px 0;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:12px;transition:filter .15s}
-.qbd-review-banner:hover{filter:brightness(0.97)}
-.qbd-review-banner.has-items{background:linear-gradient(#fff6e0,#ffedc2);border:1px solid #e0b84a;color:#6b4e00}
-.qbd-review-banner.clear{background:linear-gradient(#eef6ee,#e2f0e2);border:1px solid #9fc9a0;color:#2a5f2d}
-.qbd-review-banner b{font-size:13px}
-.qbd-review-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#c0392b;color:#fff;font-weight:bold;font-size:12px;margin-right:8px;vertical-align:middle}
-.qbd-review-arrow{font-size:14px}
 
 .qbd-review-table{table-layout:fixed;width:100%}
 .qbd-review-table td.desc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0}
