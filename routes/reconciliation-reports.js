@@ -6,8 +6,13 @@ import {
   listReconciliationReports,
   getReconciliationReport,
 } from '../lib/reconciliation-report.js';
+import { renderReconciliationReportPdf } from '../lib/reconciliation-report-pdf.js';
 
 const router = express.Router();
+
+function safeFilePart(s) {
+  return String(s || '').replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '') || 'account';
+}
 
 /**
  * POST /api/reconciliation/reports/generate
@@ -65,6 +70,30 @@ router.get('/:id', async (req, res) => {
     res.json({ report });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/reconciliation/reports/:id/pdf?mode=summary|detail|both
+ * Stream a QuickBooks-style PDF of a saved (closed) reconciliation. Rendered
+ * on demand from the archived summary/detail JSON via headless Chromium.
+ */
+router.get('/:id/pdf', async (req, res) => {
+  try {
+    const mode = ['summary', 'detail', 'both'].includes(req.query.mode) ? req.query.mode : 'both';
+    const db = await getDatabase();
+    const report = await getReconciliationReport(db, req.params.id);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+
+    const pdf = await renderReconciliationReportPdf(report, { mode });
+    const fileName = `Reconciliation_${safeFilePart(report.account_name)}_${safeFilePart(report.statement_date)}_${mode}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdf.length);
+    return res.end(pdf);
+  } catch (error) {
+    console.error('Reconciliation report PDF error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to generate reconciliation PDF' });
   }
 });
 

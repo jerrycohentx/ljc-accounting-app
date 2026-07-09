@@ -111,6 +111,29 @@ export const bankReconAPI = {
   adjustment: (data) => client.post('/api/reconciliation/bank/adjustment', data),
 };
 
+export const reconReportAPI = {
+  list: (entityId, accountId) => client.get('/api/reconciliation/reports', {
+    params: { entityId, accountId: accountId || undefined },
+  }),
+  get: (id) => client.get(`/api/reconciliation/reports/${id}`),
+  // Fetch the on-demand PDF (summary | detail | both) and save it. Uses fetch so
+  // the Bearer token is attached; a plain <a href> would not authenticate.
+  async downloadPdf(id, mode, filename) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/reconciliation/reports/${id}/pdf?mode=${mode}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Could not generate the reconciliation PDF');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  },
+};
+
 export const backupAPI = {
   status: () => client.get('/api/backup/status'),
   list: (limit = 20) => client.get('/api/backup/list', { params: { limit } }),
