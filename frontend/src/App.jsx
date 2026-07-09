@@ -20,6 +20,7 @@ import QBDFeedReview from './qbd/QBDFeedReview';
 import QBDPeriodClose from './qbd/QBDPeriodClose';
 import QBDTaxFinancials from './qbd/QBDTaxFinancials';
 import Receipts from './pages/Receipts';
+import MgmtReports from './pages/MgmtReports';
 import BankImport from './pages/BankImport';
 
 const theme = createTheme({
@@ -59,6 +60,7 @@ function App() {
             <Route path="bank-feeds" element={<QBDBankFeeds />} />
             <Route path="period-close" element={<QBDPeriodClose />} />
             <Route path="receipts" element={<Receipts />} />
+            <Route path="mgmt-reports" element={<MgmtReports />} />
             <Route path="bank-import" element={<BankImport />} />
             {/* Single bank reconcile screen — legacy paths redirect here */}
             <Route path="bank-reconciliation" element={<ReconcileRedirect />} />
