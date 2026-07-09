@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, journalAPI } from '../services/api';
-import { fmt, leafLabel, todayISO } from './helpers';
+import { fmt, leafLabel, todayISO, fmtShortDate } from './helpers';
 
 function flat(nodes, out) {
   (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flat(n.children, out); });
@@ -107,7 +107,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
             <tbody>
               {recent.length === 0 ? <tr><td colSpan={5}><div className="qbd-empty">No entries yet.</div></td></tr> :
                 recent.map((j) => (
-                  <tr key={j.id}><td className="qbd-num">{j.posting_date}</td><td>{j.je_number}</td><td>{j.description}</td><td>{j.status}</td><td className="qbd-bal">{fmt(+j.total_debit)}</td></tr>
+                  <tr key={j.id}><td className="qbd-num">{fmtShortDate(j.posting_date)}</td><td>{j.je_number}</td><td>{j.description}</td><td>{j.status}</td><td className="qbd-bal">{fmt(+j.total_debit)}</td></tr>
                 ))}
             </tbody>
           </table>
