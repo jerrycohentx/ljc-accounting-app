@@ -106,8 +106,8 @@ function serialize(row) {
     fileMime: row.file_mime,
     hasFile: !!row.file_data,
     journalEntryId: row.journal_entry_id,
-    expectedDepositDate: row.expected_deposit_date,
-    cashReceivedDate: row.cash_received_date,
+    expectedDepositDate: toDateOnly(row.expected_deposit_date),
+    cashReceivedDate: toDateOnly(row.cash_received_date),
     cashReceivedCents: row.cash_received_cents,
     cashVarianceCents: row.cash_variance_cents,
     // Invoice-style view on top of the same underlying data: once the accrual
