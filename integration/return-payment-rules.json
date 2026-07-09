@@ -43,7 +43,7 @@
       "matchType": "contains",
       "pattern": "CHARGEBACK",
       "amountSign": "any",
-      "offsetAccount": "1201",
+      "offsetAccount": "5801",
       "autoPostWhenMatched": false
     }
   ]
