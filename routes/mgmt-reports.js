@@ -208,6 +208,23 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Source document download — the original uploaded report, kept for audit trail /
+// documentation on the journal entry it produced.
+router.get('/:id/file', async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const row = await db.get('SELECT file_name, file_mime, file_data FROM mgmt_report_imports WHERE id = ?', req.params.id);
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    if (!row.file_data) return res.status(404).json({ error: 'No file was attached to this report (it was entered as text).' });
+    const buf = Buffer.from(row.file_data, 'base64');
+    res.setHeader('Content-Type', row.file_mime || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${(row.file_name || 'report').replace(/"/g, '')}"`);
+    res.send(buf);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /* ------------------------------------------------------------------- Review */
 
 router.patch('/:id', async (req, res) => {
