@@ -11,6 +11,7 @@ import { isPostgresUrl } from './db-url.js';
 import { ensurePlaidSchema } from './plaid-schema.js';
 import { ensureQboReplacementSchema } from './qbo-replacement-schema.js';
 import { ensureReceiptsSchema } from './receipts-schema.js';
+import { ensureMgmtReportsSchema } from './mgmt-reports-schema.js';
 import { seedDefaultRules } from '../lib/categorization-rules.js';
 import { seedCreCategorizationRules } from '../lib/cre-categorization.js';
 import { reapplyRulesToPending } from '../lib/import-commit.js';
@@ -68,6 +69,7 @@ export async function getDatabase() {
         await ensurePlaidSchema(db);
         await ensureQboReplacementSchema(db);
         await ensureReceiptsSchema(db);
+        await ensureMgmtReportsSchema(db);
         await seedDefaultRules(db, 'ent-ljc');
         await seedCreCategorizationRules(db, 'ent-ljc');
         try {
@@ -103,6 +105,7 @@ export async function getDatabase() {
     await ensurePlaidSchema(db);
     await ensureQboReplacementSchema(db);
     await ensureReceiptsSchema(db);
+    await ensureMgmtReportsSchema(db);
     await seedDefaultRules(db, 'ent-ljc');
     await seedCreCategorizationRules(db, 'ent-ljc');
     try {
