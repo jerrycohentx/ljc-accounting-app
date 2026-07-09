@@ -5,7 +5,7 @@ import {
   CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Stack, IconButton, Tooltip,
 } from '@mui/material';
-import { UploadFile, CheckCircle, PostAdd, Delete, Edit } from '@mui/icons-material';
+import { UploadFile, CheckCircle, PostAdd, Delete, Edit, AttachFile } from '@mui/icons-material';
 import { entityAPI, mgmtReportAPI } from '../services/api';
 
 const STATUS_COLORS = {
@@ -204,6 +204,13 @@ export default function MgmtReports() {
                 </TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={0.5}>
+                    {r.hasFile && (
+                      <Tooltip title="View source report">
+                        <IconButton size="small" onClick={() => mgmtReportAPI.viewFile(r.id, r.fileName).catch((e) => setError(e.message))}>
+                          <AttachFile fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     <Tooltip title="Review / correct">
                       <IconButton size="small" onClick={() => openEdit(r)} disabled={!!r.journalEntryId}><Edit fontSize="small" /></IconButton>
                     </Tooltip>
