@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { reportAPI, accountAPI } from '../services/api';
-import { fmt, leafLabel, todayISO, fmtVariance, fmtVariancePct } from './helpers';
+import { fmt, leafLabel, todayISO, fmtVariance, fmtVariancePct, fmtShortDate } from './helpers';
 import { DATE_PRESETS, computeRange } from './dateRangePresets';
 
 function flatNums(nodes, map) {
@@ -417,7 +417,7 @@ function GL({ data, zoom, from, to }) {
           {rows.length === 0 ? <tr><td colSpan={6}><div className="qbd-empty">No transactions in this period.</div></td></tr> :
             rows.map((e) => (
               <tr key={e.id} style={{ cursor: 'pointer' }} onClick={() => zoom(e.account_id, true)} title="Open account register">
-                <td className="qbd-d">{e.posting_date}</td>
+                <td className="qbd-d">{fmtShortDate(e.posting_date)}</td>
                 <td className="qbd-je">{e.je_number}</td>
                 <td>{e.account_number} · {leafLabel(e.account_name)}</td>
                 <td>{e.je_description || e.description || ''}</td>
