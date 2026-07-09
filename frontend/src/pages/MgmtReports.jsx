@@ -5,7 +5,7 @@ import {
   CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Stack, IconButton, Tooltip,
 } from '@mui/material';
-import { UploadFile, CheckCircle, PostAdd, Delete, Edit, AttachFile } from '@mui/icons-material';
+import { UploadFile, CheckCircle, PostAdd, Delete, Edit, AttachFile, PaidOutlined } from '@mui/icons-material';
 import { entityAPI, mgmtReportAPI } from '../services/api';
 
 const STATUS_COLORS = {
@@ -34,6 +34,9 @@ export default function MgmtReports() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [editRecord, setEditRecord] = useState(null);
+  const [receiveRecord, setReceiveRecord] = useState(null);
+  const [receiveDate, setReceiveDate] = useState('');
+  const [receiveAmount, setReceiveAmount] = useState('');
   const fileInputRef = useRef(null);
 
   const showError = (e) => setError(e?.response?.data?.error || e.message || 'Something went wrong');
@@ -98,6 +101,27 @@ export default function MgmtReports() {
     setBusy(true); setError(null);
     try { await mgmtReportAPI.reject(id); await loadAll(); }
     catch (e) { showError(e); } finally { setBusy(false); }
+  };
+
+  const openReceive = (r) => {
+    setReceiveRecord(r);
+    setReceiveDate(new Date().toISOString().slice(0, 10));
+    setReceiveAmount((r.netIncomeCents / 100).toFixed(2));
+  };
+
+  const submitReceive = async () => {
+    setBusy(true); setError(null); setSuccess(null);
+    try {
+      const res = await mgmtReportAPI.markReceived(receiveRecord.id, {
+        cashReceivedDate: receiveDate,
+        cashReceivedCents: Math.round(Number(receiveAmount || 0) * 100),
+      });
+      setSuccess(res.data.matches
+        ? 'Recorded — matches the amount due per the report.'
+        : `Recorded — but this is ${money(Math.abs(res.data.varianceCents))} ${res.data.varianceCents > 0 ? 'more' : 'less'} than the ${money(receiveRecord.netIncomeCents)} the report said was due. Worth a second look.`);
+      setReceiveRecord(null);
+      await loadAll();
+    } catch (e) { showError(e); } finally { setBusy(false); }
   };
 
   const openEdit = (record) => setEditRecord({
@@ -178,6 +202,7 @@ export default function MgmtReports() {
               <TableCell align="right">Income</TableCell>
               <TableCell align="right">Expenses</TableCell>
               <TableCell align="right">Net</TableCell>
+              <TableCell>Expected by</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
@@ -198,6 +223,18 @@ export default function MgmtReports() {
                 <TableCell align="right">{money(r.totalIncomeCents)}</TableCell>
                 <TableCell align="right">{money(r.totalExpenseCents)}</TableCell>
                 <TableCell align="right">{money(r.netIncomeCents)}</TableCell>
+                <TableCell>
+                  {r.cashReceivedDate ? (
+                    <Chip size="small" icon={<PaidOutlined />} label={`Received ${r.cashReceivedDate}${r.cashVarianceCents ? ` (off by ${money(Math.abs(r.cashVarianceCents))})` : ''}`}
+                      color={r.cashVarianceCents ? 'warning' : 'success'} />
+                  ) : r.expectedDepositDate ? (
+                    <span style={{ color: r.expectedDepositDate < new Date().toISOString().slice(0, 10) ? '#c62828' : 'inherit', fontWeight: r.expectedDepositDate < new Date().toISOString().slice(0, 10) ? 600 : 400 }}>
+                      {r.expectedDepositDate}{r.expectedDepositDate < new Date().toISOString().slice(0, 10) ? ' (overdue)' : ''}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#999' }}>—</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <Chip size="small" label={r.status.replace('_', ' ')} color={STATUS_COLORS[r.status] || 'default'} />
                   {r.needsReview && r.status !== 'DRAFT_CREATED' && <Chip size="small" label="needs review" color="warning" sx={{ ml: 1 }} />}
@@ -232,6 +269,11 @@ export default function MgmtReports() {
                     {!r.journalEntryId && (
                       <Tooltip title="Discard">
                         <IconButton size="small" onClick={() => handleReject(r.id)}><Delete fontSize="small" /></IconButton>
+                      </Tooltip>
+                    )}
+                    {r.journalEntryId && !r.cashReceivedDate && (
+                      <Tooltip title="Mark cash received">
+                        <IconButton size="small" color="success" onClick={() => openReceive(r)}><PaidOutlined fontSize="small" /></IconButton>
                       </Tooltip>
                     )}
                   </Stack>
@@ -289,6 +331,28 @@ export default function MgmtReports() {
         <DialogActions>
           <Button onClick={() => setEditRecord(null)}>Cancel</Button>
           <Button variant="contained" onClick={saveEdit} disabled={busy}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!receiveRecord} onClose={() => setReceiveRecord(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Confirm cash received</DialogTitle>
+        <DialogContent>
+          {receiveRecord && (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Typography variant="body2">
+                {receiveRecord.propertyCanonical} — report said {receiveRecord.managementCompany} owed {money(receiveRecord.netIncomeCents)}.
+                Enter what actually hit the bank.
+              </Typography>
+              <TextField label="Date received" type="date" value={receiveDate} InputLabelProps={{ shrink: true }}
+                onChange={(e) => setReceiveDate(e.target.value)} />
+              <TextField label="Amount received" type="number" value={receiveAmount}
+                onChange={(e) => setReceiveAmount(e.target.value)} />
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReceiveRecord(null)}>Cancel</Button>
+          <Button variant="contained" onClick={submitReceive} disabled={busy}>Confirm</Button>
         </DialogActions>
       </Dialog>
     </Box>
