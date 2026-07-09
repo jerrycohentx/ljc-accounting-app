@@ -206,6 +206,16 @@ export const receiptAPI = {
   },
 };
 
+export const mgmtReportAPI = {
+  list: (entityId, status) => client.get('/api/mgmt-reports', { params: { entityId, status } }),
+  get: (id) => client.get(`/api/mgmt-reports/${id}`),
+  upload: (data) => client.post('/api/mgmt-reports/upload', data),
+  update: (id, data) => client.patch(`/api/mgmt-reports/${id}`, data),
+  approve: (id) => client.post(`/api/mgmt-reports/${id}/approve`),
+  createJournal: (id) => client.post(`/api/mgmt-reports/${id}/create-journal`),
+  reject: (id) => client.delete(`/api/mgmt-reports/${id}`),
+};
+
 export const interestAPI = {
   preview: (entityId, asOfDate) =>
     client.get(`/api/entities/${entityId}/interest-accrual/preview`, { params: { asOfDate } }),
