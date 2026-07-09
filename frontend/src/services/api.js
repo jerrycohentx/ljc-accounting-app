@@ -214,6 +214,7 @@ export const mgmtReportAPI = {
   approve: (id) => client.post(`/api/mgmt-reports/${id}/approve`),
   createJournal: (id) => client.post(`/api/mgmt-reports/${id}/create-journal`),
   reject: (id) => client.delete(`/api/mgmt-reports/${id}`),
+  markReceived: (id, data) => client.post(`/api/mgmt-reports/${id}/mark-received`, data),
   async viewFile(id, fileName) {
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/mgmt-reports/${id}/file`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
