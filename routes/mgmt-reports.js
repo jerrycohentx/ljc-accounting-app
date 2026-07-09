@@ -24,7 +24,7 @@ import { createRequire } from 'module';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../config/database.js';
 import { parseManagementReport } from '../lib/mgmt-report-parser.js';
-import { matchProperty } from '../lib/property-registry.js';
+import { matchProperty, computeExpectedDepositDate } from '../lib/property-registry.js';
 import {
   buildJournalEntryPlan,
   AR_ACCOUNT_NUMBER,
@@ -96,6 +96,10 @@ function serialize(row) {
     fileMime: row.file_mime,
     hasFile: !!row.file_data,
     journalEntryId: row.journal_entry_id,
+    expectedDepositDate: row.expected_deposit_date,
+    cashReceivedDate: row.cash_received_date,
+    cashReceivedCents: row.cash_received_cents,
+    cashVarianceCents: row.cash_variance_cents,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -143,6 +147,7 @@ router.post('/upload', async (req, res) => {
 
     const parsed = parseManagementReport(rawText);
     const property = matchProperty(parsed.propertyRaw);
+    const expectedDepositDate = computeExpectedDepositDate(parsed.managementCompany, parsed.periodEnd);
 
     const status = parsed.needsReview ? 'PENDING_REVIEW' : 'REVIEWED';
     const id = `mri-${uuidv4()}`;
@@ -154,8 +159,8 @@ router.post('/upload', async (req, res) => {
         period_start, period_end, income_lines, expense_lines, other_lines,
         total_income_cents, total_expense_cents, net_income_cents,
         confidence_score, status, needs_review, notes, raw_text,
-        file_name, file_mime, file_data, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        file_name, file_mime, file_data, expected_deposit_date, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, entityId, idempotencyKey, parsed.format, parsed.managementCompany,
         parsed.propertyRaw, property ? property.canonical : null, !!property,
@@ -164,7 +169,7 @@ router.post('/upload', async (req, res) => {
         parsed.totalIncomeCents, parsed.totalExpenseCents, parsed.netIncomeCents,
         parsed.confidenceScore, status, parsed.needsReview ? true : false, JSON.stringify(parsed.notes),
         rawText,
-        fileName || null, fileMime || null, fileData || null, req.user.id,
+        fileName || null, fileMime || null, fileData || null, expectedDepositDate, req.user.id,
       ]
     );
 
@@ -376,6 +381,40 @@ router.post('/:id/create-journal', async (req, res) => {
     });
   } catch (error) {
     console.error('mgmt-reports create-journal error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* --------------------------------------------------------- Confirm receipt */
+
+// Manually confirm the manager's actual cash remittance against the net
+// amount this report said was due — the "does the deposit match the report"
+// check. This does NOT touch the ledger (the bank-feed reconciliation flow
+// already books the actual cash entry); it just records the confirmation so
+// it's visible on this screen, with a variance flag if they don't match.
+router.post('/:id/mark-received', async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const row = await db.get('SELECT * FROM mgmt_report_imports WHERE id = ?', req.params.id);
+    if (!row) return res.status(404).json({ error: 'Not found' });
+
+    const { cashReceivedDate, cashReceivedCents } = req.body || {};
+    if (cashReceivedCents == null || Number.isNaN(Number(cashReceivedCents))) {
+      return res.status(400).json({ error: 'cashReceivedCents is required' });
+    }
+    const variance = Number(cashReceivedCents) - Number(row.net_income_cents || 0);
+
+    await db.run(
+      `UPDATE mgmt_report_imports SET
+        cash_received_date = ?, cash_received_cents = ?, cash_variance_cents = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [cashReceivedDate || new Date().toISOString().slice(0, 10), Math.round(Number(cashReceivedCents)), variance, req.params.id]
+    );
+
+    const updated = await db.get('SELECT * FROM mgmt_report_imports WHERE id = ?', req.params.id);
+    res.json({ record: serialize(updated), matches: variance === 0, varianceCents: variance });
+  } catch (error) {
+    console.error('mgmt-reports mark-received error:', error);
     res.status(500).json({ error: error.message });
   }
 });
