@@ -23,6 +23,11 @@ const INVOICE_STATUS = {
 const money = (cents) =>
   (Number(cents || 0) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
+// Backend dates come back as either plain "2026-06-30" or a full Postgres
+// timestamp "2026-06-30T00:00:00.000Z" — always just take the date part.
+const dateOnly = (v) => (v ? String(v).slice(0, 10) : '');
+const today = () => new Date().toISOString().slice(0, 10);
+
 /**
  * Each monthly report from a property manager (WestSide Realty, MANAGErenthouses.com,
  * etc.) is effectively an invoice: it says how much rent they collected, what they
@@ -180,7 +185,7 @@ export default function MgmtReports() {
         <Paper sx={{ p: 2, mb: 2, display: 'flex', gap: 4 }}>
           {(() => {
             const open = records.filter((r) => r.invoiceStatus === 'OPEN');
-            const overdue = open.filter((r) => r.expectedDepositDate && r.expectedDepositDate < new Date().toISOString().slice(0, 10));
+            const overdue = open.filter((r) => r.expectedDepositDate && dateOnly(r.expectedDepositDate) < today());
             const openTotal = open.reduce((s, r) => s + r.netIncomeCents, 0);
             const paid = records.filter((r) => r.invoiceStatus === 'PAID' || r.invoiceStatus === 'PAID_VARIANCE');
             return (
@@ -246,17 +251,17 @@ export default function MgmtReports() {
                   {!r.propertyMatched && <Chip size="small" label="unmatched property" color="warning" sx={{ ml: 1 }} />}
                 </TableCell>
                 <TableCell>{r.managementCompany || '—'}</TableCell>
-                <TableCell>{r.periodEnd || '—'}</TableCell>
+                <TableCell>{dateOnly(r.periodEnd) || '—'}</TableCell>
                 <TableCell align="right">{money(r.totalIncomeCents)}</TableCell>
                 <TableCell align="right">{money(r.totalExpenseCents)}</TableCell>
                 <TableCell align="right">{money(r.netIncomeCents)}</TableCell>
                 <TableCell>
                   {r.cashReceivedDate ? (
-                    <Chip size="small" icon={<PaidOutlined />} label={`Received ${r.cashReceivedDate}${r.cashVarianceCents ? ` (off by ${money(Math.abs(r.cashVarianceCents))})` : ''}`}
+                    <Chip size="small" icon={<PaidOutlined />} label={`Received ${dateOnly(r.cashReceivedDate)}${r.cashVarianceCents ? ` (off by ${money(Math.abs(r.cashVarianceCents))})` : ''}`}
                       color={r.cashVarianceCents ? 'warning' : 'success'} />
                   ) : r.expectedDepositDate ? (
-                    <span style={{ color: r.expectedDepositDate < new Date().toISOString().slice(0, 10) ? '#c62828' : 'inherit', fontWeight: r.expectedDepositDate < new Date().toISOString().slice(0, 10) ? 600 : 400 }}>
-                      {r.expectedDepositDate}{r.expectedDepositDate < new Date().toISOString().slice(0, 10) ? ' (overdue)' : ''}
+                    <span style={{ color: dateOnly(r.expectedDepositDate) < today() ? '#c62828' : 'inherit', fontWeight: dateOnly(r.expectedDepositDate) < today() ? 600 : 400 }}>
+                      {dateOnly(r.expectedDepositDate)}{dateOnly(r.expectedDepositDate) < today() ? ' (overdue)' : ''}
                     </span>
                   ) : (
                     <span style={{ color: '#999' }}>—</span>
