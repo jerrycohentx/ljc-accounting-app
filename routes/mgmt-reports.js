@@ -394,6 +394,28 @@ router.post('/:id/create-journal', async (req, res) => {
   }
 });
 
+// Recompute the expected-deposit-date from the current management-company
+// schedule (lib/property-registry.js). Safe to call any time, including
+// after a journal entry exists — it only touches the display-only due date,
+// never the accrual figures — so it can backfill records created before a
+// company's remittance schedule was confirmed.
+router.post('/:id/recompute-expected-date', async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const row = await db.get('SELECT * FROM mgmt_report_imports WHERE id = ?', req.params.id);
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    const expectedDepositDate = computeExpectedDepositDate(row.management_company, row.period_end);
+    await db.run(
+      'UPDATE mgmt_report_imports SET expected_deposit_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [expectedDepositDate, req.params.id]
+    );
+    const updated = await db.get('SELECT * FROM mgmt_report_imports WHERE id = ?', req.params.id);
+    res.json(serialize(updated));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /* --------------------------------------------------------- Confirm receipt */
 
 // Manually confirm the manager's actual cash remittance against the net
