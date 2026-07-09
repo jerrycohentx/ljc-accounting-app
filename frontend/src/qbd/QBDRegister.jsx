@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { reportAPI, journalAPI, mgmtReportAPI } from '../services/api';
-import { fmt, typeLabel, parseTag, tagClass } from './helpers';
+import { fmt, typeLabel, parseTag, tagClass, fmtShortDate } from './helpers';
 
 export default function QBDRegister() {
   const { accountId } = useParams();
@@ -122,7 +122,7 @@ export default function QBDRegister() {
                 const inc = incOf(e), dec = decOf(e);
                 return (
                   <tr key={e.id} onClick={() => openEntry(e.journal_entry_id)} title="Open transaction detail">
-                    <td className="qbd-d">{e.posting_date}</td>
+                    <td className="qbd-d">{fmtShortDate(e.posting_date)}</td>
                     <td className="qbd-je">{e.je_number}</td>
                     <td>{memoOf(e)}</td>
                     <td className="qbd-tag">{tag && <span className={'qbd-pill ' + tagClass(tag)}>{tag}</span>}</td>
@@ -176,7 +176,7 @@ function TxnDetail({ entry, entityId, onClose, onReversed }) {
       <div className="qbd-window" style={{ width: 680, maxHeight: '80vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
         <div className="qbd-wtitle">🧾 Transaction Detail — {entry.je_number} <span className="x" onClick={onClose}>✕</span></div>
         <div className="qbd-tools">
-          <span className="qbd-muted">Date</span><b>{entry.posting_date}</b>
+          <span className="qbd-muted">Date</span><b>{fmtShortDate(entry.posting_date)}</b>
           <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{entry.description || ''}</span>
           <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {entry.status}</span>
           {entry.reversed_by_je_id && <span className="qbd-muted" style={{ marginLeft: 8 }}>(reversed)</span>}
