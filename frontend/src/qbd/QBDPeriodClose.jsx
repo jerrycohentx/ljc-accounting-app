@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountingAPI } from '../services/api';
-import { fmt, todayISO } from './helpers';
+import { fmt, todayISO, fmtShortDate } from './helpers';
 
 const SAMPLE_CSV = `account_number,balance
 1000,11450.19
@@ -111,8 +111,8 @@ export default function QBDPeriodClose() {
                 <tbody>
                   {periods.map((p) => (
                     <tr key={p.id}>
-                      <td>{p.period_start}</td>
-                      <td>{p.period_end}</td>
+                      <td>{fmtShortDate(p.period_start)}</td>
+                      <td>{fmtShortDate(p.period_end)}</td>
                       <td>{p.status}</td>
                       <td>{p.closed_at ? p.closed_at.slice(0, 10) : '—'}</td>
                       <td>{p.status === 'CLOSED' && <button className="qbd-btn" disabled={busy} onClick={() => reopen(p)}>Reopen</button>}</td>
