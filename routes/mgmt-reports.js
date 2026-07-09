@@ -100,6 +100,15 @@ function serialize(row) {
     cashReceivedDate: row.cash_received_date,
     cashReceivedCents: row.cash_received_cents,
     cashVarianceCents: row.cash_variance_cents,
+    // Invoice-style view on top of the same underlying data: once the accrual
+    // journal entry exists, this report is effectively "billed" — an amount
+    // due from the management company with a due date, open until cash is
+    // confirmed received (see /mark-received).
+    invoiceStatus: !row.journal_entry_id
+      ? null
+      : row.cash_received_date
+        ? (row.cash_variance_cents ? 'PAID_VARIANCE' : 'PAID')
+        : 'OPEN',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
