@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { reportAPI, journalAPI } from '../services/api';
+import { reportAPI, journalAPI, mgmtReportAPI } from '../services/api';
 import { fmt, typeLabel, parseTag, tagClass } from './helpers';
 
 export default function QBDRegister() {
@@ -180,6 +180,16 @@ function TxnDetail({ entry, entityId, onClose, onReversed }) {
           <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{entry.description || ''}</span>
           <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {entry.status}</span>
           {entry.reversed_by_je_id && <span className="qbd-muted" style={{ marginLeft: 8 }}>(reversed)</span>}
+          {entry.sourceDocument?.hasFile && (
+            <button
+              className="qbd-btn"
+              style={{ marginLeft: 12 }}
+              title={entry.sourceDocument.fileName || 'Source report'}
+              onClick={() => mgmtReportAPI.viewFile(entry.sourceDocument.mgmtReportId, entry.sourceDocument.fileName).catch((e) => window.alert(e.message))}
+            >
+              📎 View source report
+            </button>
+          )}
           {canReverse && (
             <button className="qbd-btn" disabled={busy} onClick={doReverse} style={{ marginLeft: 12 }}>Reverse entry</button>
           )}
