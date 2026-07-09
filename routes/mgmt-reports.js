@@ -46,6 +46,16 @@ function parseJson(text, fallback) {
   try { return JSON.parse(text); } catch { return fallback; }
 }
 
+// Postgres returns DATE columns as full JS Date objects (which stringify to
+// "Tue Jun 30 2026 00:00:00 GMT+0000..." if concatenated directly into text);
+// SQLite returns plain "2026-06-30" strings. Normalize to a plain date string
+// everywhere a DB-sourced date is echoed back or used to build entry text.
+function toDateOnly(v) {
+  if (v == null) return null;
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  return String(v).slice(0, 10);
+}
+
 async function getOrCreateAccount(db, entityId, { number, name, type, normal }) {
   let account = await db.get(
     'SELECT * FROM accounts WHERE entity_id = ? AND account_number = ?',
@@ -80,8 +90,8 @@ function serialize(row) {
     propertyRaw: row.property_raw,
     propertyCanonical: row.property_canonical,
     propertyMatched: !!row.property_matched,
-    periodStart: row.period_start,
-    periodEnd: row.period_end,
+    periodStart: toDateOnly(row.period_start),
+    periodEnd: toDateOnly(row.period_end),
     incomeLines: parseJson(row.income_lines, []),
     expenseLines: parseJson(row.expense_lines, []),
     otherLines: parseJson(row.other_lines, []),
@@ -251,8 +261,8 @@ router.patch('/:id', async (req, res) => {
     const body = req.body || {};
     const propertyRaw = body.propertyRaw !== undefined ? body.propertyRaw : row.property_raw;
     const managementCompany = body.managementCompany !== undefined ? body.managementCompany : row.management_company;
-    const periodStart = body.periodStart !== undefined ? body.periodStart : row.period_start;
-    const periodEnd = body.periodEnd !== undefined ? body.periodEnd : row.period_end;
+    const periodStart = body.periodStart !== undefined ? body.periodStart : toDateOnly(row.period_start);
+    const periodEnd = body.periodEnd !== undefined ? body.periodEnd : toDateOnly(row.period_end);
     const incomeLines = body.incomeLines !== undefined ? body.incomeLines : parseJson(row.income_lines, []);
     const expenseLines = body.expenseLines !== undefined ? body.expenseLines : parseJson(row.expense_lines, []);
     const otherLines = body.otherLines !== undefined ? body.otherLines : parseJson(row.other_lines, []);
@@ -325,8 +335,8 @@ router.post('/:id/create-journal', async (req, res) => {
     const parsed = {
       managementCompany: row.management_company,
       propertyRaw: row.property_raw,
-      periodStart: row.period_start,
-      periodEnd: row.period_end,
+      periodStart: toDateOnly(row.period_start),
+      periodEnd: toDateOnly(row.period_end),
       incomeLines: parseJson(row.income_lines, []),
       expenseLines: parseJson(row.expense_lines, []),
       totalIncomeCents: row.total_income_cents,
