@@ -214,6 +214,15 @@ export const mgmtReportAPI = {
   approve: (id) => client.post(`/api/mgmt-reports/${id}/approve`),
   createJournal: (id) => client.post(`/api/mgmt-reports/${id}/create-journal`),
   reject: (id) => client.delete(`/api/mgmt-reports/${id}`),
+  async viewFile(id, fileName) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/mgmt-reports/${id}/file`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error('Could not load the source report');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  },
 };
 
 export const interestAPI = {
