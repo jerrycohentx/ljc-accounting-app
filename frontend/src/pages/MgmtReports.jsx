@@ -14,15 +14,23 @@ const STATUS_COLORS = {
   DRAFT_CREATED: 'success',
 };
 
+const INVOICE_STATUS = {
+  OPEN: { label: 'Open — awaiting deposit', color: 'warning' },
+  PAID: { label: 'Paid', color: 'success' },
+  PAID_VARIANCE: { label: 'Paid — amount differs', color: 'error' },
+};
+
 const money = (cents) =>
   (Number(cents || 0) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
 /**
- * Upload monthly property-management reports (WestSide Realty, MANAGErenthouses.com,
- * etc.), review the parsed figures, and generate the balanced draft journal entry —
- * Dr Accounts Receivable / Cr Rental Income for the gross rent, Dr the relevant expense
- * account(s) / Cr Accounts Receivable for whatever the manager withheld. The entry lands
- * as a DRAFT; post it from the Journal Entries screen once it looks right.
+ * Each monthly report from a property manager (WestSide Realty, MANAGErenthouses.com,
+ * etc.) is effectively an invoice: it says how much rent they collected, what they
+ * withheld, and what's due to LJC. Upload the report, review the parsed figures, and
+ * this books the accrual entry (Dr Accounts Receivable / Cr Rental Income for the gross
+ * rent, Dr expenses / Cr Accounts Receivable for what the manager withheld) as a DRAFT —
+ * post it from Journal Entries once it looks right. The receivable stays "Open" here
+ * until you confirm the manager's actual deposit, at which point it's "Paid".
  */
 export default function MgmtReports() {
   const [entities, setEntities] = useState([]);
@@ -158,14 +166,33 @@ export default function MgmtReports() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>Property Management Report Import</Typography>
+      <Typography variant="h5" gutterBottom>Property Manager Invoices</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Upload the monthly report your property manager sends (WestSide Realty, MANAGErenthouses.com, etc.).
-        Rent and each expense line are parsed automatically; review, then generate the draft journal entry.
+        Rent and each expense line are parsed automatically; review, then generate the entry. Each one is
+        tracked as an invoice — Open until you confirm the deposit, then Paid.
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>{success}</Alert>}
+
+      {records.some((r) => r.invoiceStatus) && (
+        <Paper sx={{ p: 2, mb: 2, display: 'flex', gap: 4 }}>
+          {(() => {
+            const open = records.filter((r) => r.invoiceStatus === 'OPEN');
+            const overdue = open.filter((r) => r.expectedDepositDate && r.expectedDepositDate < new Date().toISOString().slice(0, 10));
+            const openTotal = open.reduce((s, r) => s + r.netIncomeCents, 0);
+            const paid = records.filter((r) => r.invoiceStatus === 'PAID' || r.invoiceStatus === 'PAID_VARIANCE');
+            return (
+              <>
+                <Box><Typography variant="caption" color="text.secondary">Open invoices</Typography><Typography variant="h6">{open.length} · {money(openTotal)}</Typography></Box>
+                <Box><Typography variant="caption" color="text.secondary">Overdue</Typography><Typography variant="h6" color={overdue.length ? 'error.main' : 'inherit'}>{overdue.length}</Typography></Box>
+                <Box><Typography variant="caption" color="text.secondary">Paid</Typography><Typography variant="h6">{paid.length}</Typography></Box>
+              </>
+            );
+          })()}
+        </Paper>
+      )}
 
       <Paper sx={{ p: 2, mb: 2 }}>
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
@@ -236,8 +263,14 @@ export default function MgmtReports() {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Chip size="small" label={r.status.replace('_', ' ')} color={STATUS_COLORS[r.status] || 'default'} />
-                  {r.needsReview && r.status !== 'DRAFT_CREATED' && <Chip size="small" label="needs review" color="warning" sx={{ ml: 1 }} />}
+                  {r.invoiceStatus ? (
+                    <Chip size="small" label={INVOICE_STATUS[r.invoiceStatus].label} color={INVOICE_STATUS[r.invoiceStatus].color} />
+                  ) : (
+                    <>
+                      <Chip size="small" label={r.status.replace('_', ' ')} color={STATUS_COLORS[r.status] || 'default'} />
+                      {r.needsReview && <Chip size="small" label="needs review" color="warning" sx={{ ml: 1 }} />}
+                    </>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={0.5}>
