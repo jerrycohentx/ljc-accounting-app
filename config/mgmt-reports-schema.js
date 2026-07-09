@@ -46,11 +46,27 @@ CREATE INDEX IF NOT EXISTS idx_mgmt_report_imports_entity ON mgmt_report_imports
 CREATE INDEX IF NOT EXISTS idx_mgmt_report_imports_status ON mgmt_report_imports(entity_id, status);
 `;
 
+const MGMT_REPORTS_MIGRATIONS = [
+  'ALTER TABLE mgmt_report_imports ADD COLUMN expected_deposit_date DATE',
+  'ALTER TABLE mgmt_report_imports ADD COLUMN cash_received_date DATE',
+  'ALTER TABLE mgmt_report_imports ADD COLUMN cash_received_cents INTEGER',
+  'ALTER TABLE mgmt_report_imports ADD COLUMN cash_variance_cents INTEGER',
+];
+
 export async function ensureMgmtReportsSchema(db) {
   const statements = MGMT_REPORTS_SCHEMA_SQL.split(';')
     .map((s) => s.trim())
     .filter(Boolean);
   for (const statement of statements) {
     await db.exec(statement);
+  }
+  for (const migration of MGMT_REPORTS_MIGRATIONS) {
+    try {
+      await db.run(migration);
+    } catch (error) {
+      if (!/duplicate column|already exists/i.test(error.message)) {
+        throw error;
+      }
+    }
   }
 }
