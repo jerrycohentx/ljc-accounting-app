@@ -68,7 +68,25 @@ router.get('/:id', entityAccessMiddleware, async (req, res) => {
       req.params.id
     );
 
-    res.json({ ...journal, lines });
+    let sourceDocument = null;
+    try {
+      const mri = await db.get(
+        'SELECT id, file_name, file_mime, file_data FROM mgmt_report_imports WHERE journal_entry_id = ?',
+        req.params.id
+      );
+      if (mri) {
+        sourceDocument = {
+          mgmtReportId: mri.id,
+          fileName: mri.file_name,
+          fileMime: mri.file_mime,
+          hasFile: !!mri.file_data,
+        };
+      }
+    } catch {
+      // mgmt_report_imports may not exist yet on older deploys — non-fatal.
+    }
+
+    res.json({ ...journal, lines, sourceDocument });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
