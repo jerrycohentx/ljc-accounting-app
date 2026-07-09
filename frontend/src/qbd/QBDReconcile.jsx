@@ -171,7 +171,7 @@ function TxnDetailModal({ entry, entityId, onClose }) {
       <div className="qbd-window" style={{ width: 680, maxHeight: '80vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
         <div className="qbd-wtitle">🧾 Transaction Detail — {entry.je_number} <span className="x" onClick={onClose}>✕</span></div>
         <div className="qbd-tools">
-          <span className="qbd-muted">Date</span><b>{entry.posting_date}</b>
+          <span className="qbd-muted">Date</span><b>{fmtReconDate(entry.posting_date)}</b>
           <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{entry.description || ''}</span>
           <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {entry.status}</span>
         </div>
