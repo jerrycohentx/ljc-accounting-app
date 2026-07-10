@@ -178,4 +178,50 @@ router.post('/lonestar/fix-opening-balance', [entityAccessMiddleware, requireRol
   }
 });
 
+// POST /api/entities/:entityId/accounting/purge
+// DESTRUCTIVE: wipes ALL journal entries, GL, import rows and reconciliation artifacts for the
+// entity so its ledger can be rebuilt cleanly from reconciled opening balances + a fresh import.
+// Requires body.confirm === `PURGE-<entityId>`. PRESERVES chart of accounts, audit_logs, plaid_items.
+router.post('/purge', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    const e = req.entityId;
+    const { confirm } = req.body || {};
+    if (confirm !== `PURGE-${e}`) {
+      return res.status(400).json({ error: `confirm must equal "PURGE-${e}"` });
+    }
+    const db = await getDatabase();
+    const counts = {};
+    const run = async (label, sql, params = []) => {
+      try {
+        const r = await db.run(sql, params);
+        counts[label] = (r && (r.changes ?? r.rowCount)) ?? 'ok';
+      } catch (err) {
+        counts[label] = `skip: ${String(err.message).slice(0, 70)}`;
+      }
+    };
+    // child / referencing rows first (FK-safe); journal_entry_lines cascades on JE delete
+    await run('reconciliation_matches',
+      `DELETE FROM reconciliation_matches
+        WHERE gl_entry_id IN (SELECT id FROM general_ledger WHERE entity_id = ?)
+           OR import_transaction_id IN (SELECT id FROM import_transactions WHERE entity_id = ?)`, [e, e]);
+    await run('holdback_disbursements', 'DELETE FROM holdback_disbursements WHERE entity_id = ?', [e]);
+    await run('captured_documents', 'DELETE FROM captured_documents WHERE entity_id = ?', [e]);
+    await run('journal_entry_documents',
+      'DELETE FROM journal_entry_documents WHERE journal_entry_id IN (SELECT id FROM journal_entries WHERE entity_id = ?)', [e]);
+    await run('mgmt_report_imports',
+      'DELETE FROM mgmt_report_imports WHERE journal_entry_id IN (SELECT id FROM journal_entries WHERE entity_id = ?)', [e]);
+    await run('import_transactions', 'DELETE FROM import_transactions WHERE entity_id = ?', [e]);
+    await run('general_ledger', 'DELETE FROM general_ledger WHERE entity_id = ?', [e]);
+    await run('bank_reconciliation_session_lines', 'DELETE FROM bank_reconciliation_session_lines WHERE entity_id = ?', [e]);
+    await run('bank_reconciliation_sessions', 'DELETE FROM bank_reconciliation_sessions WHERE entity_id = ?', [e]);
+    await run('reconciliations', 'DELETE FROM reconciliations WHERE entity_id = ?', [e]);
+    await run('email_import_log', 'DELETE FROM email_import_log WHERE entity_id = ?', [e]);
+    // parent last — journal_entry_lines removed via ON DELETE CASCADE
+    await run('journal_entries', 'DELETE FROM journal_entries WHERE entity_id = ?', [e]);
+    res.json({ message: `Purged ledger for ${e}`, counts });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
