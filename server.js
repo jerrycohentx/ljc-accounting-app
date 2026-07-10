@@ -266,10 +266,20 @@ async function start() {
     // contaminated the Lone Star bank account, BEFORE any statement auto-load runs.
     await removeDeprecatedRules(db).catch((e) => console.warn('Rule cleanup skipped:', e.message));
     startAutoBackup();
-    startStatementAutoLoad(getDatabase);
-    startStatementEmailIngest(getDatabase);
-    startAchJeInboxScan(getDatabase);
-    startPlaidAutoSync(getDatabase);
+    // REBUILD FREEZE (2026-07-10): the 2026 books are being purged and re-imported
+    // cleanly. All auto-importers are paused so they cannot re-create duplicate
+    // transactions during the rebuild. Backups above stay ON. Re-enable by setting
+    // this flag back to false (or REBUILD_FREEZE=0) and redeploying once the clean
+    // re-import + reconciliation is complete.
+    const REBUILD_FREEZE = process.env.REBUILD_FREEZE !== '0';
+    if (REBUILD_FREEZE) {
+      console.log('⏸ REBUILD FREEZE active — auto-importers paused (statement/email/ACH/Plaid)');
+    } else {
+      startStatementAutoLoad(getDatabase);
+      startStatementEmailIngest(getDatabase);
+      startAchJeInboxScan(getDatabase);
+      startPlaidAutoSync(getDatabase);
+    }
   } catch (error) {
     console.error('Database initialization failed:', error);
     process.exit(1);
