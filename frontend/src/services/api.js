@@ -75,7 +75,16 @@ export const journalAPI = {
   update: (entityId, id, data) => client.put(`/api/entities/${entityId}/journals/${id}`, data),
   approve: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/approve`),
   post: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/post`),
-  reverse: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/reverse`, data)
+  reverse: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/reverse`, data),
+  async viewDocument(entityId, id) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/entities/${entityId}/journals/${id}/document`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error('Could not load the attached document');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
 };
 
 export const reportAPI = {

@@ -184,10 +184,13 @@ function TxnDetail({ entry, entityId, onClose, onReversed }) {
             <button
               className="qbd-btn"
               style={{ marginLeft: 12 }}
-              title={entry.sourceDocument.fileName || 'Source report'}
-              onClick={() => mgmtReportAPI.viewFile(entry.sourceDocument.mgmtReportId, entry.sourceDocument.fileName).catch((e) => window.alert(e.message))}
+              title={entry.sourceDocument.fileName || 'Source document'}
+              onClick={() => (entry.sourceDocument.documentId
+                ? journalAPI.viewDocument(entityId, entry.id)
+                : mgmtReportAPI.viewFile(entry.sourceDocument.mgmtReportId, entry.sourceDocument.fileName)
+              ).catch((e) => window.alert(e.message))}
             >
-              📎 View source report
+              📎 {entry.sourceDocument.documentId ? 'View attachment' : 'View source report'}
             </button>
           )}
           {canReverse && (
