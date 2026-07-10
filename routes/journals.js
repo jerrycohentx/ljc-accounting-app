@@ -8,6 +8,23 @@ import { reverseJournalEntry } from '../lib/reverse-journal.js';
 
 const router = express.Router({ mergeParams: true });
 
+// Backup-document plumbing at the JE level: staple a source PDF (statement/invoice)
+// to any journal entry — the manual-entry equivalent of the mgmt-report import link.
+let jeDocsReady = false;
+async function ensureJeDocsTable(db) {
+  if (jeDocsReady) return;
+  await db.run(`CREATE TABLE IF NOT EXISTS journal_entry_documents (
+    id TEXT PRIMARY KEY,
+    journal_entry_id TEXT NOT NULL,
+    file_name TEXT,
+    file_mime TEXT,
+    file_data TEXT,
+    uploaded_by TEXT,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`);
+  jeDocsReady = true;
+}
+
 // GET /api/entities/:entityId/journals - List journal entries
 router.get('/', entityAccessMiddleware, async (req, res) => {
   try {
@@ -84,6 +101,27 @@ router.get('/:id', entityAccessMiddleware, async (req, res) => {
       }
     } catch {
       // mgmt_report_imports may not exist yet on older deploys — non-fatal.
+    }
+
+    // Fall back to a manually-attached backup document (JE-level attachment feature).
+    if (!sourceDocument) {
+      try {
+        await ensureJeDocsTable(db);
+        const doc = await db.get(
+          'SELECT id, file_name, file_mime, file_data FROM journal_entry_documents WHERE journal_entry_id = ? ORDER BY uploaded_at DESC LIMIT 1',
+          req.params.id
+        );
+        if (doc) {
+          sourceDocument = {
+            documentId: doc.id,
+            fileName: doc.file_name,
+            fileMime: doc.file_mime,
+            hasFile: !!doc.file_data,
+          };
+        }
+      } catch {
+        // journal_entry_documents may not exist yet — non-fatal.
+      }
     }
 
     res.json({ ...journal, lines, sourceDocument });
@@ -282,6 +320,53 @@ router.post('/:id/reverse', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOU
     if (/already been reversed|Only posted|Cannot reverse|closed period/i.test(error.message)) {
       return res.status(409).json({ error: error.message });
     }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/entities/:entityId/journals/:id/document - attach a backup document (base64) to a JE
+router.post('/:id/document', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    const { fileName, fileMime, fileData } = req.body || {};
+    if (!fileData) return res.status(400).json({ error: 'fileData (base64) is required' });
+
+    const db = await getDatabase();
+    const je = await db.get(
+      'SELECT id FROM journal_entries WHERE id = ? AND entity_id = ?',
+      [req.params.id, req.entityId]
+    );
+    if (!je) return res.status(404).json({ error: 'Journal entry not found' });
+
+    await ensureJeDocsTable(db);
+    const id = `jed-${uuidv4()}`;
+    await db.run(
+      `INSERT INTO journal_entry_documents (id, journal_entry_id, file_name, file_mime, file_data, uploaded_by)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, req.params.id, fileName || null, fileMime || 'application/pdf', fileData, req.user?.id || null]
+    );
+    res.status(201).json({ id, journalEntryId: req.params.id, fileName: fileName || null, fileMime: fileMime || 'application/pdf' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/entities/:entityId/journals/:id/document - download the attached backup document
+router.get('/:id/document', entityAccessMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    await ensureJeDocsTable(db);
+    const doc = await db.get(
+      'SELECT file_name, file_mime, file_data FROM journal_entry_documents WHERE journal_entry_id = ? ORDER BY uploaded_at DESC LIMIT 1',
+      req.params.id
+    );
+    if (!doc || !doc.file_data) return res.status(404).json({ error: 'No document attached' });
+    const buf = Buffer.from(doc.file_data, 'base64');
+    const safeName = (doc.file_name || 'document.pdf').replace(/[^A-Za-z0-9._-]+/g, '_');
+    res.setHeader('Content-Type', doc.file_mime || 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
+    res.setHeader('Content-Length', buf.length);
+    return res.end(buf);
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
