@@ -68,7 +68,7 @@ function txnType(side, isCard) {
  */
 function RegisterTable({
   entries, account, labels, checked, matchedSet, highlightGlId, selectedId, highlightMarked,
-  showNum, showType, onToggle, onSelect, onHover, onDrill, compact, amountSide,
+  showNum, showType, showDate = true, showPayee = true, onToggle, onSelect, onHover, onDrill, compact, amountSide,
 }) {
   if (!entries.length) {
     return <div className="qbd-empty">{compact ? 'None' : 'No transactions for this account.'}</div>;
@@ -82,9 +82,9 @@ function RegisterTable({
       <thead>
         <tr>
           <th style={{ width: 26 }}>✓</th>
-          <th className="qbd-d">DATE</th>
+          {showDate && <th className="qbd-d">DATE</th>}
           {showNum && <th className="qbd-je">CHK #</th>}
-          <th>PAYEE</th>
+          {showPayee && <th>PAYEE</th>}
           {showType && <th className="qbd-type">TYPE</th>}
           {compact ? (
             <th className="qbd-amt qbd-recon-amt">{compactAmtLabel}</th>
@@ -126,9 +126,9 @@ function RegisterTable({
                   title={isMatched ? 'Matched to statement' : 'Mark cleared'}
                 />
               </td>
-              <td className="qbd-d">{fmtReconDate(e.posting_date)}</td>
+              {showDate && <td className="qbd-d">{fmtReconDate(e.posting_date)}</td>}
               {showNum && <td className="qbd-je">{e.je_number}</td>}
-              <td>{e.je_description || e.description || ''}</td>
+              {showPayee && <td>{e.je_description || e.description || ''}</td>}
               {showType && <td className="qbd-type">{txnType(side, isCard)}</td>}
               {compact ? (
                 <td className="qbd-amt qbd-recon-amt">{compactAmount ? fmt(compactAmount) : ''}</td>
@@ -289,8 +289,10 @@ export default function QBDReconcile() {
   const [highlightMarked, setHighlightMarked] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [showColsMenu, setShowColsMenu] = useState(false);
-  const [showNum, setShowNum] = useState(true);
-  const [showType, setShowType] = useState(true);
+  const [showNum, setShowNum] = useState(() => localStorage.getItem('qbd-recon-col-num') !== 'false');
+  const [showType, setShowType] = useState(() => localStorage.getItem('qbd-recon-col-type') !== 'false');
+  const [showDate, setShowDate] = useState(() => localStorage.getItem('qbd-recon-col-date') !== 'false');
+  const [showPayee, setShowPayee] = useState(() => localStorage.getItem('qbd-recon-col-payee') !== 'false');
   const startRegisterResize = useSplitResize(registerSplitRef, setRegisterSplitPct, 18, 82);
   const startStmtResize = useSplitResize(outerSplitRef, setStmtSplitPct, 15, 72);
 
@@ -312,6 +314,12 @@ export default function QBDReconcile() {
   useEffect(() => {
     localStorage.setItem(STMT_SHOW_STORAGE_KEY, showStmt ? 'true' : 'false');
   }, [showStmt]);
+
+  // Remember which columns the user wants displayed.
+  useEffect(() => { localStorage.setItem('qbd-recon-col-num', showNum ? 'true' : 'false'); }, [showNum]);
+  useEffect(() => { localStorage.setItem('qbd-recon-col-type', showType ? 'true' : 'false'); }, [showType]);
+  useEffect(() => { localStorage.setItem('qbd-recon-col-date', showDate ? 'true' : 'false'); }, [showDate]);
+  useEffect(() => { localStorage.setItem('qbd-recon-col-payee', showPayee ? 'true' : 'false'); }, [showPayee]);
 
   // Release the object URL for the statement PDF when it changes or on unmount.
   useEffect(() => () => { if (statementPdfUrl) URL.revokeObjectURL(statementPdfUrl); }, [statementPdfUrl]);
@@ -944,7 +952,7 @@ export default function QBDReconcile() {
               <div className="qbd-recon-subpane" style={{ width: `calc(${registerSplitPct}% - 3px)` }}>
                 <div className="qbd-recon-panehead">Checks and Payments <span className="qbd-muted">{paymentCount} cleared · {fmt(markedPayments)}</span></div>
                 <div className="qbd-recon-panebody" ref={regScrollRef}>
-                  <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} compact amountSide="payment" />
+                  <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} showDate={showDate} showPayee={showPayee} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} compact amountSide="payment" />
                 </div>
               </div>
               <div
@@ -958,7 +966,7 @@ export default function QBDReconcile() {
               <div className="qbd-recon-subpane" style={{ width: `calc(${100 - registerSplitPct}% - 3px)` }}>
                 <div className="qbd-recon-panehead">Deposits and Other Credits <span className="qbd-muted">{depositCount} cleared · {fmt(markedDeposits)}</span></div>
                 <div className="qbd-recon-panebody">
-                  <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} compact amountSide="deposit" />
+                  <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} showDate={showDate} showPayee={showPayee} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} compact amountSide="deposit" />
                 </div>
               </div>
             </div>
@@ -969,7 +977,7 @@ export default function QBDReconcile() {
                 <span className="qbd-muted">{checkedIds.length} marked</span>
               </div>
               <div className="qbd-recon-panebody" ref={regScrollRef}>
-                <RegisterTable entries={visibleEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} />
+                <RegisterTable entries={visibleEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} showDate={showDate} showPayee={showPayee} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} />
               </div>
             </>
           )}
@@ -999,7 +1007,9 @@ export default function QBDReconcile() {
           <button type="button" className="qbd-btn" disabled={busy} onClick={() => setShowColsMenu((v) => !v)}>Columns to Display…</button>
           {showColsMenu && (
             <div className="qbd-cols-menu" onMouseLeave={() => setShowColsMenu(false)}>
+              <label><input type="checkbox" checked={showDate} onChange={(e) => setShowDate(e.target.checked)} /> Date</label>
               <label><input type="checkbox" checked={showNum} onChange={(e) => setShowNum(e.target.checked)} /> Chk # / Num</label>
+              <label><input type="checkbox" checked={showPayee} onChange={(e) => setShowPayee(e.target.checked)} /> Payee / Memo</label>
               <label><input type="checkbox" checked={showType} onChange={(e) => setShowType(e.target.checked)} /> Type</label>
               {!isCard && (
                 <button type="button" className="qbd-btn" style={{ fontSize: 10 }} onClick={() => { setRegisterSplitPct(DEFAULT_REGISTER_SPLIT); setShowColsMenu(false); }}>Reset column width</button>
