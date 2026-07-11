@@ -227,7 +227,14 @@ export default function QBDReconcile() {
   const { showToast } = useOutletContext() || {};
   const [searchParams] = useSearchParams();
   const [accounts, setAccounts] = useState([]);
+  const [expenseAccounts, setExpenseAccounts] = useState([]);
+  const [incomeAccounts, setIncomeAccounts] = useState([]);
   const [accountId, setAccountId] = useState('');
+  // QuickBooks Begin-Reconciliation service-charge / interest date + posting account.
+  const [scDate, setScDate] = useState('');
+  const [scAccountId, setScAccountId] = useState('');
+  const [intDate, setIntDate] = useState('');
+  const [intAccountId, setIntAccountId] = useState('');
   const [stmtDate, setStmtDate] = useState(() => {
     const d = searchParams.get('date') || searchParams.get('asOf');
     return d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : todayISO();
@@ -408,6 +415,8 @@ export default function QBDReconcile() {
           || (a.account_type === 'LIABILITY' && /Credit-Cards/.test(a.account_name))
       );
       setAccounts(bankAccounts);
+      setExpenseAccounts(all.filter((a) => a.account_type === 'EXPENSE'));
+      setIncomeAccounts(all.filter((a) => a.account_type === 'REVENUE'));
       setAccountId((prev) => {
         if (prev) return prev;
         const want = searchParams.get('account');
@@ -669,6 +678,21 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   };
 
+  // QuickBooks "Undo Last Reconciliation" from the Begin dialog: reopen the
+  // selected account's period for the chosen statement date and open the worksheet.
+  const undoLastReconciliation = () => {
+    if (!accountId) { showToast && showToast('Pick an account first'); return; }
+    if (!window.confirm(
+      `Undo the completed reconciliation for ${stmtDate}? The cleared checkmarks are removed and the period reopens so you can re-do it. `
+      + 'No transactions are deleted, and any service charge / interest already posted are kept.'
+    )) return;
+    setBusy(true);
+    bankReconAPI.reopen({ entityId, accountId, statementDate: stmtDate })
+      .then(() => { showToast && showToast('Reconciliation reopened — cleared lines restored'); return loadWorksheet(); })
+      .catch((e) => showToast && showToast('Nothing to undo for this period: ' + (e.response?.data?.error || e.message)))
+      .finally(() => setBusy(false));
+  };
+
   const enterAdjustment = () => {
     if (balanced) {
       showToast && showToast('Difference is already zero');
@@ -708,6 +732,10 @@ export default function QBDReconcile() {
       statementEndingBalance: target,
       serviceCharge: svc,
       interestEarned: int,
+      serviceChargeAccountId: scAccountId || null,
+      interestAccountId: intAccountId || null,
+      serviceChargeDate: (svc > 0 ? (scDate || stmtDate) : null),
+      interestDate: (int > 0 ? (intDate || stmtDate) : null),
     })
       .then((r) => {
         const toRow = (e) => ({
@@ -819,6 +847,40 @@ export default function QBDReconcile() {
                 onChange={(e) => setDateDraft(e.target.value)}
               />
             </div>
+            <div className="frow"><label>Beginning balance</label>
+              <input type="text" readOnly value={prepareBusy && !beginBal ? '…' : (beginBal ? fmt(+beginBal) : '—')} style={{ textAlign: 'right', width: 150, background: '#f5f7fa' }} />
+              <span
+                className="qbd-link"
+                onClick={() => showToast && showToast('The beginning balance is the ending balance from your last completed reconciliation. If it does not match your statement, a prior period was changed or not reconciled — reconcile the earlier period first, or use Undo / Reopen on it.')}
+              >
+                What if my beginning balance doesn&apos;t match?
+              </span>
+            </div>
+            <div className="frow"><label>Ending balance</label>
+              <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 150 }} />
+            </div>
+            <div className="fsec">Enter any service charge or interest earned.</div>
+            <div className="fsec-sub">Only enter amounts that are not already in your register — the reconcile screen also reads these off the statement.</div>
+            <div className="frow"><label>Service charge</label>
+              <input type="number" step="0.01" min="0" value={serviceCharge} onChange={(e) => setServiceCharge(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 90 }} />
+              <span className="fsub">Date</span>
+              <input type="date" value={scDate || stmtDate} onChange={(e) => setScDate(e.target.value)} />
+              <span className="fsub">Account</span>
+              <select value={scAccountId} onChange={(e) => setScAccountId(e.target.value)}>
+                <option value="">Auto — Bank Service Charges</option>
+                {expenseAccounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
+              </select>
+            </div>
+            <div className="frow"><label>Interest earned</label>
+              <input type="number" step="0.01" min="0" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 90 }} />
+              <span className="fsub">Date</span>
+              <input type="date" value={intDate || stmtDate} onChange={(e) => setIntDate(e.target.value)} />
+              <span className="fsub">Account</span>
+              <select value={intAccountId} onChange={(e) => setIntAccountId(e.target.value)}>
+                <option value="">Auto — Interest Income</option>
+                {incomeAccounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
+              </select>
+            </div>
             <div className="frow"><label>Bank statement</label>
               <div>
                 <input
@@ -842,26 +904,6 @@ export default function QBDReconcile() {
                 </div>
               </div>
             </div>
-            <div className="frow"><label>Beginning balance</label>
-              <input type="text" readOnly value={prepareBusy && !beginBal ? '…' : (beginBal ? fmt(+beginBal) : '—')} style={{ textAlign: 'right', width: 160, background: '#f5f7fa' }} />
-              <span
-                className="qbd-link"
-                onClick={() => showToast && showToast('The beginning balance is the ending balance from your last completed reconciliation. If it does not match your statement, a prior period was changed or not reconciled — reconcile the earlier period first, or use Undo / Reopen on it.')}
-              >
-                What if my beginning balance doesn&apos;t match?
-              </span>
-            </div>
-            <div className="frow"><label>Ending balance</label>
-              <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 160 }} />
-            </div>
-            <div className="fsec">Enter any service charge or interest earned.</div>
-            <div className="fsec-sub">Only enter amounts that are not already in your register — the reconcile screen also reads these off the statement.</div>
-            <div className="frow"><label>Service charge</label>
-              <input type="number" step="0.01" min="0" value={serviceCharge} onChange={(e) => setServiceCharge(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 160 }} />
-            </div>
-            <div className="frow"><label>Interest earned</label>
-              <input type="number" step="0.01" min="0" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 160 }} />
-            </div>
             {prepareMsg && (
               <div className="qbd-muted" style={{ padding: '0 12px 8px', fontSize: 11, color: /invalid|failed|error|not found/i.test(prepareMsg) ? '#b3261e' : undefined }}>
                 {prepareMsg}
@@ -870,9 +912,11 @@ export default function QBDReconcile() {
           </>
         )}
         <div className="qbd-botbar">
-          <button type="button" className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={() => { setAccountId(''); setEndBal(''); setServiceCharge('0'); setInterestEarned('0'); }}>Cancel</button>
+          <button type="button" className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} title="Open the reconcile worksheet to find unmatched items and the difference">Locate Discrepancies</button>
+          <button type="button" className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={undoLastReconciliation} title="Undo the last completed reconciliation for this account and reopen the period">Undo Last Reconciliation</button>
           <span className="sp" />
           <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold', background: 'linear-gradient(#dff3e2,#bfe6c8)' }}>Continue →</button>
+          <button type="button" className="qbd-btn" disabled={busy || prepareBusy} onClick={() => { setAccountId(''); setEndBal(''); setServiceCharge('0'); setInterestEarned('0'); setScAccountId(''); setIntAccountId(''); setScDate(''); setIntDate(''); }}>Cancel</button>
         </div>
       </div>
       {reportOverlay}

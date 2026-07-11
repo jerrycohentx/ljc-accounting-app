@@ -586,7 +586,12 @@ router.get('/worksheet', async (req, res) => {
 // POST /api/reconciliation/bank/reconcile — close only when difference is zero
 router.post('/reconcile', async (req, res) => {
   try {
-    const { entityId, accountId, glIds, statementDate, statementEndingBalance, notes, serviceCharge = 0, interestEarned = 0 } = req.body;
+    const {
+      entityId, accountId, glIds, statementDate, statementEndingBalance, notes,
+      serviceCharge = 0, interestEarned = 0,
+      serviceChargeAccountId = null, interestAccountId = null,
+      serviceChargeDate = null, interestDate = null,
+    } = req.body;
     if (!entityId || !accountId || !Array.isArray(glIds)) {
       return res.status(400).json({ error: 'entityId, accountId and glIds[] required' });
     }
@@ -605,6 +610,10 @@ router.post('/reconcile', async (req, res) => {
         notes,
         serviceCharge: Number(serviceCharge) || 0,
         interestEarned: Number(interestEarned) || 0,
+        serviceChargeAccountId: serviceChargeAccountId || null,
+        interestAccountId: interestAccountId || null,
+        serviceChargeDate: serviceChargeDate || null,
+        interestDate: interestDate || null,
       });
     } catch (err) {
       if (err.code === 'RECON_OUT_OF_BALANCE') {
