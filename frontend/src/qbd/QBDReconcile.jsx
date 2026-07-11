@@ -843,16 +843,24 @@ export default function QBDReconcile() {
               </div>
             </div>
             <div className="frow"><label>Beginning balance</label>
-              <input type="text" readOnly value={prepareBusy && !beginBal ? '…' : (beginBal ? fmt(+beginBal) : '—')} style={{ textAlign: 'right', width: 180, background: '#f5f7fa' }} />
+              <input type="text" readOnly value={prepareBusy && !beginBal ? '…' : (beginBal ? fmt(+beginBal) : '—')} style={{ textAlign: 'right', width: 160, background: '#f5f7fa' }} />
+              <span
+                className="qbd-link"
+                onClick={() => showToast && showToast('The beginning balance is the ending balance from your last completed reconciliation. If it does not match your statement, a prior period was changed or not reconciled — reconcile the earlier period first, or use Undo / Reopen on it.')}
+              >
+                What if my beginning balance doesn&apos;t match?
+              </span>
             </div>
             <div className="frow"><label>Ending balance</label>
-              <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 180 }} />
+              <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 160 }} />
             </div>
+            <div className="fsec">Enter any service charge or interest earned.</div>
+            <div className="fsec-sub">Only enter amounts that are not already in your register — the reconcile screen also reads these off the statement.</div>
             <div className="frow"><label>Service charge</label>
-              <input type="number" step="0.01" min="0" value={serviceCharge} onChange={(e) => setServiceCharge(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 180 }} />
+              <input type="number" step="0.01" min="0" value={serviceCharge} onChange={(e) => setServiceCharge(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 160 }} />
             </div>
             <div className="frow"><label>Interest earned</label>
-              <input type="number" step="0.01" min="0" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 180 }} />
+              <input type="number" step="0.01" min="0" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 160 }} />
             </div>
             {prepareMsg && (
               <div className="qbd-muted" style={{ padding: '0 12px 8px', fontSize: 11, color: /invalid|failed|error|not found/i.test(prepareMsg) ? '#b3261e' : undefined }}>
@@ -862,8 +870,9 @@ export default function QBDReconcile() {
           </>
         )}
         <div className="qbd-botbar">
+          <button type="button" className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={() => { setAccountId(''); setEndBal(''); setServiceCharge('0'); setInterestEarned('0'); }}>Cancel</button>
           <span className="sp" />
-          <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold' }}>Continue →</button>
+          <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold', background: 'linear-gradient(#dff3e2,#bfe6c8)' }}>Continue →</button>
         </div>
       </div>
       {reportOverlay}
