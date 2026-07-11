@@ -241,6 +241,9 @@ export default function QBDReconcile() {
   const [checked, setChecked] = useState({});
   const [serviceCharge, setServiceCharge] = useState('0');
   const [interestEarned, setInterestEarned] = useState('0');
+  // Note shown when interest / service charge was read off the statement and
+  // pre-filled here (because it was not already a booked transaction).
+  const [feeNote, setFeeNote] = useState('');
   const [showModify, setShowModify] = useState(false);
   const [busy, setBusy] = useState(false);
   const [highlightGlId, setHighlightGlId] = useState(null);
@@ -507,10 +510,23 @@ export default function QBDReconcile() {
           setEndBal(String(r.data.endingBalance));
         }
         if (r.data.displayBeginning != null) setBeginBal(String(r.data.displayBeginning));
-        // QuickBooks rule: only enter a service charge / interest here if it is
-        // not already recorded. Statement transactions are auto-imported, so we
-        // do NOT auto-fill these (that would double-count). The detected amounts
-        // remain available in feeSuggestions for reference only.
+        // Pull interest / service charge off the statement — but ONLY when the
+        // amount is not already a booked transaction (alreadyRecorded). Statement
+        // lines are normally auto-imported, so an interest line that is already a
+        // txn stays here at 0 to avoid double-counting. When it is genuinely not
+        // in the books, pre-fill it as a reviewable suggestion (posted only when
+        // the user clicks Reconcile Now).
+        const fee = r.data.feeSuggestions || {};
+        const notes = [];
+        if (fee.interestEarned && !fee.interestEarned.alreadyRecorded && fee.interestEarned.amount > 0) {
+          setInterestEarned((prev) => ((parseFloat(prev || '0') || 0) === 0 ? String(fee.interestEarned.amount) : prev));
+          notes.push(`interest ${fmt(fee.interestEarned.amount)}`);
+        }
+        if (fee.serviceCharge && !fee.serviceCharge.alreadyRecorded && fee.serviceCharge.amount > 0) {
+          setServiceCharge((prev) => ((parseFloat(prev || '0') || 0) === 0 ? String(fee.serviceCharge.amount) : prev));
+          notes.push(`service charge ${fmt(fee.serviceCharge.amount)}`);
+        }
+        setFeeNote(notes.length ? `Read from the statement (not yet in your books): ${notes.join(', ')}. Review below — it posts when you Reconcile Now.` : '');
       })
       .catch((e) => showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message)))
       .finally(() => setBusy(false));
@@ -995,6 +1011,14 @@ export default function QBDReconcile() {
         <span className="sp" />
         {buildInfo?.app?.buildLabel && <span className="qbd-muted">{buildInfo.app.buildLabel}</span>}
       </div>
+      {feeNote && (
+        <div className="qbd-recon-feenote">
+          <span>💡 {feeNote}</span>
+          <button type="button" className="qbd-btn" style={{ fontSize: 10, marginLeft: 'auto' }} onClick={() => { setInterestEarned('0'); setServiceCharge('0'); setFeeNote(''); }} title="Discard — the amount is already recorded elsewhere">
+            Dismiss
+          </button>
+        </div>
+      )}
       {showModify && (
         <div className="qbd-recon-modify">
           <label>Statement ending

@@ -75,6 +75,7 @@
 .qbd-recon-stmt .qbd-recon-panehead{background:linear-gradient(#eef2f7,#dbe3ee);border-bottom:1px solid #b9c4d2;color:#2a5596}
 .qbd-zoom-btn{padding:0 6px!important;min-width:22px;height:18px;line-height:1;font-size:12px;font-weight:bold}
 .qbd-zoom-lbl{min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+.qbd-recon-feenote{display:flex;align-items:center;gap:8px;padding:5px 12px;background:linear-gradient(#fff8e6,#fdefc4);border-top:1px solid #e6d28a;border-bottom:1px solid #e6d28a;font-size:11px;color:#7a5900;flex-shrink:0}
 .qbd-recon-panebody{flex:1;overflow:auto;background:#fff;overscroll-behavior:contain;min-height:0}
 .qbd-recon-panebody.stmt-with-pdf{display:flex;flex-direction:column;overflow:hidden}
 .qbd-recon-panebody.stmt-markup-mode{display:flex;flex-direction:column;overflow:hidden}
