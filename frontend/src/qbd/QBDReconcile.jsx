@@ -464,7 +464,12 @@ export default function QBDReconcile() {
     const reader = new FileReader();
     setUploadBusy(true);
     reader.onload = () => {
-      const payload = { entityId, accountId, fileName: file.name, autoPost: true };
+      // autoPost:false — during reconciliation the register already holds these
+      // transactions (bank feed / rebuilt books). Uploading the statement must only
+      // read the dates/balances and show the PDF for matching; posting them again
+      // creates duplicate journal entries (the importer only dedups on bank fitid,
+      // which rebuilt/Beancount entries don't carry).
+      const payload = { entityId, accountId, fileName: file.name, autoPost: false };
       if (isPdf) {
         const res = String(reader.result || '');
         payload.pdfBase64 = res.includes(',') ? res.split(',')[1] : res;

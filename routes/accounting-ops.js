@@ -224,4 +224,54 @@ router.post('/purge', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT'
   }
 });
 
+// POST /api/entities/:entityId/accounting/delete-journal-entries
+// Targeted, FK-safe hard delete of a specific list of journal entries (and their
+// GL lines, JE lines, bank import rows, match + session-line records) for this
+// entity. Used to remove erroneous duplicate entries. Capped and entity-scoped.
+router.post('/delete-journal-entries', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    const e = req.entityId;
+    const { journalEntryIds } = req.body || {};
+    if (!Array.isArray(journalEntryIds) || journalEntryIds.length === 0) {
+      return res.status(400).json({ error: 'journalEntryIds[] required' });
+    }
+    if (journalEntryIds.length > 50) {
+      return res.status(400).json({ error: 'refusing to delete more than 50 entries in one call' });
+    }
+    const db = await getDatabase();
+    // Only operate on entries that actually belong to this entity.
+    const inPh = journalEntryIds.map(() => '?').join(',');
+    const owned = await db.all(
+      `SELECT id, je_number, description FROM journal_entries WHERE entity_id = ? AND id IN (${inPh})`,
+      [e, ...journalEntryIds]
+    );
+    const ids = owned.map((r) => r.id);
+    if (ids.length === 0) return res.status(404).json({ error: 'no matching journal entries for this entity' });
+    const ph = ids.map(() => '?').join(',');
+    const counts = {};
+    const run = async (label, sql, params = []) => {
+      try {
+        const r = await db.run(sql, params);
+        counts[label] = (r && (r.changes ?? r.rowCount)) ?? 'ok';
+      } catch (err) {
+        counts[label] = `skip: ${String(err.message).slice(0, 80)}`;
+      }
+    };
+    await run('reconciliation_matches',
+      `DELETE FROM reconciliation_matches
+        WHERE gl_entry_id IN (SELECT id FROM general_ledger WHERE journal_entry_id IN (${ph}))
+           OR import_transaction_id IN (SELECT id FROM import_transactions WHERE journal_entry_id IN (${ph}))`,
+      [...ids, ...ids]);
+    await run('bank_reconciliation_session_lines',
+      `DELETE FROM bank_reconciliation_session_lines WHERE gl_id IN (SELECT id FROM general_ledger WHERE journal_entry_id IN (${ph}))`, ids);
+    await run('journal_entry_documents', `DELETE FROM journal_entry_documents WHERE journal_entry_id IN (${ph})`, ids);
+    await run('general_ledger', `DELETE FROM general_ledger WHERE journal_entry_id IN (${ph})`, ids);
+    await run('import_transactions', `DELETE FROM import_transactions WHERE journal_entry_id IN (${ph})`, ids);
+    await run('journal_entries', `DELETE FROM journal_entries WHERE entity_id = ? AND id IN (${ph})`, [e, ...ids]);
+    res.json({ message: `Deleted ${ids.length} journal entr(ies) for ${e}`, deleted: owned, counts });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
