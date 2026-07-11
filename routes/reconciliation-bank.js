@@ -724,7 +724,6 @@ router.post('/import-statement', async (req, res) => {
       ofxContent,
       pdfBase64,
       fileName,
-      autoPost = true,
     } = req.body;
     if (!entityId || !accountId) {
       return res.status(400).json({ error: 'entityId and accountId required' });
@@ -734,6 +733,10 @@ router.post('/import-statement', async (req, res) => {
     }
 
     const db = await getDatabase();
+    // SAFEGUARD: a statement upload during reconciliation NEVER posts transactions
+    // to the ledger — the register already holds them (bank feed / rebuilt books).
+    // autoPost is forced false here regardless of what the client sends, so no client
+    // bug or direct API call can re-post an already-booked month as duplicates.
     const result = await importStatementForReconcile(db, {
       entityId,
       accountId,
@@ -741,7 +744,7 @@ router.post('/import-statement', async (req, res) => {
       ofxContent,
       pdfBase64,
       fileName,
-      autoPost,
+      autoPost: false,
     });
 
     // Keep the statement PDF so it can be shown automatically next to the
@@ -767,11 +770,15 @@ router.post('/import-statement', async (req, res) => {
     return res.json({
       ok: true,
       statementFileSaved,
-      message: result.imported
-        ? `Imported ${result.imported} line(s), posted ${result.posted} to register`
-        : result.skippedDuplicates
-          ? `All ${result.skippedDuplicates} line(s) already imported`
-          : 'No transactions found on statement',
+      message: (() => {
+        const parts = [];
+        if (result.alreadyBooked) parts.push(`${result.alreadyBooked} already in your register (skipped)`);
+        if (result.skippedDuplicates) parts.push(`${result.skippedDuplicates} duplicate line(s) skipped`);
+        if (result.imported) parts.push(`${result.imported} new line(s) staged for matching`);
+        return parts.length
+          ? `Statement read — ${parts.join('; ')}. Dates and balances filled in.`
+          : 'Statement read — dates and balances filled in.';
+      })(),
       ...result,
     });
   } catch (error) {
