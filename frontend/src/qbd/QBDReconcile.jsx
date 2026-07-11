@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, bankReconAPI, journalAPI } from '../services/api';
 import { useBackupStatus } from './QBDBackupDialog';
@@ -226,6 +226,7 @@ export default function QBDReconcile() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [expenseAccounts, setExpenseAccounts] = useState([]);
   const [incomeAccounts, setIncomeAccounts] = useState([]);
@@ -916,7 +917,7 @@ export default function QBDReconcile() {
           <button type="button" className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={undoLastReconciliation} title="Undo the last completed reconciliation for this account and reopen the period">Undo Last Reconciliation</button>
           <span className="sp" />
           <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold', background: 'linear-gradient(#dff3e2,#bfe6c8)' }}>Continue →</button>
-          <button type="button" className="qbd-btn" disabled={busy || prepareBusy} onClick={() => { setAccountId(''); setEndBal(''); setServiceCharge('0'); setInterestEarned('0'); setScAccountId(''); setIntAccountId(''); setScDate(''); setIntDate(''); }}>Cancel</button>
+          <button type="button" className="qbd-btn" disabled={busy || prepareBusy} onClick={() => navigate('/')}>Cancel</button>
         </div>
       </div>
       {reportOverlay}
