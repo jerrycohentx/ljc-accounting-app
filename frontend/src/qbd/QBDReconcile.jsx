@@ -617,6 +617,9 @@ export default function QBDReconcile() {
 
   const periodSession = data?.periodSession || data?.priorSession;
   const needsReopen = periodSession && !periodSession.balanced;
+  // A balanced, closed period has no difference to fix but can still be undone
+  // (QuickBooks-style "Undo Last Reconciliation") to re-do it.
+  const canReopen = !!periodSession && (needsReopen || periodSession.status === 'CLOSED');
   const stmtMeta = data?.statementMeta || {};
 
   const visibleEntries = useMemo(() => {
@@ -631,6 +634,10 @@ export default function QBDReconcile() {
   const depositEntries = useMemo(() => visibleEntries.filter((e) => entrySide(e, account) === 'deposit'), [visibleEntries, account]);
 
   const reopenPeriod = () => {
+    if (periodSession?.balanced && !window.confirm(
+      'Undo this completed reconciliation? The cleared checkmarks are removed and the period reopens so you can re-do it. '
+      + 'No transactions are deleted, and the service charge / interest already posted are kept.'
+    )) return;
     setBusy(true);
     bankReconAPI.reopen({ entityId, accountId, statementDate: stmtDate })
       .then(() => { showToast && showToast('Reconciliation reopened — cleared lines restored'); return loadWorksheet(); })
@@ -856,9 +863,9 @@ export default function QBDReconcile() {
         {!periodSession.balanced && periodSession.difference != null ? ` — difference ${fmt(periodSession.difference)}` : ''}
       </span>
       {periodSession.message && <span className="qbd-muted">{periodSession.message}</span>}
-      {needsReopen && (
-        <button className="qbd-btn" disabled={busy} onClick={reopenPeriod} style={{ marginLeft: 'auto' }}>
-          Reopen period
+      {canReopen && (
+        <button className="qbd-btn" disabled={busy} onClick={reopenPeriod} style={{ marginLeft: 'auto' }} title="Undo this reconciliation and reopen the period so you can re-do it">
+          {needsReopen ? 'Reopen period' : 'Undo / Reopen'}
         </button>
       )}
     </div>
