@@ -4,9 +4,51 @@ import { useEntity } from './EntityContext';
 import { reportAPI } from '../services/api';
 import { fmt, leafLabel } from './helpers';
 
-const VLANE = [['🧾', 'Enter Bills'], ['→'], ['💵', 'Pay Bills']];
-const CLANE = [['🧾', 'Sales Receipts'], ['💳', 'Online Payments'], ['📑', 'Create Invoices'], ['→'], ['📈', 'Finance Charges'], ['📃', 'Statements'], ['→'], ['💵', 'Receive Payments'], ['↩️', 'Refunds & Credits']];
-const ELANE = [['⏱️', 'Enter Time']];
+// QuickBooks Desktop-style Home: workflow swim-lanes + quick-access columns +
+// an Account Balances panel. Populated only with this app's real, working
+// features — no QuickBooks marketing, add-ons, or dead links.
+const A = ['→']; // connector arrow between workflow steps
+
+const LANES = [
+  ['BANK ACTIVITY', [
+    ['🏦', 'Bank Feeds', '/bank-feeds'], A, ['🔍', 'Review', '/feed-review'], A,
+    ['🔗', 'Bank Import', '/bank-import'], A, ['✓', 'Reconcile', '/reconcile'],
+  ]],
+  ['GENERAL LEDGER', [
+    ['📋', 'Chart of Accounts', '/accounts'], A, ['📝', 'Journal Entry', '/journal'], A,
+    ['✍️', 'Write Checks', '/write-checks'], A, ['💰', 'Make Deposits', '/make-deposits'],
+  ]],
+  ['CLOSE & REPORT', [
+    ['📥', 'Receipt Inbox', '/receipts'], A, ['🔒', 'Period Close', '/period-close'], A,
+    ['📊', 'Reports', '/reports'], A, ['🧾', 'Tax Financials', '/tax-financials'],
+  ]],
+];
+
+const COMPANY = [
+  ['📋', 'Chart of Accounts', '/accounts'],
+  ['📝', 'Make Journal Entry', '/journal'],
+  ['📒', 'Registers', '/accounts'],
+  ['🔒', 'Period Close', '/period-close'],
+  ['📈', 'Dashboard', '/dashboard'],
+];
+
+const BANKING = [
+  ['🏦', 'Bank Feeds', '/bank-feeds'],
+  ['🔗', 'Bank Import', '/bank-import'],
+  ['✓', 'Reconcile', '/reconcile'],
+  ['✍️', 'Write Checks', '/write-checks'],
+  ['💰', 'Make Deposits', '/make-deposits'],
+  ['⚡', 'ACH / Interest Import', '/ach-interest-import'],
+  ['📥', 'Receipt Inbox', '/receipts'],
+  ['📄', 'Reconciliation Reports', '/reconciliation-reports'],
+];
+
+const SHORTCUTS = [
+  ['Reconcile an account', '/reconcile'],
+  ['Enter a journal entry', '/journal'],
+  ['Run reports', '/reports'],
+  ['Close a period', '/period-close'],
+];
 
 export default function QBDHome() {
   const { entityId, current } = useEntity();
@@ -29,30 +71,42 @@ export default function QBDHome() {
   const cc = g(/Credit-Cards/, 'LIABILITY');
   const ar = g(/Accounts-Receivable|Notes-Receivable/);
 
-  const COMPANY = [['📋', 'Chart of Accounts', () => nav('/accounts')], ['📦', 'Items & Services', null], ['🧾', 'Order Checks', null], ['📅', 'Calendar', null]];
-  const BANKING = [['🏦', 'Bank Feeds', () => nav('/bank-feeds')], ['🔗', 'Bank Import', () => nav('/bank-import')], ['📥', 'Receipt Inbox', () => nav('/receipts')], ['🏘️', 'Mgmt Report Import', () => nav('/mgmt-reports')], ['💰', 'Record Deposits', () => nav('/make-deposits')], ['✓', 'Reconcile', () => nav('/reconcile')], ['✍️', 'Write Checks', () => nav('/write-checks')], ['💳', 'Credit Card Charges', null], ['📒', 'Use Register', () => nav('/accounts')]];
-
   const abRow = (a) => (
     <div key={a.id} className="ab" onClick={() => nav('/register/' + a.id)}>
       <span>{leafLabel(a.accountName)}</span>
       <b className={a.balance < 0 ? 'qbd-neg' : ''}>{fmt(a.balance) || '0.00'}</b>
     </div>
   );
-  const grp = (title, arr) => arr.length ? <React.Fragment key={title}><div className="grp">{title}</div>{arr.map(abRow)}</React.Fragment> : null;
-  const flow = (ic, label, fn, key) => (
-    <div key={key} className="qbd-flow" onClick={fn || (() => {})} style={fn ? {} : { opacity: 0.85 }}>
+  const grp = (title, arr) => (arr.length ? (
+    <React.Fragment key={title}>
+      <div className="grp">{title}</div>
+      {arr.map(abRow)}
+    </React.Fragment>
+  ) : null);
+
+  const flow = (ic, label, path, key) => (
+    <div key={key} className="qbd-flow" onClick={() => path && nav(path)} title={label}>
       <div className="ic">{ic}</div>{label}
     </div>
   );
 
   return (
     <div>
-      <div style={{ background: 'linear-gradient(#3f6cb0,#2a5596)', color: '#fff', fontWeight: 'bold', padding: '5px 12px', fontSize: 13 }}>Home</div>
+      <div style={{ background: 'linear-gradient(#3f6cb0,#2a5596)', color: '#fff', fontWeight: 'bold', padding: '5px 12px', fontSize: 13 }}>
+        Home{current ? ` — ${current.name}` : ''}
+      </div>
       <div className="qbd-canvas">
         <div className="qbd-lanes">
-          <div className="qbd-lane"><div className="qbd-lanehead">VENDORS</div><div className="qbd-lanebody">{VLANE.map((it, i) => it[0] === '→' ? <span key={i} className="qbd-arrow">▶</span> : flow(it[0], it[1], null, i))}</div></div>
-          <div className="qbd-lane"><div className="qbd-lanehead">CUSTOMERS</div><div className="qbd-lanebody">{CLANE.map((it, i) => it[0] === '→' ? <span key={i} className="qbd-arrow">▶</span> : flow(it[0], it[1], null, i))}</div></div>
-          <div className="qbd-lane"><div className="qbd-lanehead">EMPLOYEES</div><div className="qbd-lanebody">{ELANE.map((it, i) => flow(it[0], it[1], null, i))}</div></div>
+          {LANES.map(([head, steps]) => (
+            <div className="qbd-lane" key={head}>
+              <div className="qbd-lanehead">{head}</div>
+              <div className="qbd-lanebody">
+                {steps.map((it, i) => (it[0] === '→'
+                  ? <span key={i} className="qbd-arrow">▶</span>
+                  : flow(it[0], it[1], it[2], i)))}
+              </div>
+            </div>
+          ))}
         </div>
         <div className="qbd-cols">
           <div className="qbd-col"><div className="qbd-colhead">COMPANY</div>{COMPANY.map((c, i) => flow(c[0], c[1], c[2], i))}</div>
@@ -62,11 +116,25 @@ export default function QBDHome() {
           <div className="qbd-rp">
             <h4>ACCOUNT BALANCES</h4>
             {loading ? <div className="info">Loading…</div> : (
-              <>{grp('Bank', cash)}{grp('Brokerage', brk)}{grp('Credit Cards', cc)}{grp('Accounts Receivable', ar)}
-                {!cash.length && !cc.length && !ar.length && <div className="info">No balance-sheet accounts with activity yet.</div>}</>
+              <>
+                {grp('Bank', cash)}
+                {grp('Brokerage', brk)}
+                {grp('Credit Cards', cc)}
+                {grp('Receivables', ar)}
+                {!cash.length && !cc.length && !ar.length && !brk.length && (
+                  <div className="info">No balance-sheet accounts with activity yet.</div>
+                )}
+              </>
             )}
           </div>
-          <div className="qbd-rp"><h4>DO MORE WITH QUICKBOOKS</h4><div className="info">{current ? current.name : ''}</div></div>
+          <div className="qbd-rp">
+            <h4>SHORTCUTS</h4>
+            {SHORTCUTS.map(([label, path]) => (
+              <div key={path} className="ab" onClick={() => nav(path)}>
+                <span>{label}</span><span style={{ color: '#7c97b2' }}>›</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
