@@ -25,6 +25,7 @@ import {
 } from '../lib/bank-reconcile-session.js';
 import { buildReconciliationReport, saveReconciliationReport } from '../lib/reconciliation-report.js';
 import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
+import { ensureStatementFileSchema, saveStatementFile, getStatementFile } from '../lib/statement-file-schema.js';
 import { prepareReconciliation } from '../lib/reconcile-prepare.js';
 import { postReconcileAdjustment } from '../lib/reconcile-adjustment.js';
 import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/statement-auto-load.js';
@@ -734,8 +735,29 @@ router.post('/import-statement', async (req, res) => {
       autoPost,
     });
 
+    // Keep the statement PDF so it can be shown automatically next to the
+    // register the next time this period is reconciled.
+    let statementFileSaved = false;
+    if (pdfBase64 && result.statementDate) {
+      try {
+        await ensureStatementFileSchema(db);
+        statementFileSaved = await saveStatementFile(db, {
+          entityId,
+          accountId,
+          statementDate: result.statementDate,
+          fileName: fileName || 'statement.pdf',
+          fileMime: 'application/pdf',
+          fileDataBase64: pdfBase64,
+          userId: req.user?.id || 'usr-admin',
+        });
+      } catch (e) {
+        console.error('Statement file save failed (non-fatal):', e.message);
+      }
+    }
+
     return res.json({
       ok: true,
+      statementFileSaved,
       message: result.imported
         ? `Imported ${result.imported} line(s), posted ${result.posted} to register`
         : result.skippedDuplicates
@@ -746,6 +768,30 @@ router.post('/import-statement', async (req, res) => {
   } catch (error) {
     console.error('Import statement error:', error);
     return res.status(500).json({ error: error.message || 'Failed to import statement' });
+  }
+});
+
+// GET /api/reconciliation/bank/statement-file — the stored statement PDF for a
+// period, so the frontend can show it automatically next to the register.
+router.get('/statement-file', async (req, res) => {
+  try {
+    const { entityId, accountId, statementDate } = req.query;
+    if (!entityId || !accountId || !statementDate) {
+      return res.status(400).json({ error: 'entityId, accountId and statementDate required' });
+    }
+    const db = await getDatabase();
+    await ensureStatementFileSchema(db);
+    const row = await getStatementFile(db, { entityId, accountId, statementDate });
+    if (!row || !row.file_data) return res.json({ found: false });
+    return res.json({
+      found: true,
+      fileName: row.file_name || 'statement.pdf',
+      mime: row.file_mime || 'application/pdf',
+      dataBase64: row.file_data,
+    });
+  } catch (error) {
+    console.error('Statement file fetch error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to load statement file' });
   }
 });
 

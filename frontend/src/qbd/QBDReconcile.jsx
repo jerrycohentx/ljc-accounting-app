@@ -19,6 +19,21 @@ import {
 const REGISTER_SPLIT_STORAGE_KEY = 'qbd-recon-register-split-pct';
 const HIDE_AFTER_END_KEY = 'qbd-recon-hide-after-end';
 const DEFAULT_REGISTER_SPLIT = 50;
+// Persist how the reconcile screen is sized so the user never re-does it:
+// the statement-vs-register split width and the statement zoom level.
+const STMT_SPLIT_STORAGE_KEY = 'qbd-recon-stmt-split-pct';
+const STMT_ZOOM_STORAGE_KEY = 'qbd-recon-stmt-zoom';
+const STMT_SHOW_STORAGE_KEY = 'qbd-recon-stmt-show';
+const DEFAULT_STMT_SPLIT = 38; // statement pane width, % of the split
+const DEFAULT_STMT_ZOOM = 100; // percent; 0 means "fit width"
+
+/** Turn a base64 payload from the API into an object URL for an <iframe>. */
+function base64ToObjectUrl(b64, mime = 'application/pdf') {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: mime }));
+}
 
 function isAfterStatementEnd(postingDate, statementEndDate) {
   if (!postingDate || !statementEndDate) return false;
@@ -234,8 +249,22 @@ export default function QBDReconcile() {
     const saved = parseFloat(localStorage.getItem(REGISTER_SPLIT_STORAGE_KEY) || '');
     return Number.isFinite(saved) ? saved : DEFAULT_REGISTER_SPLIT;
   });
+  // Side-by-side bank statement pane (shows the uploaded PDF next to the register).
+  const [statementPdfUrl, setStatementPdfUrl] = useState(null);
+  const [showStmt, setShowStmt] = useState(() => localStorage.getItem(STMT_SHOW_STORAGE_KEY) !== 'false');
+  const [stmtSplitPct, setStmtSplitPct] = useState(() => {
+    const saved = parseFloat(localStorage.getItem(STMT_SPLIT_STORAGE_KEY) || '');
+    return Number.isFinite(saved) ? saved : DEFAULT_STMT_SPLIT;
+  });
+  const [stmtZoom, setStmtZoom] = useState(() => {
+    const saved = parseInt(localStorage.getItem(STMT_ZOOM_STORAGE_KEY) || '', 10);
+    return Number.isFinite(saved) ? saved : DEFAULT_STMT_ZOOM;
+  });
 
   const registerSplitRef = useRef(null);
+  const outerSplitRef = useRef(null);
+  const reconStmtFileRef = useRef(null);
+  const stmtAutoLoadKeyRef = useRef(null);
   const regScrollRef = useRef(null);
   const prepareTimerRef = useRef(null);
   const prepareRequestRef = useRef(0);
@@ -260,6 +289,7 @@ export default function QBDReconcile() {
   const [showNum, setShowNum] = useState(true);
   const [showType, setShowType] = useState(true);
   const startRegisterResize = useSplitResize(registerSplitRef, setRegisterSplitPct, 18, 82);
+  const startStmtResize = useSplitResize(outerSplitRef, setStmtSplitPct, 15, 72);
 
   useEffect(() => {
     localStorage.setItem(REGISTER_SPLIT_STORAGE_KEY, String(Math.round(registerSplitPct)));
@@ -268,6 +298,52 @@ export default function QBDReconcile() {
   useEffect(() => {
     localStorage.setItem(HIDE_AFTER_END_KEY, hideAfterEndDate ? 'true' : 'false');
   }, [hideAfterEndDate]);
+
+  // Remember the reconcile screen sizing between sessions.
+  useEffect(() => {
+    localStorage.setItem(STMT_SPLIT_STORAGE_KEY, String(Math.round(stmtSplitPct)));
+  }, [stmtSplitPct]);
+  useEffect(() => {
+    localStorage.setItem(STMT_ZOOM_STORAGE_KEY, String(stmtZoom));
+  }, [stmtZoom]);
+  useEffect(() => {
+    localStorage.setItem(STMT_SHOW_STORAGE_KEY, showStmt ? 'true' : 'false');
+  }, [showStmt]);
+
+  // Release the object URL for the statement PDF when it changes or on unmount.
+  useEffect(() => () => { if (statementPdfUrl) URL.revokeObjectURL(statementPdfUrl); }, [statementPdfUrl]);
+
+  // Switching accounts drops any statement carried over from the previous one.
+  useEffect(() => {
+    setStatementPdfUrl(null);
+    stmtAutoLoadKeyRef.current = null;
+  }, [accountId]);
+
+  // Automatically show the statement being reconciled: once a session is open,
+  // fetch the stored PDF for this period (if one was uploaded before) and load
+  // it into the side-by-side pane — no re-upload needed.
+  useEffect(() => {
+    if (!started || !entityId || !accountId || statementPdfUrl) return undefined;
+    const date = (data && data.statementDate) || stmtDate;
+    if (!date) return undefined;
+    const key = `${entityId}|${accountId}|${date}`;
+    if (stmtAutoLoadKeyRef.current === key) return undefined; // try once per period
+    stmtAutoLoadKeyRef.current = key;
+    let cancelled = false;
+    bankReconAPI.statementFile(entityId, accountId, date)
+      .then((r) => {
+        const d = r.data || {};
+        if (cancelled || !d.found || !d.dataBase64) return;
+        const url = base64ToObjectUrl(d.dataBase64, d.mime || 'application/pdf');
+        setStatementPdfUrl((prev) => { if (prev) { URL.revokeObjectURL(url); return prev; } return url; });
+      })
+      .catch(() => { /* no stored statement for this period — fine */ });
+    return () => { cancelled = true; };
+  }, [started, entityId, accountId, stmtDate, data, statementPdfUrl]);
+
+  const zoomIn = useCallback(() => setStmtZoom((z) => Math.min(250, (z > 0 ? z : 100) + 15)), []);
+  const zoomOut = useCallback(() => setStmtZoom((z) => Math.max(40, (z > 0 ? z : 100) - 15)), []);
+  const zoomFit = useCallback(() => setStmtZoom(0), []);
 
   useEffect(() => {
     if (!dateInputFocusedRef.current) setDateDraft(stmtDate);
@@ -358,6 +434,12 @@ export default function QBDReconcile() {
   const handleStatementUpload = useCallback((file) => {
     if (!file || !entityId || !accountId) return;
     const isPdf = /\.pdf$/i.test(file.name);
+    // Keep the PDF so it can be shown side-by-side with the register.
+    if (isPdf) {
+      const url = URL.createObjectURL(file);
+      setStatementPdfUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return url; });
+      setShowStmt(true);
+    }
     const reader = new FileReader();
     setUploadBusy(true);
     reader.onload = () => {
@@ -799,8 +881,41 @@ export default function QBDReconcile() {
           Hide transactions after the statement&apos;s end date
         </label>
       </div>
-      <div className="qbd-recon-split register-only">
-        <div className="qbd-recon-pane qbd-recon-dual" style={{ width: '100%' }}>
+      <div className={`qbd-recon-split${statementPdfUrl && showStmt ? '' : ' register-only'}`} ref={outerSplitRef}>
+        {statementPdfUrl && showStmt && (
+          <>
+            <div className="qbd-recon-pane qbd-recon-stmt" style={{ width: `calc(${stmtSplitPct}% - 4px)` }}>
+              <div className="qbd-recon-panehead">
+                Statement
+                <span className="qbd-muted">bank PDF</span>
+                <span className="sp" style={{ flex: 1 }} />
+                <button type="button" className="qbd-btn qbd-zoom-btn" title="Zoom out" onClick={zoomOut}>−</button>
+                <span className="qbd-muted qbd-zoom-lbl">{stmtZoom > 0 ? `${stmtZoom}%` : 'Fit'}</span>
+                <button type="button" className="qbd-btn qbd-zoom-btn" title="Zoom in" onClick={zoomIn}>+</button>
+                <button type="button" className="qbd-btn qbd-zoom-btn" title="Fit width" onClick={zoomFit}>⤢</button>
+                <button type="button" className="qbd-btn qbd-zoom-btn" title="Hide statement" onClick={() => setShowStmt(false)}>✕</button>
+              </div>
+              <div className="qbd-recon-panebody stmt-with-pdf">
+                <div className="qbd-stmt-pdf qbd-stmt-pdf-full">
+                  <iframe
+                    title="Bank statement"
+                    key={stmtZoom}
+                    src={`${statementPdfUrl}#toolbar=1&navpanes=0&${stmtZoom > 0 ? `zoom=${stmtZoom}` : 'view=FitH'}`}
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              className="qbd-recon-gutter"
+              role="separator"
+              aria-orientation="vertical"
+              aria-valuenow={Math.round(stmtSplitPct)}
+              title="Drag to resize the statement vs the register"
+              onMouseDown={startStmtResize}
+            />
+          </>
+        )}
+        <div className="qbd-recon-pane qbd-recon-dual" style={{ width: statementPdfUrl && showStmt ? `calc(${100 - stmtSplitPct}% - 4px)` : '100%' }}>
           {!isCard ? (
             <div className="qbd-recon-register-split" ref={registerSplitRef}>
               <div className="qbd-recon-subpane" style={{ width: `calc(${registerSplitPct}% - 3px)` }}>
@@ -847,6 +962,16 @@ export default function QBDReconcile() {
         <button type="button" className="qbd-btn" disabled={busy} onClick={unmarkAll}>Unmark All</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={goTo}>Go To</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={matched} title="Check off everything matched to the statement">Matched</button>
+        <input ref={reconStmtFileRef} type="file" accept=".pdf,.ofx,.qfx" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleStatementUpload(f); }} />
+        {statementPdfUrl ? (
+          <button type="button" className="qbd-btn" disabled={busy} onClick={() => setShowStmt((v) => !v)} title="Show or hide the bank statement next to the register">
+            {showStmt ? 'Hide Statement' : 'Show Statement'}
+          </button>
+        ) : (
+          <button type="button" className="qbd-btn" disabled={busy || uploadBusy} onClick={() => reconStmtFileRef.current && reconStmtFileRef.current.click()} title="Attach the bank statement PDF to view it side-by-side">
+            {uploadBusy ? 'Reading…' : '⬆ Statement'}
+          </button>
+        )}
         <div className="qbd-cols-wrap">
           <button type="button" className="qbd-btn" disabled={busy} onClick={() => setShowColsMenu((v) => !v)}>Columns to Display…</button>
           {showColsMenu && (
@@ -856,6 +981,7 @@ export default function QBDReconcile() {
               {!isCard && (
                 <button type="button" className="qbd-btn" style={{ fontSize: 10 }} onClick={() => { setRegisterSplitPct(DEFAULT_REGISTER_SPLIT); setShowColsMenu(false); }}>Reset column width</button>
               )}
+              <button type="button" className="qbd-btn" style={{ fontSize: 10 }} onClick={() => { setStmtSplitPct(DEFAULT_STMT_SPLIT); setStmtZoom(DEFAULT_STMT_ZOOM); setShowColsMenu(false); }}>Reset statement size &amp; zoom</button>
             </div>
           )}
         </div>

@@ -70,8 +70,11 @@
 .qbd-recon-gutter{width:7px;flex-shrink:0;cursor:col-resize;background:linear-gradient(90deg,#dbe3ee,#c9d3df,#dbe3ee);border-left:1px solid #9fb4c8;border-right:1px solid #9fb4c8;position:relative;z-index:2}
 .qbd-recon-gutter:hover,.qbd-recon-gutter.dragging{background:linear-gradient(90deg,#8fb0e0,#5a85c4,#8fb0e0)}
 .qbd-recon-gutter::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:28px;border-radius:2px;background:rgba(255,255,255,.55)}
-.qbd-recon-panehead{background:linear-gradient(#eef2f7,#dbe3ee);border-bottom:1px solid #b9c4d2;padding:4px 8px;font-size:10px;font-weight:bold;color:#2a5596;letter-spacing:.4px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.qbd-recon-panehead{background:linear-gradient(#e7f1da,#cfe4b6);border-bottom:1px solid #9cbf7e;padding:4px 8px;font-size:10px;font-weight:bold;color:#2f4d1e;letter-spacing:.4px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
 .qbd-recon-panehead .qbd-muted{font-weight:normal;font-size:10px}
+.qbd-recon-stmt .qbd-recon-panehead{background:linear-gradient(#eef2f7,#dbe3ee);border-bottom:1px solid #b9c4d2;color:#2a5596}
+.qbd-zoom-btn{padding:0 6px!important;min-width:22px;height:18px;line-height:1;font-size:12px;font-weight:bold}
+.qbd-zoom-lbl{min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
 .qbd-recon-panebody{flex:1;overflow:auto;background:#fff;overscroll-behavior:contain;min-height:0}
 .qbd-recon-panebody.stmt-with-pdf{display:flex;flex-direction:column;overflow:hidden}
 .qbd-recon-panebody.stmt-markup-mode{display:flex;flex-direction:column;overflow:hidden}
@@ -98,7 +101,7 @@
 .qbd-stmt-unmatched-row .m{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1f3550}
 .qbd-stmt-unmatched-row .a{text-align:right;font-variant-numeric:tabular-nums}
 .qbd-recon-split .qbd-reg{table-layout:fixed}
-.qbd-recon-split .qbd-reg th{top:0;font-size:10px;padding:3px 6px}
+.qbd-recon-split .qbd-reg th{top:0;font-size:10px;padding:3px 6px;background:linear-gradient(#dceccf,#b9d69b);border-color:#9cbf7e;color:#2f4d1e}
 .qbd-recon-split .qbd-reg td{font-size:11px;padding:2px 6px;overflow:hidden;text-overflow:ellipsis}
 .qbd-recon-split .qbd-d{width:52px;min-width:52px;max-width:52px;white-space:nowrap!important;overflow:hidden;font-variant-numeric:tabular-nums}
 .qbd-recon-register-split .qbd-recon-reg td:last-child,.qbd-recon-register-split .qbd-recon-reg th:last-child{width:92px;min-width:92px;max-width:92px}
@@ -106,8 +109,9 @@
 .qbd-recon-stmt .qbd-amt{min-width:88px;width:88px;white-space:nowrap!important;text-align:right}
 .qbd-recon-stmt tr.hl td,.qbd-recon-reg tr.hl td{background:#fff6cf!important;outline:1px solid #e6c200;scroll-margin-top:28px}
 .qbd-recon-stmt tr.matched td{background:#f0f7ff}
-.qbd-recon-reg tr.cleared td{background:#eaf6ec!important}
-.qbd-recon-reg tr.selected td{background:#dbe9fb}
+.qbd-recon-reg tr.cleared td{background:#dff0d3!important}
+.qbd-recon-reg tr.selected td{background:#b7dd94}
+.qbd-recon-reg tr.selected.cleared td{background:#a9d67f!important}
 .qbd-recon-reg tr.matched td:first-child{box-shadow:inset 3px 0 0 #2f6b3a}
 .qbd-type{width:52px;min-width:52px;max-width:52px;font-size:10px;color:#42566f;text-align:center}
 .qbd-recon-reg td,.qbd-recon-reg th{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

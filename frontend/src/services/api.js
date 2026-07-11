@@ -117,6 +117,9 @@ export const bankReconAPI = {
   reconcile: (data) => client.post('/api/reconciliation/bank/reconcile', data),
   reopen: (data) => client.post('/api/reconciliation/bank/reopen', data),
   importStatement: (data) => client.post('/api/reconciliation/bank/import-statement', data),
+  statementFile: (entityId, accountId, statementDate) => client.get('/api/reconciliation/bank/statement-file', {
+    params: { entityId, accountId, statementDate },
+  }),
   adjustment: (data) => client.post('/api/reconciliation/bank/adjustment', data),
 };
 
