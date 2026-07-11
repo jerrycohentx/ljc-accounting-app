@@ -123,8 +123,17 @@ router.get('/balance-sheet', entityAccessMiddleware, async (req, res) => {
     let totalAssets = new Decimal(0);
     let totalLiabilities = new Decimal(0);
     let totalEquity = new Decimal(0);
+    let netIncome = new Decimal(0); // current-period earnings (revenue - expense) through reportDate
 
     for (const acc of accounts) {
+      if (acc.account_type === 'REVENUE') {
+        netIncome = netIncome.plus(calculateBalance(acc));
+        continue;
+      }
+      if (acc.account_type === 'EXPENSE') {
+        netIncome = netIncome.minus(calculateBalance(acc));
+        continue;
+      }
       if (acc.account_type === 'ASSET' || acc.account_type === 'CONTRA') {
         const balance = calculateBalance(acc);
         assets.push({
@@ -157,6 +166,13 @@ router.get('/balance-sheet', entityAccessMiddleware, async (req, res) => {
       }
     }
 
+    // Fold current-period net income into equity (Current Year Earnings) so the
+    // balance sheet balances for an open period before year-end close.
+    if (!netIncome.isZero()) {
+      equity.push({ accountNumber: '', accountName: 'Current Year Earnings', amount: netIncome.toNumber() });
+      totalEquity = totalEquity.plus(netIncome);
+    }
+
     res.json({
       asOfDate: reportDate,
       assets,
@@ -165,6 +181,7 @@ router.get('/balance-sheet', entityAccessMiddleware, async (req, res) => {
       totalLiabilities: totalLiabilities.toNumber(),
       equity,
       totalEquity: totalEquity.toNumber(),
+      netIncome: netIncome.toNumber(),
       totalLiabilitiesAndEquity: totalLiabilities.plus(totalEquity).toNumber()
     });
   } catch (error) {
