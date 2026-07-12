@@ -11,6 +11,7 @@ import {
 import { previewOpeningBalances, postOpeningBalances, parseOpeningBalanceCsv } from '../lib/opening-balances.js';
 import { previewYearEndClose, postYearEndClose } from '../lib/year-end-close.js';
 import { runLonestarBalanceFixes } from '../lib/fix-lonestar-opening-balance.js';
+import { checkSuspenseAccounts } from '../lib/suspense-check.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -26,10 +27,33 @@ router.get('/periods', entityAccessMiddleware, async (req, res) => {
 });
 
 // POST /api/entities/:entityId/accounting/periods/close
+// Zero-suspense gate (ledger-integrity guardrail #3): report any non-zero
+// clearing/suspense/uncategorized account as of a date. Read-only.
+router.get('/suspense-check', entityAccessMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const result = await checkSuspenseAccounts(db, req.entityId, req.query.asOf || null);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/periods/close', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
   try {
-    const { periodStart, periodEnd, postingDate, notes } = req.body;
+    const { periodStart, periodEnd, postingDate, notes, force } = req.body;
     const db = await getDatabase();
+
+    // Zero-suspense gate: money must not be stranded in clearing/suspense
+    // accounts when a period closes. Block unless the caller explicitly forces.
+    const suspenseAsOf = postingDate || periodEnd || null;
+    const suspense = await checkSuspenseAccounts(db, req.entityId, suspenseAsOf);
+    if (!suspense.clean && !force) {
+      return res.status(409).json({
+        error: `Cannot close: $${suspense.totalAbs} stranded in ${suspense.nonZero.length} suspense/clearing account(s). Resolve them, or resend with force:true to override.`,
+        suspense,
+      });
+    }
 
     let result;
     if (postingDate) {
@@ -51,7 +75,11 @@ router.post('/periods/close', [entityAccessMiddleware, requireRole('ADMIN', 'ACC
       return res.status(400).json({ error: 'Provide postingDate or periodStart and periodEnd' });
     }
 
-    res.json({ message: 'Period closed', ...result });
+    res.json({
+      message: suspense.clean ? 'Period closed' : `Period closed (forced — $${suspense.totalAbs} in suspense)`,
+      suspense,
+      ...result,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
