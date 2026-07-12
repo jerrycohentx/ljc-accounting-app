@@ -50,6 +50,18 @@ function periodLabel(statementDate) {
   return String(statementDate).slice(0, 7);
 }
 
+// Next month's period-end date, for "Close & Advance". Bank statements are
+// month-end dated, so return the last day of the following month; the Begin
+// screen's prepare step refines it if the real statement date differs.
+function nextStatementDate(statementDate) {
+  if (!statementDate || !/^\d{4}-\d{2}-\d{2}$/.test(statementDate)) return '';
+  const [y, m] = statementDate.split('-').map(Number);
+  const nextMonth = m === 12 ? 1 : m + 1;
+  const nextYear = m === 12 ? y + 1 : y;
+  const lastDay = new Date(nextYear, nextMonth, 0).getDate();
+  return `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+}
+
 /**
  * Best-effort QuickBooks-style transaction type label (CHK / DEP / CHRG / PMT).
  * The ledger does not store a QBD transaction type, so this is derived from the
@@ -726,7 +738,7 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   };
 
-  const finish = () => {
+  const finish = (advance = false) => {
     if (!balanced) { showToast && showToast('Difference must be $0.00 to reconcile'); return; }
     if (checkedIds.length === 0) { showToast && showToast('Mark the cleared transactions first'); return; }
     setBusy(true);
@@ -774,6 +786,16 @@ export default function QBDReconcile() {
         setData(null);
         setEndBal('');
         setBeginningOverride('');
+        // Close & Advance: roll straight into the next month. The beginning
+        // balance auto-carries from this close; we just bump the statement date.
+        if (advance) {
+          const next = nextStatementDate(stmtDate);
+          if (next) {
+            setStmtDate(next);
+            userPickedDateRef.current = true;
+            showToast && showToast(`Reconciled. Advanced to ${periodLabel(next)} — beginning balance carries from this close.`);
+          }
+        }
       })
       .catch((e) => {
         const msg = e.response?.data?.error || e.message;
@@ -1137,7 +1159,8 @@ export default function QBDReconcile() {
           </button>
         )}
         <button className="qbd-btn" disabled={busy} onClick={() => { setStarted(false); showToast && showToast('Progress saved — nothing posted to the ledger'); }}>Leave</button>
-        <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={finish} style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dff3e2,#bfe6c8)' : undefined }}>Reconcile Now</button>
+        <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={() => finish(false)} style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dff3e2,#bfe6c8)' : undefined }}>Reconcile Now</button>
+        <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={() => finish(true)} title="Reconcile this statement and roll straight into the next month (beginning balance carries automatically)" style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dfeaf7,#bcd4ef)' : undefined }}>Close &amp; Advance →</button>
       </div>
       {drillEntry && (
         <TxnDetailModal entry={drillEntry} entityId={entityId} onClose={() => setDrillEntry(null)} />
