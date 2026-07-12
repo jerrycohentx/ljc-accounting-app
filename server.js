@@ -65,9 +65,26 @@ const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Middleware
-const corsOptions = NODE_ENV === 'production'
-  ? { origin: process.env.FRONTEND_URL || '*', credentials: true, allowedHeaders: ['Content-Type', 'Authorization', 'X-Loan-Tracker-Key'] }
-  : { origin: '*', credentials: true, allowedHeaders: ['Content-Type', 'Authorization', 'X-Loan-Tracker-Key'] };
+// CORS origin policy. Endpoints are auth-gated (JWT for /api, the loan-tracker
+// key for /api/automation/*), so CORS is not the security boundary here — it
+// just has to let legitimate browsers through. The loan-servicing app runs
+// locally (http://localhost:8765 by default, any port) and posts loan events
+// cross-origin, so localhost/127.0.0.1 must be allowed in addition to the app's
+// own frontend. Reflecting a specific origin (never '*') keeps credentialed
+// requests valid.
+const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+function corsOriginCheck(origin, cb) {
+  if (!origin) return cb(null, true); // curl, same-origin, file://
+  if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) return cb(null, true);
+  if (LOCAL_ORIGIN.test(origin)) return cb(null, true);
+  if (NODE_ENV !== 'production') return cb(null, true);
+  return cb(null, false); // disallowed: no CORS headers, browser blocks (no server error)
+}
+const corsOptions = {
+  origin: corsOriginCheck,
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Loan-Tracker-Key'],
+};
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' })); // Increase limit for OFX file uploads
