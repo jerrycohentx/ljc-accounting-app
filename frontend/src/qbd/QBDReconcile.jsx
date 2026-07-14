@@ -257,6 +257,10 @@ export default function QBDReconcile() {
   const [prepareMsg, setPrepareMsg] = useState('');
   const [prepareBusy, setPrepareBusy] = useState(false);
   const [started, setStarted] = useState(false);
+  // Unposted draft journal entries dated on or before the statement date. Drafts
+  // never reach the general ledger, so the reconcile cannot see them -- surface
+  // the count before you commit, so you don't tie out to incomplete books.
+  const [pendingDrafts, setPendingDrafts] = useState(0);
   const [data, setData] = useState(null);
   const [checked, setChecked] = useState({});
   const [serviceCharge, setServiceCharge] = useState('0');
@@ -334,6 +338,20 @@ export default function QBDReconcile() {
   useEffect(() => {
     localStorage.setItem(STMT_SHOW_STORAGE_KEY, showStmt ? 'true' : 'false');
   }, [showStmt]);
+
+  // Count unposted drafts dated on or before the statement date. These are NOT in
+  // the general ledger, so this reconcile cannot include them -- warn before finishing.
+  useEffect(() => {
+    if (!entityId || !started || !stmtDate) { setPendingDrafts(0); return undefined; }
+    let alive = true;
+    journalAPI.list(entityId, { status: 'DRAFT', endDate: stmtDate, limit: 1000 })
+      .then((r) => {
+        const all = (r.data && r.data.data) || (Array.isArray(r.data) ? r.data : []);
+        if (alive) setPendingDrafts(all.length);
+      })
+      .catch(() => { if (alive) setPendingDrafts(0); });
+    return () => { alive = false; };
+  }, [entityId, started, stmtDate]);
 
   // Remember which columns the user wants displayed.
   useEffect(() => { localStorage.setItem('qbd-recon-col-num', showNum ? 'true' : 'false'); }, [showNum]);
@@ -1152,6 +1170,18 @@ export default function QBDReconcile() {
         <span className="qbd-muted">{checkedIds.length} transaction(s) marked cleared</span>
         {!balanced && <span className="qbd-muted" style={{ color: '#b3261e', marginLeft: 12 }}>Difference must be $0.00 to reconcile</span>}
         {balanced && <span className="qbd-muted" style={{ color: '#2f6b3a', marginLeft: 12 }}>Ready to reconcile</span>}
+        {pendingDrafts > 0 && (
+          <span className="qbd-muted" style={{ color: '#8a6d00', marginLeft: 12 }}>
+            ⚠ {pendingDrafts} unposted draft {pendingDrafts === 1 ? 'entry' : 'entries'} dated on or before {fmtReconDate(stmtDate)} — not included in this reconciliation.{' '}
+            <a
+              href="/draft-journals"
+              onClick={(e) => { e.preventDefault(); navigate(`/draft-journals?through=${encodeURIComponent(stmtDate)}`); }}
+              style={{ color: '#1a56a8' }}
+            >
+              Review drafts
+            </a>
+          </span>
+        )}
         <span className="sp" />
         {!balanced && (
           <button type="button" className="qbd-btn" disabled={busy} onClick={enterAdjustment} title="Last resort — posts a journal entry for the difference">
