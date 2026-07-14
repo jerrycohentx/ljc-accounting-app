@@ -1175,7 +1175,7 @@ export default function QBDReconcile() {
             ⚠ {pendingDrafts} unposted draft {pendingDrafts === 1 ? 'entry' : 'entries'} dated on or before {fmtReconDate(stmtDate)} — not included in this reconciliation.{' '}
             <a
               href="/draft-journals"
-              onClick={(e) => { e.preventDefault(); navigate(`/draft-journals?through=${encodeURIComponent(stmtDate)}`); }}
+              onClick={(e) => { e.preventDefault(); navigate(`/draft-journals?through=${encodeURIComponent(stmtDate)}&all=1`); }}
               style={{ color: '#1a56a8' }}
             >
               Review drafts
