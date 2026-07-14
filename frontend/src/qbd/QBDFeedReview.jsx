@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { accountAPI, importAPI } from '../services/api';
+import { accountAPI, importAPI, journalAPI } from '../services/api';
 import { leafLabel, todayISO, fmtShortDate } from './helpers';
 
 function flat(nodes, out) {
@@ -20,8 +20,34 @@ function effectiveCategoryId(row) {
   return row.offsetAccountId || row.suggestedCategoryId || '';
 }
 
+const jeMoney = (v) => (Number(v) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 function ReviewDetail({ row, onClose }) {
+  const [je, setJe] = useState(null);
+  const [jeErr, setJeErr] = useState('');
+
+  // Load the full journal entry so the detail shows BOTH sides (debit + credit),
+  // not just the summary -- lets you verify the account distribution here.
+  useEffect(() => {
+    if (!row?.entityId || !row?.jeId) { setJe(null); setJeErr(''); return undefined; }
+    let alive = true;
+    setJe(null);
+    setJeErr('');
+    journalAPI.get(row.entityId, row.jeId)
+      .then((r) => { if (alive) setJe(r.data); })
+      .catch(() => { if (alive) setJeErr('Could not load the journal entry lines.'); });
+    return () => { alive = false; };
+  }, [row?.entityId, row?.jeId]);
+
   if (!row) return null;
+
+  const lines = Array.isArray(je?.lines) ? je.lines : [];
+  const totalDebit = lines.reduce((t, l) => t + (Number(l.debit) || 0), 0);
+  const totalCredit = lines.reduce((t, l) => t + (Number(l.credit) || 0), 0);
+  const cell = { padding: '3px 5px', verticalAlign: 'top' };
+  const numCell = { ...cell, textAlign: 'right', whiteSpace: 'nowrap' };
+  const headCell = { ...cell, textAlign: 'left', borderBottom: '1px solid #bbb', fontWeight: 600 };
+
   return (
     <div className="qbd-review-detail-backdrop" onClick={onClose} role="presentation">
       <div className="qbd-review-detail" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Transaction detail">
@@ -44,6 +70,41 @@ function ReviewDetail({ row, onClose }) {
           <dt>Downloaded</dt><dd>{row.downloadedAt ? fmtShortDate(row.downloadedAt) : '—'}</dd>
           <dt>FITID</dt><dd className="qbd-review-detail-mono">{row.fitid}</dd>
         </dl>
+        <div style={{ padding: '8px 12px 12px' }}>
+          <b style={{ fontSize: 12 }}>Journal entry — both sides</b>
+          {!je && !jeErr && <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>Loading…</div>}
+          {jeErr && <div style={{ fontSize: 12, color: '#b00020', marginTop: 6 }}>{jeErr}</div>}
+          {je && lines.length === 0 && <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>No lines on this entry.</div>}
+          {je && lines.length > 0 && (
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 6, fontSize: 12 }}>
+              <thead>
+                <tr>
+                  <th style={headCell}>Account</th>
+                  <th style={headCell}>Description</th>
+                  <th style={{ ...headCell, textAlign: 'right' }}>Debit</th>
+                  <th style={{ ...headCell, textAlign: 'right' }}>Credit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((l) => (
+                  <tr key={l.id}>
+                    <td style={cell}>{l.account_number} — {leafLabel(l.account_name)}</td>
+                    <td style={cell}>{l.description || '—'}</td>
+                    <td style={numCell}>{Number(l.debit) ? jeMoney(l.debit) : ''}</td>
+                    <td style={numCell}>{Number(l.credit) ? jeMoney(l.credit) : ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td style={{ ...cell, fontWeight: 600, borderTop: '1px solid #bbb' }} colSpan={2}>Totals</td>
+                  <td style={{ ...numCell, fontWeight: 600, borderTop: '1px solid #bbb' }}>{jeMoney(totalDebit)}</td>
+                  <td style={{ ...numCell, fontWeight: 600, borderTop: '1px solid #bbb' }}>{jeMoney(totalCredit)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );
