@@ -21,7 +21,9 @@ export default function QBDDraftJournals() {
   // Date limiter -- blank = no limit. Pre-set from ?through=YYYY-MM-DD when arriving
   // from the Reconcile window, so you land on exactly the statement period's drafts.
   const [through, setThrough] = useState(() => searchParams.get('through') || '');
-  const [includeAuto, setIncludeAuto] = useState(false);
+  // ?all=1 (set by the Reconcile window's "Review drafts" link) includes bank-feed
+  // drafts, so the count you land on matches the count the reconcile warned about.
+  const [includeAuto, setIncludeAuto] = useState(() => searchParams.get('all') === '1');
   const [sel, setSel] = useState(() => new Set());
   const [openId, setOpenId] = useState(null);
   const [linesById, setLinesById] = useState({});
