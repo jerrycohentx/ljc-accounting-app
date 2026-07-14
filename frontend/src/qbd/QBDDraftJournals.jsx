@@ -26,8 +26,9 @@ export default function QBDDraftJournals() {
   // drafts, so the count you land on matches the count the reconcile warned about.
   const [includeAuto, setIncludeAuto] = useState(() => searchParams.get('all') === '1');
   const [sel, setSel] = useState(() => new Set());
-  const [openId, setOpenId] = useState(null);
-  const [linesById, setLinesById] = useState({});
+  // Multiple rows can be expanded at once, so a whole cycle can be compared side by side.
+  const [openIds, setOpenIds] = useState(() => new Set());
+  const [jeById, setJeById] = useState({});
 
   const load = useCallback(() => {
     if (!entityId) return;
@@ -42,7 +43,7 @@ export default function QBDDraftJournals() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId]);
 
-  useEffect(() => { setSel(new Set()); setOpenId(null); load(); }, [load]);
+  useEffect(() => { setSel(new Set()); setOpenIds(new Set()); load(); }, [load]);
 
   const inScope = rows.filter((j) => (includeAuto ? true : !isAutoDraft(j)));
   const visible = inScope
@@ -59,13 +60,21 @@ export default function QBDDraftJournals() {
   const toggleAll = () => setSel(allSel ? new Set() : new Set(visible.map((j) => j.id)));
   const selected = visible.filter((j) => sel.has(j.id));
 
-  const openLines = (id) => {
-    setOpenId((cur) => (cur === id ? null : id));
-    if (linesById[id] !== undefined) return;
+  const fetchJe = (id) => {
+    if (jeById[id] !== undefined) return;
     journalAPI.get(entityId, id)
-      .then((r) => setLinesById((m) => ({ ...m, [id]: (r.data && r.data.lines) || [] })))
-      .catch(() => setLinesById((m) => ({ ...m, [id]: null })));
+      .then((r) => setJeById((m) => ({ ...m, [id]: r.data || null })))
+      .catch(() => setJeById((m) => ({ ...m, [id]: null })));
   };
+
+  const toggleOpen = (id) => {
+    setOpenIds((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    fetchJe(id);
+  };
+
+  // Open every visible entry at once, so a whole cycle can be read together.
+  const expandAll = () => { visible.forEach((j) => fetchJe(j.id)); setOpenIds(new Set(visible.map((j) => j.id))); };
+  const collapseAll = () => setOpenIds(new Set());
 
   const postSelected = async () => {
     if (!selected.length) { toast('Select at least one entry to post'); return; }
@@ -115,7 +124,7 @@ export default function QBDDraftJournals() {
               <th style={{ width: 28 }}><input type="checkbox" checked={allSel} onChange={toggleAll} /></th>
               <th style={{ width: 90 }}>DATE</th>
               <th style={{ width: 175 }}>ENTRY #</th>
-              <th>MEMO</th>
+              <th>DESCRIPTION</th>
               <th className="qbd-bal" style={{ width: 110 }}>AMOUNT</th>
               <th style={{ width: 100 }} />
             </tr>
@@ -126,8 +135,9 @@ export default function QBDDraftJournals() {
             ) : visible.length === 0 ? (
               <tr><td colSpan={6}><div className="qbd-empty">No draft journal entries{through ? ` dated on or before ${through}` : ''}.</div></td></tr>
             ) : visible.map((j) => {
-              const lines = linesById[j.id];
-              const open = openId === j.id;
+              const je = jeById[j.id];
+              const lines = je === undefined ? undefined : (je === null ? null : (je.lines || []));
+              const open = openIds.has(j.id);
               return (
                 <React.Fragment key={j.id}>
                   <tr>
@@ -136,11 +146,16 @@ export default function QBDDraftJournals() {
                     <td>{j.je_number}</td>
                     <td style={{ maxWidth: 460, overflow: 'hidden', textOverflow: 'ellipsis' }} title={j.description}>{j.description}</td>
                     <td className="qbd-bal">{fmt(+j.total_debit)}</td>
-                    <td><button className="qbd-btn" onClick={() => openLines(j.id)}>{open ? 'Hide' : 'Both sides'}</button></td>
+                    <td><button className="qbd-btn" onClick={() => toggleOpen(j.id)}>{open ? 'Hide' : 'Both sides'}</button></td>
                   </tr>
                   {open && (
                     <tr>
                       <td colSpan={6} style={{ background: '#f7f9fc', padding: '6px 10px' }}>
+                        {je && je.memo && (
+                          <div style={{ marginBottom: 8, padding: '7px 9px', background: '#fffbe8', border: '1px solid #e3d9a3', borderRadius: 3, fontSize: 12, lineHeight: 1.55, whiteSpace: 'normal' }}>
+                            <b>Why this entry exists:</b> {je.memo}
+                          </div>
+                        )}
                         {lines === undefined ? (
                           <span className="qbd-muted">Loading lines…</span>
                         ) : lines === null ? (
@@ -191,6 +206,8 @@ export default function QBDDraftJournals() {
           {selected.length ? ` · ${selected.length} selected` : ''}
         </span>
         <span className="sp" />
+        <button className="qbd-btn" onClick={expandAll} disabled={busy || !visible.length}>Expand all</button>
+        <button className="qbd-btn" onClick={collapseAll} disabled={busy || !openIds.size}>Collapse all</button>
         <button className="qbd-btn" onClick={() => navigate('/')} disabled={busy}>Close</button>
         <button className="qbd-btn" onClick={load} disabled={busy}>Refresh</button>
         <button className="qbd-btn" style={{ fontWeight: 'bold' }} disabled={busy || !selected.length} onClick={postSelected}>
