@@ -117,7 +117,7 @@ export default function QBDLayout() {
       case 'View': return [['Home Page', () => nav('/')], ['Multi-Entity Dashboard', () => nav('/dashboard')], ['Activity Review', () => nav('/feed-review')], ['Open Window List', t('Live app')]];
       case 'Lists': return [['Chart of Accounts', () => nav('/accounts')], ['Item List', t('Item List — live app')], ['Class List', t('Live app')]];
       case 'Favorites': return [['Customize Favorites…', t('Live app')]];
-      case 'Company': return [['Home Page', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')], '-', ['Make General Journal Entries…', () => nav('/journal')], ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Set Closing Date…', () => nav('/period-close')], ['Company Information…', t('Live app')]];
+      case 'Company': return [['Home Page', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')], '-', ['Make General Journal Entries…', () => nav('/journal')], ['Review Journal Entry Drafts…', () => nav('/draft-journals')], ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Set Closing Date…', () => nav('/period-close')], ['Company Information…', t('Live app')]];
       case 'Customers': return [['Customer Center', t('Live app')], '-', ['Create Invoices', t('Live app')], ['Receive Payments', t('Live app')], ['Create Sales Receipts', t('Live app')]];
       case 'Vendors': return [['Vendor Center', t('Live app')], '-', ['Enter Bills', t('Live app')], ['Pay Bills', t('Live app')]];
       case 'Employees': return [['Employee Center', t('Live app')], '-', ['Enter Time', t('Live app')]];
