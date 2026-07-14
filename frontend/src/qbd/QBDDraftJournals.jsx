@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { journalAPI } from '../services/api';
 import { fmt, leafLabel } from './helpers';
@@ -13,6 +13,7 @@ export default function QBDDraftJournals() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const toast = (m) => (showToast ? showToast(m) : null);
 
   const [rows, setRows] = useState([]);
@@ -90,8 +91,8 @@ export default function QBDDraftJournals() {
   };
 
   return (
-    <div className="qbd-form">
-      <div className="fhd">Review Journal Entry Drafts</div>
+    <div className="qbd-form qbd-wide">
+      <div className="fhd">Review Journal Entry Drafts <span style={{ fontWeight: 'normal', opacity: 0.85 }}>— drag the bottom-right corner to resize</span></div>
 
       <div className="frow">
         <label>Show entries through</label>
@@ -133,7 +134,7 @@ export default function QBDDraftJournals() {
                     <td><input type="checkbox" checked={sel.has(j.id)} onChange={() => toggle(j.id)} /></td>
                     <td className="qbd-num">{dateOf(j)}</td>
                     <td>{j.je_number}</td>
-                    <td>{j.description}</td>
+                    <td style={{ maxWidth: 460, overflow: 'hidden', textOverflow: 'ellipsis' }} title={j.description}>{j.description}</td>
                     <td className="qbd-bal">{fmt(+j.total_debit)}</td>
                     <td><button className="qbd-btn" onClick={() => openLines(j.id)}>{open ? 'Hide' : 'Both sides'}</button></td>
                   </tr>
@@ -190,6 +191,7 @@ export default function QBDDraftJournals() {
           {selected.length ? ` · ${selected.length} selected` : ''}
         </span>
         <span className="sp" />
+        <button className="qbd-btn" onClick={() => navigate('/')} disabled={busy}>Close</button>
         <button className="qbd-btn" onClick={load} disabled={busy}>Refresh</button>
         <button className="qbd-btn" style={{ fontWeight: 'bold' }} disabled={busy || !selected.length} onClick={postSelected}>
           {busy ? 'Posting…' : `Approve & Post${selected.length ? ` (${selected.length})` : ''}`}
