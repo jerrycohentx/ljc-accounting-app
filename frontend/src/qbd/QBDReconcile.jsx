@@ -45,6 +45,29 @@ function flat(nodes, out) {
   return out;
 }
 
+// Internal plumbing — real balances, but no external statement to reconcile against.
+// Checked first so "Cash Clearing" can't sneak in on the leading "Cash".
+const INTERNAL_ACCOUNT = /clearing|in transit|undeposited|holdback|due from|due to|suspense/i;
+
+/**
+ * Reconcilable = an account with a real statement from a bank or card issuer.
+ *
+ * The previous test was `/^Cash|Bank/` for assets and `/Credit-Cards/` for
+ * liabilities, and both halves were wrong. `^` binds only to `Cash`, so the
+ * second branch meant "contains Bank ANYWHERE" and dragged in
+ * "Holdbacks - Simmons Bank" and "ACH Collections - Due from Bank". And no
+ * account is named "Credit-Cards" -- they are "Credit Card - American Express"
+ * etc. -- so NO credit card was ever listed, which is why the AMEX card could
+ * not be reconciled at all.
+ */
+function isReconcilableAccount(a) {
+  const name = String(a?.account_name || '');
+  if (INTERNAL_ACCOUNT.test(name)) return false;
+  if (a?.account_type === 'ASSET') return /^cash\b/i.test(name);
+  if (a?.account_type === 'LIABILITY') return /^credit card\b/i.test(name);
+  return false;
+}
+
 function periodLabel(statementDate) {
   if (!statementDate) return '';
   return String(statementDate).slice(0, 7);
@@ -441,10 +464,7 @@ export default function QBDReconcile() {
     if (!entityId) return;
     accountAPI.list(entityId).then((r) => {
       const all = flat(Array.isArray(r.data) ? r.data : (r.data?.data || []), []);
-      const bankAccounts = all.filter(
-        (a) => (a.account_type === 'ASSET' && /^Cash|Bank/.test(a.account_name))
-          || (a.account_type === 'LIABILITY' && /Credit-Cards/.test(a.account_name))
-      );
+      const bankAccounts = all.filter(isReconcilableAccount);
       setAccounts(bankAccounts);
       setExpenseAccounts(all.filter((a) => a.account_type === 'EXPENSE'));
       setIncomeAccounts(all.filter((a) => a.account_type === 'REVENUE'));
