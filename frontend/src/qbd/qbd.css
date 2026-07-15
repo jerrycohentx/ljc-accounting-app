@@ -218,8 +218,31 @@
 .qbd-form{background:#eef1f5;margin:16px auto;max-width:700px;border:1px solid #6f8197;border-radius:5px;padding:0 0 2px;box-shadow:0 8px 26px rgba(20,40,70,.24);overflow:hidden}
 /* Wider, user-resizable window: drag the bottom-right corner. For screens whose
    tables need more room than the standard 700px form (e.g. draft review). */
-.qbd-form.qbd-wide{max-width:1180px;width:calc(100vw - 40px);min-width:560px;min-height:260px;overflow:auto;resize:both}
-.qbd-form.qbd-wide .qbd-wbody{max-height:60vh}
+/* Resizable window (drag the bottom-right corner).
+   max-width MUST stay `none`: `resize:both` works by setting an inline width, and
+   a max-width silently CLAMPS that -- the old 1180px ceiling meant dragging wider
+   did nothing on any screen above ~1200px. Use width for the INITIAL size only.
+   The frame must not scroll (overflow:hidden) -- it is a flex column so the body
+   absorbs the height and scrolls by itself. The old rule let the frame scroll AND
+   capped the body at 60vh, so dragging taller grew the frame around a fixed-height
+   body and produced nested scrollbars instead of showing more rows. */
+.qbd-form.qbd-wide{
+  max-width:none;
+  width:min(1180px, calc(100vw - 40px));
+  max-height:calc(100vh - 90px);
+  min-width:560px;
+  min-height:260px;
+  overflow:hidden;
+  resize:both;
+  display:flex;
+  flex-direction:column;
+}
+/* min-height:0 lets a flex child actually shrink; without it the table forces the
+   body to its full content height and the footer gets pushed out of view. */
+.qbd-form.qbd-wide .qbd-wbody{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}
+.qbd-form.qbd-wide .fhd,
+.qbd-form.qbd-wide .frow,
+.qbd-form.qbd-wide .qbd-foot{flex:0 0 auto}
 .qbd-form .fhd{background:linear-gradient(#5a85c4,#3c66a6);color:#fff;padding:6px 12px;font-weight:bold;font-size:12px}
 .qbd-form .frow{display:flex;gap:8px;align-items:center;padding:6px 14px;flex-wrap:wrap}
 .qbd-form label{font-size:11px;color:#33465e;width:118px;flex-shrink:0;text-align:right}
