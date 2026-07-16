@@ -512,35 +512,52 @@ router.get('/list', async (req, res) => {
 router.delete('/:importId', async (req, res) => {
   try {
     const { importId } = req.params;
-    const { rollback = false } = req.query;
+    const db = await getDatabase();
 
-    const session = importSessions.get(importId);
-    if (!session) {
-      return res.status(404).json({ error: 'Import session not found' });
+    // Look the batch up by its DURABLE identifier — the import_id on the rows
+    // themselves. The old handler consulted only the in-memory importSessions
+    // map, so any batch created before the last restart (and every imp-recon-*
+    // batch, which never registers a session) 404'd and could not be cleaned up.
+    const rows = await db.all(
+      'SELECT id, journal_entry_id FROM import_transactions WHERE import_id = ?',
+      [importId]
+    );
+    const hadSession = importSessions.has(importId);
+    if (rows.length === 0 && !hadSession) {
+      return res.status(404).json({ error: 'Import not found' });
     }
 
-    if (rollback === 'true') {
-      const db = await getDatabase();
-
-      // Delete journal entries created by this import
-      const entries = await db.all(
-        `SELECT je.id FROM journal_entries je
-         WHERE je.created_by = ? AND je.description LIKE ?`,
-        [req.user.id, '%Bank Import%']
-      );
-
-      for (const entry of entries) {
-        await db.run('DELETE FROM journal_entry_lines WHERE journal_entry_id = ?', entry.id);
-        await db.run('DELETE FROM general_ledger WHERE journal_entry_id = ?', entry.id);
-        await db.run('DELETE FROM journal_entries WHERE id = ?', entry.id);
-      }
+    // Check EVERY linked journal entry's status BEFORE touching anything —
+    // refuse the whole delete if any is POSTED. (The old rollback deleted
+    // entries matched by `description LIKE '%Bank Import%'` — a fuzzy match
+    // that could destroy unrelated, even posted, entries.)
+    const jeIds = [...new Set(rows.map((r) => r.journal_entry_id).filter(Boolean))];
+    const posted = [];
+    const drafts = [];
+    for (const id of jeIds) {
+      const je = await db.get('SELECT id, je_number, status FROM journal_entries WHERE id = ?', [id]);
+      if (!je) continue;
+      if (je.status === 'POSTED') posted.push(je.je_number);
+      else drafts.push(je.id);
+    }
+    if (posted.length > 0) {
+      return res.status(409).json({
+        error: `This import has ${posted.length} POSTED journal entr(ies) (${posted.slice(0, 5).join(', ')}${posted.length > 5 ? ', …' : ''}). Nothing was deleted — reverse the posted entries first.`,
+      });
     }
 
+    for (const id of drafts) {
+      await db.run('DELETE FROM journal_entry_lines WHERE journal_entry_id = ?', [id]);
+      await db.run('DELETE FROM journal_entries WHERE id = ?', [id]);
+    }
+    await db.run('DELETE FROM import_transactions WHERE import_id = ?', [importId]);
     importSessions.delete(importId);
 
     return res.json({
-      message: 'Import session deleted',
-      rolled_back: rollback === 'true'
+      message: 'Import deleted',
+      importId,
+      importRowsDeleted: rows.length,
+      draftEntriesDeleted: drafts.length,
     });
   } catch (error) {
     console.error('Delete import error:', error);
