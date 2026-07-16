@@ -39,6 +39,9 @@ export default function QBDDraftJournals() {
   const [editingId, setEditingId] = useState(null);
   const [editLines, setEditLines] = useState([]);
   const [saving, setSaving] = useState(false);
+  // Manual "Attach document" — backs an entry with its statement / HUD / payoff
+  // letter so the support is one click away at review time (Jerry, 2026-07-16).
+  const [attachingId, setAttachingId] = useState(null);
 
   useEffect(() => {
     if (!entityId) return;
@@ -135,6 +138,37 @@ export default function QBDDraftJournals() {
     } catch (e) {
       toast('Could not save: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
     } finally { setSaving(false); }
+  };
+
+  const pickAndAttach = (id) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.png,.jpg,.jpeg,application/pdf,image/*';
+    input.onchange = async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      if (file.size > 15 * 1024 * 1024) { toast('File is too large — keep attachments under 15 MB'); return; }
+      setAttachingId(id);
+      try {
+        const b64 = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result).split(',')[1] || '');
+          r.onerror = () => reject(new Error('Could not read the file'));
+          r.readAsDataURL(file);
+        });
+        await journalAPI.attachDocument(entityId, id, {
+          fileName: file.name,
+          fileMime: file.type || 'application/pdf',
+          fileData: b64,
+        });
+        const r2 = await journalAPI.get(entityId, id);
+        setJeById((m) => ({ ...m, [id]: r2.data || null }));
+        toast(`Attached ${file.name}`);
+      } catch (e) {
+        toast('Could not attach: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
+      } finally { setAttachingId(null); }
+    };
+    input.click();
   };
 
   const postSelected = async () => {
@@ -298,9 +332,28 @@ export default function QBDDraftJournals() {
                                 </tr>
                               </tbody>
                             </table>
-                            <div style={{ marginTop: 7 }}>
+                            <div style={{ marginTop: 7, display: 'flex', alignItems: 'center', gap: 8 }}>
                               <button className="qbd-btn" onClick={() => startEdit(j.id, lines)} disabled={busy || saving}>Edit lines…</button>
-                              <span className="qbd-muted" style={{ marginLeft: 8, fontSize: 11 }}>Corrects this draft before it posts — accounts, amounts and line memos.</span>
+                              <span className="qbd-muted" style={{ fontSize: 11 }}>Corrects this draft before it posts — accounts, amounts and line memos.</span>
+                              <span style={{ flex: 1 }} />
+                              {je && je.sourceDocument && je.sourceDocument.documentId && je.sourceDocument.hasFile && (
+                                <button
+                                  className="qbd-btn"
+                                  title={je.sourceDocument.fileName || 'View the attached document'}
+                                  onClick={() => journalAPI.viewDocument(entityId, j.id).catch(() => toast('Could not open the attachment'))}
+                                >
+                                  📎 {(je.sourceDocument.fileName || 'View attachment').length > 34
+                                    ? `${je.sourceDocument.fileName.slice(0, 31)}…`
+                                    : (je.sourceDocument.fileName || 'View attachment')}
+                                </button>
+                              )}
+                              <button className="qbd-btn" onClick={() => pickAndAttach(j.id)} disabled={attachingId === j.id}>
+                                {attachingId === j.id
+                                  ? 'Attaching…'
+                                  : (je && je.sourceDocument && je.sourceDocument.documentId && je.sourceDocument.hasFile
+                                    ? 'Replace attachment…'
+                                    : 'Attach document…')}
+                              </button>
                             </div>
                           </>
                         )}
