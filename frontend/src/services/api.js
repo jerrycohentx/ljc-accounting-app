@@ -76,6 +76,7 @@ export const journalAPI = {
   approve: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/approve`),
   post: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/post`),
   reverse: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/reverse`, data),
+  attachDocument: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/document`, data),
   async viewDocument(entityId, id) {
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/entities/${entityId}/journals/${id}/document`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
