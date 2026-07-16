@@ -733,10 +733,12 @@ router.post('/import-statement', async (req, res) => {
     }
 
     const db = await getDatabase();
-    // SAFEGUARD: a statement upload during reconciliation NEVER posts transactions
-    // to the ledger — the register already holds them (bank feed / rebuilt books).
-    // autoPost is forced false here regardless of what the client sends, so no client
-    // bug or direct API call can re-post an already-booked month as duplicates.
+    // SAFEGUARD: a statement upload during reconciliation creates STATEMENT LINES
+    // ONLY (import rows with no journal entry) — never journal entries, posted or
+    // draft. Reconciliation consumes statements; creating register entries is Bank
+    // Import's job. Forced here regardless of what the client sends: the previous
+    // draft-creating behavior duplicated every fully-drafted month on each upload
+    // (2026-07-16: one double-clicked upload minted 42 duplicate drafts, $2.43M).
     const result = await importStatementForReconcile(db, {
       entityId,
       accountId,
@@ -745,6 +747,7 @@ router.post('/import-statement', async (req, res) => {
       pdfBase64,
       fileName,
       autoPost: false,
+      createEntries: false,
     });
 
     // Keep the statement PDF so it can be shown automatically next to the
