@@ -284,7 +284,7 @@ router.get('/account-balances', entityAccessMiddleware, async (req, res) => {
         accountType: a.account_type,
         balance: calculateBalance(a).toNumber()
       }))
-      .sort((a, b) => a.account_number.localeCompare(b.account_number));
+      .sort((a, b) => a.accountNumber.localeCompare(b.accountNumber));
 
     res.json(balances);
   } catch (error) {
