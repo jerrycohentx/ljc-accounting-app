@@ -260,7 +260,7 @@ function TxnDetailModal({ entry, entityId, onClose }) {
 export default function QBDReconcile() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [expenseAccounts, setExpenseAccounts] = useState([]);
@@ -577,6 +577,15 @@ export default function QBDReconcile() {
         setHighlightGlId(null);
         setStarted(true);
         if (r.data.statementDate) setStmtDate(r.data.statementDate);
+        // Reflect the running reconciliation in the URL so browser Back (e.g.
+        // returning from the draft-review screen) lands on THIS reconciliation,
+        // not a blank default screen. Before this, account/date/session lived
+        // only in component state and navigating away destroyed them.
+        {
+          const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountId;
+          const resolvedDate = String(r.data.statementDate || stmtDate).slice(0, 10);
+          setSearchParams({ account: String(acctNo), date: resolvedDate, go: '1' }, { replace: true });
+        }
         if (r.data.suggestedEndingBalance != null) {
           setEndBal(String(r.data.suggestedEndingBalance));
         } else if (r.data.endingBalance != null) {
@@ -603,12 +612,24 @@ export default function QBDReconcile() {
       })
       .catch((e) => showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message)))
       .finally(() => setBusy(false));
-  }, [entityId, accountId, stmtDate, showToast, applyAutoChecked]);
+  }, [entityId, accountId, stmtDate, showToast, applyAutoChecked, accounts, setSearchParams]);
 
   const start = () => {
     if (!accountId) { showToast && showToast('Pick an account'); return; }
     loadWorksheet();
   };
+
+  // Auto-resume a reconciliation carried in the URL — this is what makes browser
+  // Back work: ?account=…&date=…&go=1 re-opens the same account/date and loads
+  // the worksheet without another click. Guarded by a ref so it fires once.
+  const autoResumedRef = useRef(false);
+  useEffect(() => {
+    if (autoResumedRef.current || started) return;
+    if (searchParams.get('go') === '1' && accountId && stmtDate) {
+      autoResumedRef.current = true;
+      loadWorksheet();
+    }
+  }, [searchParams, accountId, stmtDate, started, loadWorksheet]);
 
   const toggle = (id) => {
     setChecked((c) => ({ ...c, [id]: !c[id] }));
