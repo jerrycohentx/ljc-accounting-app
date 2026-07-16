@@ -778,9 +778,12 @@ router.post('/import-statement', async (req, res) => {
         if (result.alreadyBooked) parts.push(`${result.alreadyBooked} already in your register (skipped)`);
         if (result.skippedDuplicates) parts.push(`${result.skippedDuplicates} duplicate line(s) skipped`);
         if (result.imported) parts.push(`${result.imported} new line(s) staged for matching`);
-        return parts.length
+        const body = parts.length
           ? `Statement read — ${parts.join('; ')}. Dates and balances filled in.`
           : 'Statement read — dates and balances filled in.';
+        return result.redirected
+          ? `This statement belongs to ${result.redirected.accountName} (****${result.redirected.statementLast4}) — switched to that account for you. ${body}`
+          : body;
       })(),
       ...result,
     });
