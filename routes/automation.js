@@ -39,6 +39,34 @@ router.get('/loan-events', requireRole('ADMIN', 'ACCOUNTANT'), async (req, res) 
   }
 });
 
+// Cleanup for Jerry's gross-only rule (2026-07-16): the loan-event receiver
+// records events without drafting journal entries, and any LN- drafts pushed
+// before that change are per-loan detail that must not reach the books.
+// Deletes DRAFT entries only; posted entries are never touched.
+router.delete('/loan-event-drafts', requireRole('ADMIN', 'ACCOUNTANT'), async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const entityId = req.query.entityId || LJC_ENTITY_ID;
+    const drafts = await db.all(
+      "SELECT id, je_number FROM journal_entries WHERE entity_id = ? AND status = 'DRAFT' AND je_number LIKE 'LN-%'",
+      [entityId]
+    );
+    for (const d of drafts) {
+      await db.run('DELETE FROM journal_entry_lines WHERE journal_entry_id = ?', d.id);
+      try {
+        await db.run(
+          "UPDATE loan_tracker_events SET journal_entry_id = NULL, status = 'PENDING' WHERE journal_entry_id = ?",
+          d.id
+        );
+      } catch { /* loan_tracker_events may not exist yet — non-fatal */ }
+      await db.run("DELETE FROM journal_entries WHERE id = ? AND status = 'DRAFT'", d.id);
+    }
+    res.json({ deleted: drafts.length, jeNumbers: drafts.map((d) => d.je_number) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/ach-je/scan', requireRole('ADMIN'), async (req, res) => {
   try {
     const summary = await runAchJeInboxScan(getDatabase, { reason: 'manual' });
