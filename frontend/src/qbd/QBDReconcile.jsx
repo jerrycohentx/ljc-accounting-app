@@ -537,7 +537,14 @@ export default function QBDReconcile() {
           if (d.endingBalance != null) setEndBal(String(d.endingBalance));
           if (d.beginningBalance != null) setBeginBal(String(d.beginningBalance));
           showToast && showToast(d.message || 'Statement imported — dates and balances read from your statement');
-          if (d.statementDate) runPrepare(d.statementDate);
+          if (d.redirected && d.redirected.accountId) {
+            // The statement identified a different account and the server imported
+            // it THERE. Follow it: switching accountId re-runs prepare for the
+            // right account automatically (the account/date effect).
+            setAccountId(d.redirected.accountId);
+          } else if (d.statementDate) {
+            runPrepare(d.statementDate);
+          }
         })
         .catch((e) => showToast && showToast('Statement upload failed: ' + (e.response?.data?.error || e.message)))
         .finally(() => {
