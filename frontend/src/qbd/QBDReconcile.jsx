@@ -1086,7 +1086,14 @@ export default function QBDReconcile() {
     <div className="qbd-window qbd-recon-window">
       <div className="qbd-wtitle">Reconcile — {data.account.account_number} · {leafLabel(data.account.account_name)}
         {isCard && <span style={{ fontWeight: 'normal', fontSize: 11, marginLeft: 8 }}>(Credit card)</span>}
-        <span className="x" onClick={() => { setStarted(false); setData(null); }}>✕</span>
+        <span className="x" onClick={() => {
+          // Same as Leave: an explicit exit clears the auto-resume pointer and
+          // the ?go=1 params so neither a refresh nor the next /reconcile visit
+          // drags the user back into a worksheet they closed.
+          try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
+          setSearchParams({}, { replace: true });
+          setStarted(false); setData(null);
+        }}>✕</span>
       </div>
       {sessionBanner}
       <div className="qbd-recon-period">
@@ -1276,7 +1283,16 @@ export default function QBDReconcile() {
             Enter Adjustment…
           </button>
         )}
-        <button className="qbd-btn" disabled={busy} onClick={() => { setStarted(false); showToast && showToast('Progress saved — nothing posted to the ledger'); }}>Leave</button>
+        <button className="qbd-btn" disabled={busy} onClick={() => {
+          // Leaving is an explicit exit — drop the auto-resume pointer, or the
+          // next visit to /reconcile drags the user straight back into a
+          // worksheet they chose to leave (Jerry hit this loop trying to reach
+          // AMEX while a stale Lone Star pointer kept hijacking the screen).
+          try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
+          setSearchParams({}, { replace: true }); // strip ?go=1 so a refresh doesn't re-enter
+          setStarted(false);
+          showToast && showToast('Left the reconciliation — nothing posted to the ledger');
+        }}>Leave</button>
         <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={() => finish(false)} style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dff3e2,#bfe6c8)' : undefined }}>Reconcile Now</button>
         <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={() => finish(true)} title="Reconcile this statement and roll straight into the next month (beginning balance carries automatically)" style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dfeaf7,#bcd4ef)' : undefined }}>Close &amp; Advance →</button>
       </div>
