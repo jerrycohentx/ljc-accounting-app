@@ -47,6 +47,19 @@ async function connectPostgres() {
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.PGSSLMODE === 'disable' ? false : { rejectUnauthorized: false },
   });
+  // A dropped connection emits 'error' on the Client; with no listener Node
+  // treats it as an unhandled 'error' event and KILLS THE PROCESS. That is
+  // what turned the 2026-07-16 disk-full incident into an app-wide crash
+  // loop: Postgres shed connections and every shed connection took the whole
+  // server down. Log it, drop the cached handle, and let the next
+  // getDatabase() call reconnect. (postgresBootstrapped stays true — schema
+  // is already ensured; re-running bootstrap writes on every reconnect would
+  // add write pressure exactly when the DB is least able to take it.)
+  client.on('error', (err) => {
+    console.error('PostgreSQL connection error (recovering without crash):', err.message);
+    db = null;
+    client.end().catch(() => { /* connection already gone */ });
+  });
   await client.connect();
   return createPgAdapter(client);
 }
