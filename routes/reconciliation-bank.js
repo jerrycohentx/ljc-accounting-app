@@ -817,6 +817,31 @@ router.get('/statement-file', async (req, res) => {
   }
 });
 
+// DELETE /api/reconciliation/bank/statement-file — remove a statement PDF saved
+// under the wrong account/period. Exists because the 2026-07-16 cross-account
+// upload incident left a Simmons PDF filed under Lone Star 3/31: the LINE
+// contamination was cleaned, but the saved file kept showing the wrong bank's
+// statement whenever that worksheet opened.
+router.delete('/statement-file', async (req, res) => {
+  try {
+    const { entityId, accountId, statementDate } = req.query;
+    if (!entityId || !accountId || !statementDate) {
+      return res.status(400).json({ error: 'entityId, accountId and statementDate required' });
+    }
+    const db = await getDatabase();
+    await ensureStatementFileSchema(db);
+    const row = await getStatementFile(db, { entityId, accountId, statementDate });
+    const result = await db.run(
+      'DELETE FROM bank_statement_files WHERE entity_id = ? AND account_id = ? AND statement_date = ?',
+      [entityId, accountId, statementDate]
+    );
+    return res.json({ deleted: result?.changes || 0, fileName: row?.file_name || null });
+  } catch (error) {
+    console.error('Statement file delete error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to delete statement file' });
+  }
+});
+
 // POST /api/reconciliation/bank/reopen — reopen an out-of-balance or incorrect period
 router.post('/reopen', async (req, res) => {
   try {
