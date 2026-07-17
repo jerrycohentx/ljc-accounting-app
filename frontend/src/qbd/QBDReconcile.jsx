@@ -24,6 +24,10 @@ const DEFAULT_REGISTER_SPLIT = 50;
 const STMT_SPLIT_STORAGE_KEY = 'qbd-recon-stmt-split-pct';
 const STMT_ZOOM_STORAGE_KEY = 'qbd-recon-stmt-zoom';
 const STMT_SHOW_STORAGE_KEY = 'qbd-recon-stmt-show';
+// The in-progress reconciliation (entity/account/date). URL params only survive
+// browser Back; this survives FULL round trips — review drafts, approve, come
+// back via Banking → Reconcile — which land on a bare /reconcile.
+const RECON_IN_PROGRESS_KEY = 'qbd-recon-in-progress';
 const DEFAULT_STMT_SPLIT = 38; // statement pane width, % of the split
 const DEFAULT_STMT_ZOOM = 100; // percent; 0 means "fit width"
 
@@ -469,12 +473,17 @@ export default function QBDReconcile() {
       setExpenseAccounts(all.filter((a) => a.account_type === 'EXPENSE'));
       setIncomeAccounts(all.filter((a) => a.account_type === 'REVENUE'));
       setAccountId((prev) => {
-        if (prev) return prev;
+        // The URL param outranks a previously-defaulted selection: the resume
+        // effect writes ?account=… BEFORE this list resolves, and a first
+        // resolution may already have defaulted to Lone Star. (User picks are
+        // safe — changing the picker doesn't change searchParams, so this
+        // effect doesn't re-run on a manual selection.)
         const want = searchParams.get('account');
         const match = want
           ? bankAccounts.find((a) => a.id === want || a.account_number === want)
           : null;
         if (match) return match.id;
+        if (prev) return prev;
         if (entityId === 'ent-ljc') {
           const loneStar = bankAccounts.find((a) => a.account_number === '1001');
           if (loneStar) return loneStar.id;
@@ -592,6 +601,13 @@ export default function QBDReconcile() {
           const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountId;
           const resolvedDate = String(r.data.statementDate || stmtDate).slice(0, 10);
           setSearchParams({ account: String(acctNo), date: resolvedDate, go: '1' }, { replace: true });
+          // Also persist it: the URL only survives browser Back, not a fresh
+          // visit to /reconcile after a draft-review round trip.
+          try {
+            localStorage.setItem(RECON_IN_PROGRESS_KEY, JSON.stringify({
+              entity: entityId, account: String(acctNo), date: resolvedDate, at: Date.now(),
+            }));
+          } catch { /* storage full/blocked — resume just won't persist */ }
         }
         if (r.data.suggestedEndingBalance != null) {
           setEndBal(String(r.data.suggestedEndingBalance));
@@ -637,6 +653,26 @@ export default function QBDReconcile() {
       loadWorksheet();
     }
   }, [searchParams, accountId, stmtDate, started, loadWorksheet]);
+
+  // Resume across FULL navigations, not just browser Back. The draft-review
+  // round trip (worksheet → review drafts → approve → Banking → Reconcile)
+  // lands on a bare /reconcile with no query params — Jerry hit this after
+  // approving the last 5 March drafts: the screen reset to the Begin defaults
+  // (Lone Star) instead of returning to his open Simmons 3/31 worksheet.
+  // Rehydrate the saved in-progress pointer into the URL; the account-list
+  // and go=1 effects above take it from there.
+  const storeResumedRef = useRef(false);
+  useEffect(() => {
+    if (storeResumedRef.current || started) return;
+    if (searchParams.get('go') === '1' || searchParams.get('account')) return;
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(RECON_IN_PROGRESS_KEY) || 'null'); } catch { saved = null; }
+    if (!saved || saved.entity !== entityId || !saved.account || !/^\d{4}-\d{2}-\d{2}$/.test(String(saved.date))) return;
+    storeResumedRef.current = true;
+    userPickedDateRef.current = true; // stop the prepare suggestion from re-dating it
+    setStmtDate(saved.date);
+    setSearchParams({ account: String(saved.account), date: saved.date, go: '1' }, { replace: true });
+  }, [entityId, started, searchParams, setSearchParams]);
 
   const toggle = (id) => {
     setChecked((c) => ({ ...c, [id]: !c[id] }));
@@ -852,6 +888,10 @@ export default function QBDReconcile() {
         setData(null);
         setEndBal('');
         setBeginningOverride('');
+        // This reconciliation is done — drop the resume pointer so the next
+        // visit starts fresh instead of reopening a closed period. ("Leave"
+        // intentionally KEEPS it: progress-saved means we come back to it.)
+        try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
         // Close & Advance: roll straight into the next month. The beginning
         // balance auto-carries from this close; we just bump the statement date.
         if (advance) {
