@@ -96,7 +96,15 @@ router.delete('/reconcile-autoposted', requireRole('ADMIN', 'ACCOUNTANT'), async
       linesKept += upd?.changes || 0;
       await db.run('DELETE FROM journal_entry_lines WHERE journal_entry_id = ?', r.id);
       await db.run('DELETE FROM journal_entry_documents WHERE journal_entry_id = ?', r.id);
-      // Posted entries also carry general_ledger rows (the FK that blocks a bare delete).
+      try {
+        await db.run('UPDATE captured_documents SET journal_entry_id = NULL WHERE journal_entry_id = ?', r.id);
+      } catch { /* table absent or column NOT NULL — non-fatal */ }
+      // Posted entries carry general_ledger rows, and the reconcile auto-match may
+      // have grabbed those GL rows into reconciliation_matches — unwind inside-out.
+      await db.run(
+        'DELETE FROM reconciliation_matches WHERE gl_entry_id IN (SELECT id FROM general_ledger WHERE journal_entry_id = ?)',
+        r.id
+      );
       await db.run('DELETE FROM general_ledger WHERE journal_entry_id = ?', r.id);
       await db.run('DELETE FROM journal_entries WHERE id = ?', r.id);
     }
