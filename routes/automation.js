@@ -96,6 +96,8 @@ router.delete('/reconcile-autoposted', requireRole('ADMIN', 'ACCOUNTANT'), async
       linesKept += upd?.changes || 0;
       await db.run('DELETE FROM journal_entry_lines WHERE journal_entry_id = ?', r.id);
       await db.run('DELETE FROM journal_entry_documents WHERE journal_entry_id = ?', r.id);
+      // Posted entries also carry general_ledger rows (the FK that blocks a bare delete).
+      await db.run('DELETE FROM general_ledger WHERE journal_entry_id = ?', r.id);
       await db.run('DELETE FROM journal_entries WHERE id = ?', r.id);
     }
     res.json({
