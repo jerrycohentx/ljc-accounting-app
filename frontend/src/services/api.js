@@ -129,6 +129,29 @@ export const reconReportAPI = {
     params: { entityId, accountId: accountId || undefined },
   }),
   get: (id) => client.get(`/api/reconciliation/reports/${id}`),
+  // Build + render a QuickBooks-style reconciliation PDF on demand (no saved id
+  // required) and open it in a new tab for printing / save-as-PDF. Uses fetch so
+  // the Bearer token is attached; a plain window.open would not authenticate.
+  async renderPdf({ entityId, accountId, statementDate, companyName, mode }) {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/reconciliation/reports/render-pdf', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ entityId, accountId, statementDate, companyName, mode }),
+    });
+    if (!res.ok) {
+      let msg = 'Could not generate the reconciliation report';
+      try { msg = (await res.json()).error || msg; } catch { /* non-JSON */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  },
   // Fetch the on-demand PDF (summary | detail | both) and save it. Uses fetch so
   // the Bearer token is attached; a plain <a href> would not authenticate.
   async downloadPdf(id, mode, filename) {

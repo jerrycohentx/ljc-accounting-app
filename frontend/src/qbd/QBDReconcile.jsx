@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { accountAPI, bankReconAPI, journalAPI } from '../services/api';
+import { accountAPI, bankReconAPI, journalAPI, reconReportAPI } from '../services/api';
 import { useBackupStatus } from './QBDBackupDialog';
 import {
   fmt,
@@ -340,6 +340,9 @@ export default function QBDReconcile() {
   const [highlightMarked, setHighlightMarked] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [showColsMenu, setShowColsMenu] = useState(false);
+  // QuickBooks-style "Reconciliation Report" print picker (Summary / Detail / Both).
+  const [showReportPicker, setShowReportPicker] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
   const [showNum, setShowNum] = useState(() => localStorage.getItem('qbd-recon-col-num') !== 'false');
   const [showType, setShowType] = useState(() => localStorage.getItem('qbd-recon-col-type') !== 'false');
   const [showDate, setShowDate] = useState(() => localStorage.getItem('qbd-recon-col-date') !== 'false');
@@ -911,8 +914,41 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   };
 
+  // Open a QuickBooks-style reconciliation PDF (summary | detail | both) for the
+  // current account / period in a new tab, from which the user can print or
+  // "Save as PDF". Works whether or not the reconciliation has been closed.
+  const openReconPdf = (mode) => {
+    if (!accountId || !stmtDate) { showToast && showToast('Pick an account and statement date first'); return; }
+    setReportBusy(true);
+    reconReportAPI.renderPdf({ entityId, accountId, statementDate: stmtDate, mode })
+      .then(() => { setShowReportPicker(false); setReportModal(null); })
+      .catch((e) => showToast && showToast('Report failed: ' + (e.message || e)))
+      .finally(() => setReportBusy(false));
+  };
+
   const reportOverlay = (
     <>
+      {showReportPicker && (
+        <div className="qbd-modal-backdrop" onClick={() => !reportBusy && setShowReportPicker(false)}>
+          <div className="qbd-modal" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+            <div className="qbd-wtitle">
+              Select Reconciliation Report
+              <span className="x" onClick={() => !reportBusy && setShowReportPicker(false)}>✕</span>
+            </div>
+            <div className="qbd-modal-body" style={{ fontSize: 12, lineHeight: 1.55 }}>
+              <p><strong>{data?.account ? `${data.account.account_number} · ${leafLabel(data.account.account_name)}` : (accountId ? 'Selected account' : 'Pick an account')}</strong>{stmtDate ? <> — statement ending <strong>{stmtDate}</strong></> : null}</p>
+              <p>Select the type of reconciliation report you would like. It opens as a printable PDF — choose your printer or &ldquo;Save as PDF.&rdquo;</p>
+            </div>
+            <div className="qbd-foot" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('summary')}>Summary</button>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('detail')}>Detail</button>
+              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} disabled={reportBusy} onClick={() => openReconPdf('both')}>Both</button>
+              <span className="sp" />
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => setShowReportPicker(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       {reportModal && reportMode === 'select' && (
         <div className="qbd-modal-backdrop" onClick={() => setReportModal(null)}>
           <div className="qbd-modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
@@ -926,22 +962,14 @@ export default function QBDReconcile() {
               <p>{reportModal.reconciledCount} transaction(s) reconciled. Select the type of reconciliation report you would like to see.</p>
             </div>
             <div className="qbd-foot" style={{ flexWrap: 'wrap', gap: 6 }}>
-              <button type="button" className="qbd-btn" onClick={() => setReportMode('summary')}>Summary</button>
-              <button type="button" className="qbd-btn" onClick={() => setReportMode('detail')}>Detail</button>
-              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={() => setReportMode('both')}>Both</button>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('summary')}>Summary</button>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('detail')}>Detail</button>
+              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} disabled={reportBusy} onClick={() => openReconPdf('both')}>Both</button>
               <span className="sp" />
-              <button type="button" className="qbd-btn" onClick={() => setReportModal(null)}>Close</button>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => setReportModal(null)}>Cancel</button>
             </div>
           </div>
         </div>
-      )}
-      {reportModal && reportMode !== 'select' && (
-        <ReconcileReport
-          report={reportModal}
-          mode={reportMode}
-          onBack={() => setReportMode('select')}
-          onClose={() => setReportModal(null)}
-        />
       )}
     </>
   );
@@ -1212,6 +1240,9 @@ export default function QBDReconcile() {
             </div>
           )}
         </div>
+        <button type="button" className="qbd-btn" disabled={busy || reportBusy} onClick={() => setShowReportPicker(true)} title="Print a QuickBooks-style reconciliation report (Summary / Detail / Both)">
+          {reportBusy ? 'Preparing…' : '🖨 Reconciliation Report'}
+        </button>
         <span className="sp" />
         {buildInfo?.app?.buildLabel && <span className="qbd-muted">{buildInfo.app.buildLabel}</span>}
       </div>

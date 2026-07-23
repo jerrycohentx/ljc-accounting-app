@@ -97,4 +97,44 @@ router.get('/:id/pdf', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/reconciliation/reports/render-pdf
+ * Build AND render a QuickBooks-style reconciliation PDF on demand for the
+ * given account/period, WITHOUT saving it -- used by the Reconcile screen's
+ * "Reconciliation Report" print picker (Summary / Detail / Both) so a report
+ * can be printed for the current worksheet even before it is closed. The
+ * frontend fetches this as an authenticated blob and opens it for printing.
+ * body: { entityId, accountId, statementDate, asOfDate?, companyName?, mode? }
+ */
+router.post('/render-pdf', async (req, res) => {
+  try {
+    const { entityId, accountId, statementDate, asOfDate, companyName, mode } = req.body || {};
+    if (!entityId || !accountId || !statementDate) {
+      return res.status(400).json({ error: 'entityId, accountId, and statementDate are required' });
+    }
+    const m = ['summary', 'detail', 'both'].includes(mode) ? mode : 'both';
+    const db = await getDatabase();
+    const built = await buildReconciliationReport(db, { entityId, accountId, statementDate, asOfDate, companyName });
+    const report = {
+      company_name: built.header.companyName,
+      account_name: built.header.accountName,
+      account_number: built.header.accountNumber,
+      statement_date: built.header.statementDate,
+      generated_at: built.header.reportGeneratedAt,
+      is_closed: !!(built.meta && built.meta.isClosed),
+      summary: built.summary,
+      detail: built.detail,
+    };
+    const pdf = await renderReconciliationReportPdf(report, { mode: m });
+    const fileName = `Reconciliation_${safeFilePart(built.header.accountName)}_${safeFilePart(built.header.statementDate)}_${m}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdf.length);
+    return res.end(pdf);
+  } catch (error) {
+    console.error('Reconciliation render-pdf error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to render reconciliation PDF' });
+  }
+});
+
 export default router;
