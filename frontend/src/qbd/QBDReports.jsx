@@ -102,6 +102,7 @@ export default function QBDReports() {
   const [datePreset, setDatePreset] = useState('custom');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [printBusy, setPrintBusy] = useState(false);
 
   useEffect(() => {
     if (!entityId) return;
@@ -128,12 +129,11 @@ export default function QBDReports() {
         benchmarkMode: 'both',
       });
     } else if (rtype === 'bs' || rtype === 'pl') {
-      p = reportAPI.comparison(entityId, {
+      p = reportAPI.financialStatement(entityId, {
         reportType: rtype === 'bs' ? 'balance_sheet' : 'pnl',
+        asOfDate: asOf,
         startDate: from,
         endDate: to,
-        asOfDate: asOf,
-        segment,
         compareMode,
         compareStart: compareMode === 'custom' ? compareFrom : undefined,
         compareEnd: compareMode === 'custom' ? compareTo : undefined,
@@ -161,6 +161,21 @@ export default function QBDReports() {
     setAsOf(r.to);
   };
   const markManual = (setter) => (e) => { setDatePreset('custom'); setter(e.target.value); };
+
+  const openStatementPdf = () => {
+    if (!entityId) return;
+    setPrintBusy(true);
+    reportAPI.financialStatementPdf(entityId, {
+      reportType: rtype === 'bs' ? 'balance_sheet' : 'pnl',
+      asOfDate: asOf,
+      startDate: from,
+      endDate: to,
+      compareMode,
+      compareStart: compareMode === 'custom' ? compareFrom : undefined,
+      compareEnd: compareMode === 'custom' ? compareTo : undefined,
+    }).catch((e) => alert('Could not open the statement PDF: ' + (e.message || e)))
+      .finally(() => setPrintBusy(false));
+  };
 
   const usesAsOf = rtype === 'bs' || rtype === 'tb';
   const showCompare = (rtype === 'bs' || rtype === 'pl' || rtype === 'kpi') && compareMode !== 'none';
@@ -220,16 +235,22 @@ export default function QBDReports() {
           </>
         )}
         <button className="qbd-btn" onClick={fetchReport}>Run</button>
+        {(rtype === 'bs' || rtype === 'pl') && (
+          <button className="qbd-btn" disabled={printBusy} onClick={openStatementPdf} title="Open a QuickBooks-format PDF you can print or save">
+            {printBusy ? 'Preparing…' : '🖨 Print (QuickBooks format)'}
+          </button>
+        )}
       </div>
       <div className="qbd-wbody">
         {loading ? <div className="qbd-loading">Loading…</div> : !data ? <div className="qbd-empty">No data.</div> : (
           <>
-            <div className="qbd-rpt-hint">Click account rows to open register. Green/red variances follow line polarity (revenue up = good, expense up = bad).</div>
-            {rtype === 'bs' ? <BSCompare data={data} zoom={zoomByNumber} showCompare={showCompare} />
-              : rtype === 'pl' ? <PLCompare data={data} zoom={zoomByNumber} showCompare={showCompare} />
-                : rtype === 'kpi' ? <KpiDashboard data={data} showCompare={showCompare} />
-                  : rtype === 'tb' ? <TB data={data} zoom={zoomById} />
-                    : <GL data={data} zoom={zoomById} from={from} to={to} />}
+            <div className="qbd-rpt-hint">{(rtype === 'bs' || rtype === 'pl')
+              ? 'Click any number to drill into the transactions behind it. Use “Print (QuickBooks format)” for a printable statement.'
+              : 'Click account rows to open register. Green/red variances follow line polarity (revenue up = good, expense up = bad).'}</div>
+            {(rtype === 'bs' || rtype === 'pl') ? <StatementView data={data} nav={nav} showCompare={showCompare} />
+              : rtype === 'kpi' ? <KpiDashboard data={data} showCompare={showCompare} />
+                : rtype === 'tb' ? <TB data={data} zoom={zoomById} />
+                  : <GL data={data} zoom={zoomById} from={from} to={to} />}
           </>
         )}
       </div>
@@ -425,6 +446,96 @@ function GL({ data, zoom, from, to }) {
                 <td className="qbd-amt">{(+e.credit) ? fmt(+e.credit) : ''}</td>
               </tr>
             ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// "2025-03-31" -> "Mar 31, 25" (QuickBooks period-column style).
+function shortCol(d) {
+  const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return String(d || '');
+  const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(m[2]) - 1];
+  return `${mo} ${Number(m[3])}, ${m[1].slice(2)}`;
+}
+
+// Turn a row's drill descriptor into a navigation URL. A leaf account opens its
+// register; an aggregate (subtotal/total/net income) opens Transaction Detail.
+// `cmp` drills the comparison column, using the comparison period's dates.
+function drillHref(drill, { cmp, comparePeriodDates, label } = {}) {
+  if (!drill) return null;
+  const dates = (cmp && comparePeriodDates) ? comparePeriodDates : drill;
+  const dateQ = () => (dates.mode === 'asof'
+    ? `to=${encodeURIComponent(dates.asOfDate)}`
+    : `from=${encodeURIComponent(dates.startDate)}&to=${encodeURIComponent(dates.endDate)}`);
+  if (drill.kind === 'account') {
+    return `/register/${drill.accountId}?${dateQ()}`;
+  }
+  const p = new URLSearchParams();
+  if (drill.accountNumbers) p.set('accountNumbers', drill.accountNumbers.join(','));
+  if (drill.accountTypes) p.set('accountTypes', drill.accountTypes.join(','));
+  if (drill.net) p.set('net', '1');
+  if (label) p.set('title', label);
+  p.set('mode', dates.mode);
+  if (dates.mode === 'asof') p.set('asOfDate', dates.asOfDate);
+  else { p.set('startDate', dates.startDate); p.set('endDate', dates.endDate); }
+  return `/transaction-detail?${p.toString()}`;
+}
+
+// QuickBooks-style nested Balance Sheet / P&L. Every number is drillable.
+function StatementView({ data, nav, showCompare }) {
+  const st = data.statement;
+  if (!st || !st.rows) return <div className="qbd-empty">No data.</div>;
+  const h = st.header;
+  const cpd = st.comparePeriodDates;
+  const go = (drill, cmp, label) => { const href = drillHref(drill, { cmp, comparePeriodDates: cpd, label }); if (href) nav(href); };
+  const curColLabel = h.reportType === 'balance_sheet' ? shortCol(h.asOfDate) : 'Amount';
+  const periodText = h.reportType === 'balance_sheet'
+    ? `As of ${shortCol(h.asOfDate)}`
+    : `${h.startDate} through ${h.endDate}`;
+
+  const amtCell = (row, cmp) => {
+    const val = cmp ? row.cmpAmount : row.amount;
+    if (val == null) return <td className="ramt" />;
+    const drillable = !!row.drill;
+    const style = {};
+    if (row.kind === 'subtotal') style.borderTop = '1px solid #000';
+    if (row.kind === 'grandtotal') { style.borderTop = '1px solid #000'; style.borderBottom = '3px double #000'; }
+    if (drillable) style.cursor = 'pointer';
+    const cls = ['ramt', val < 0 ? 'qbd-neg' : '', drillable ? 'qbd-drill' : ''].filter(Boolean).join(' ');
+    return <td className={cls} style={style} title={drillable ? 'Drill into transactions' : undefined} onClick={drillable ? () => go(row.drill, cmp, row.label) : undefined}>{fmt(val)}</td>;
+  };
+
+  return (
+    <div className="qbd-rpt">
+      <h2>{h.title}</h2>
+      <div className="sub">{h.companyName} · {periodText}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th className="ramt">{curColLabel}</th>
+            {showCompare && <><th className="ramt">{st.comparison?.period || 'Prior'}</th><th className="ramt">$ Change</th><th className="ramt">% Change</th></>}
+          </tr>
+        </thead>
+        <tbody>
+          {st.rows.map((row, i) => {
+            const bold = row.kind === 'section' || row.kind === 'header' || row.kind === 'subtotal' || row.kind === 'grandtotal';
+            return (
+              <tr key={i}>
+                <td className="ind" style={{ paddingLeft: 8 + row.depth * 16, fontWeight: bold ? 'bold' : 'normal' }}>{row.label}</td>
+                {amtCell(row, false)}
+                {showCompare && (
+                  <>
+                    {amtCell(row, true)}
+                    <td className="ramt">{row.variance == null ? '' : fmtVariance(row.variance)}</td>
+                    <td className="ramt">{row.variancePct == null ? '' : fmtVariancePct(row.variancePct)}</td>
+                  </>
+                )}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

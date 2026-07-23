@@ -101,6 +101,30 @@ export const reportAPI = {
   kpiDashboard: (entityId, params) => client.get(`/api/entities/${entityId}/reports/kpi-dashboard`, { params }),
   segments: (entityId) => client.get(`/api/entities/${entityId}/reports/segments`),
   benchmarkTargets: (entityId, segment) => client.get(`/api/entities/${entityId}/reports/benchmark-targets`, { params: { segment } }),
+  // QuickBooks-style nested Balance Sheet / P&L (with roll-up subtotals, per-number
+  // drill metadata, and optional period comparison).
+  financialStatement: (entityId, params) => client.get(`/api/entities/${entityId}/reports/financial-statement`, { params }),
+  // Transaction Detail by Account — the drill target for any statement number.
+  transactionDetail: (entityId, params) => client.get(`/api/entities/${entityId}/reports/transaction-detail`, { params }),
+  // Build + open a QuickBooks-format statement PDF in a new tab (fetch so the
+  // Bearer token is attached; window.open alone would not authenticate).
+  async financialStatementPdf(entityId, body) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/entities/${entityId}/reports/financial-statement-pdf`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      let msg = 'Could not generate the statement PDF';
+      try { msg = (await res.json()).error || msg; } catch { /* non-JSON */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  },
 };
 
 export const bankReconAPI = {

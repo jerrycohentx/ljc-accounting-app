@@ -5,9 +5,87 @@ import { entityAccessMiddleware } from '../middleware/auth.js';
 
 import { POSTED_GL_SUBQUERY, calculateAccountBalance } from '../lib/posted-gl.js';
 import reportAnalyticsRoutes from './report-analytics.js';
+import { buildBalanceSheet, buildProfitLoss, mergeStatements } from '../lib/financial-statement.js';
+import { deriveComparePeriod } from '../lib/report-comparison.js';
+import { renderFinancialStatementPdf } from '../lib/financial-statement-pdf.js';
 
 const router = express.Router({ mergeParams: true });
 router.use(reportAnalyticsRoutes);
+
+const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function isoOnly(d) { const m = String(d || '').match(/^\d{4}-\d{2}-\d{2}/); return m ? m[0] : ''; }
+function shortLabel(d) { const s = isoOnly(d); if (!s) return ''; const [y, mo, da] = s.split('-'); return `${MONTHS_ABBR[Number(mo) - 1]} ${Number(da)}, ${y.slice(2)}`; }
+
+async function resolveCompanyName(db, entityId) {
+  try { const e = await db.get('SELECT name FROM entities WHERE id = ?', entityId); return e?.name || null; } catch { return null; }
+}
+
+/**
+ * Build a QuickBooks-style Balance Sheet or P&L (nested, with roll-up subtotals
+ * and per-number drill metadata), optionally with a comparison period.
+ * Returns the structured statement used by both the on-screen report and the PDF.
+ */
+async function buildStatement(db, entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd }) {
+  const companyName = await resolveCompanyName(db, entityId);
+  const isBS = reportType === 'balance_sheet';
+  const primary = isBS
+    ? await buildBalanceSheet(db, { entityId, asOfDate, companyName })
+    : await buildProfitLoss(db, { entityId, startDate, endDate, companyName });
+
+  if (!compareMode || compareMode === 'none') return primary;
+
+  const primaryPeriod = isBS ? { start: asOfDate, end: asOfDate } : { start: startDate, end: endDate };
+  const cmpPeriod = deriveComparePeriod(primaryPeriod, compareMode, (compareStart && compareEnd) ? { start: compareStart, end: compareEnd } : null);
+  if (!cmpPeriod) return primary;
+
+  const comparison = isBS
+    ? await buildBalanceSheet(db, { entityId, asOfDate: cmpPeriod.end, companyName })
+    : await buildProfitLoss(db, { entityId, startDate: cmpPeriod.start, endDate: cmpPeriod.end, companyName });
+
+  const cmpLabel = isBS ? shortLabel(cmpPeriod.end) : `${shortLabel(cmpPeriod.start)} - ${shortLabel(cmpPeriod.end)}`;
+  const merged = mergeStatements(primary, comparison, cmpLabel);
+  // Dates the comparison column drills into (as-of for BS, range for P&L).
+  merged.comparePeriodDates = isBS
+    ? { mode: 'asof', asOfDate: cmpPeriod.end }
+    : { mode: 'range', startDate: cmpPeriod.start, endDate: cmpPeriod.end };
+  return merged;
+}
+
+// GET /api/entities/:entityId/reports/financial-statement?reportType=balance_sheet|pnl&asOfDate|startDate&endDate&compareMode
+router.get('/financial-statement', entityAccessMiddleware, async (req, res) => {
+  try {
+    const { reportType = 'balance_sheet', asOfDate, startDate, endDate, compareMode = 'none', compareStart, compareEnd } = req.query;
+    if (reportType === 'balance_sheet' && !asOfDate) return res.status(400).json({ error: 'asOfDate required' });
+    if (reportType === 'pnl' && (!startDate || !endDate)) return res.status(400).json({ error: 'startDate and endDate required' });
+    const db = await getDatabase();
+    const statement = await buildStatement(db, req.entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd });
+    res.json({ statement, compareMode });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/entities/:entityId/reports/financial-statement-pdf  (streams QBO-style PDF inline)
+router.post('/financial-statement-pdf', entityAccessMiddleware, async (req, res) => {
+  try {
+    const { reportType = 'balance_sheet', asOfDate, startDate, endDate, compareMode = 'none', compareStart, compareEnd } = req.body || {};
+    if (reportType === 'balance_sheet' && !asOfDate) return res.status(400).json({ error: 'asOfDate required' });
+    if (reportType === 'pnl' && (!startDate || !endDate)) return res.status(400).json({ error: 'startDate and endDate required' });
+    const db = await getDatabase();
+    const statement = await buildStatement(db, req.entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd });
+    statement.header.generatedAt = new Date();
+    const compare = !!(compareMode && compareMode !== 'none' && statement.comparison);
+    const pdf = await renderFinancialStatementPdf(statement, { compare });
+    const namePart = reportType === 'balance_sheet' ? `BalanceSheet_${isoOnly(asOfDate)}` : `ProfitAndLoss_${isoOnly(startDate)}_${isoOnly(endDate)}`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${namePart}${compare ? '_compare' : ''}.pdf"`);
+    res.setHeader('Content-Length', pdf.length);
+    return res.end(pdf);
+  } catch (error) {
+    console.error('Financial statement PDF error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to render financial statement PDF' });
+  }
+});
 
 /** @deprecated use POSTED_GL_SUBQUERY from lib/posted-gl.js */
 const POSTED_GL = POSTED_GL_SUBQUERY;
@@ -365,6 +443,78 @@ router.get('/trial-balance', entityAccessMiddleware, async (req, res) => {
       totals: { debit: totalDebit.toNumber(), credit: totalCredit.toNumber() },
       isBalanced: totalDebit.minus(totalCredit).abs().lt(0.01),
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/entities/:entityId/reports/transaction-detail
+ * QuickBooks "Transaction Detail By Account" — the drill-down target for any
+ * aggregate number on a financial statement (a section total, a subtotal, or
+ * Net Income). Returns the posted transactions behind the clicked figure,
+ * grouped by account with a running balance and per-account subtotal, plus a
+ * grand total that foots to the number that was clicked.
+ *
+ * Query: accountNumbers=csv | accountTypes=csv ; net=1 (revenue+, expense- for
+ * Net Income drills) ; mode=asof|range ; asOfDate | startDate&endDate ; title.
+ */
+router.get('/transaction-detail', entityAccessMiddleware, async (req, res) => {
+  try {
+    const { accountNumbers, accountTypes, net, mode = 'range', asOfDate, startDate, endDate, title } = req.query;
+    const db = await getDatabase();
+    const netMode = net === '1' || net === 'true';
+
+    const acctParams = [req.entityId];
+    let acctWhere = 'entity_id = ? AND is_active = true';
+    if (accountNumbers) {
+      const nums = String(accountNumbers).split(',').map((s) => s.trim()).filter(Boolean);
+      if (nums.length) { acctWhere += ` AND account_number IN (${nums.map(() => '?').join(',')})`; acctParams.push(...nums); }
+    } else if (accountTypes) {
+      const types = String(accountTypes).split(',').map((s) => s.trim()).filter(Boolean);
+      if (types.length) { acctWhere += ` AND account_type IN (${types.map(() => '?').join(',')})`; acctParams.push(...types); }
+    }
+    const accounts = await db.all(`SELECT id, account_number, account_name, account_type, normal_balance FROM accounts WHERE ${acctWhere} ORDER BY account_number`, acctParams);
+    if (!accounts.length) return res.json({ title: title || 'Transaction Detail', groups: [], grandTotal: 0, count: 0 });
+
+    const idList = accounts.map((a) => a.id);
+    const glParams = [req.entityId];
+    let dateWhere = '';
+    if (mode === 'asof' && asOfDate) { dateWhere = 'AND gl.posting_date <= ?'; glParams.push(asOfDate); }
+    else if (mode === 'range' && startDate && endDate) { dateWhere = 'AND gl.posting_date >= ? AND gl.posting_date <= ?'; glParams.push(startDate, endDate); }
+    glParams.push(...idList);
+    const lines = await db.all(
+      `SELECT gl.account_id, gl.posting_date, gl.debit, gl.credit, je.je_number, je.description AS je_description
+       FROM (${POSTED_GL_SUBQUERY}) gl
+       JOIN journal_entries je ON gl.journal_entry_id = je.id
+       WHERE gl.entity_id = ? ${dateWhere} AND gl.account_id IN (${idList.map(() => '?').join(',')})
+       ORDER BY gl.account_id, gl.posting_date ASC, gl.created_at ASC`,
+      glParams
+    );
+
+    const byAcct = new Map(accounts.map((a) => [a.id, { account: a, lines: [] }]));
+    for (const l of lines) byAcct.get(l.account_id)?.lines.push(l);
+
+    let grand = new Decimal(0);
+    const groups = [];
+    for (const a of accounts) {
+      const g = byAcct.get(a.id);
+      if (!g.lines.length) continue;
+      let running = new Decimal(0);
+      const outLines = g.lines.map((l) => {
+        const debit = new Decimal(l.debit || 0);
+        const credit = new Decimal(l.credit || 0);
+        let signed = a.normal_balance === 'DEBIT' ? debit.minus(credit) : credit.minus(debit);
+        if (a.account_type === 'CONTRA') signed = signed.negated();
+        if (netMode && a.account_type === 'EXPENSE') signed = signed.negated();
+        running = running.plus(signed);
+        return { date: l.posting_date, jeNumber: l.je_number, name: l.je_description || '', debit: debit.toNumber(), credit: credit.toNumber(), amount: signed.toNumber(), balance: running.toNumber() };
+      });
+      grand = grand.plus(running);
+      groups.push({ accountId: a.id, accountNumber: a.account_number, accountName: a.account_name, lines: outLines, total: running.toNumber() });
+    }
+
+    res.json({ title: title || 'Transaction Detail', mode, asOfDate: asOfDate || null, startDate: startDate || null, endDate: endDate || null, groups, grandTotal: grand.toNumber(), count: lines.length });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

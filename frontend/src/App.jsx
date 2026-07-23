@@ -9,6 +9,7 @@ import QBDHome from './qbd/QBDHome';
 import QBDChartOfAccounts from './qbd/QBDChartOfAccounts';
 import QBDRegister from './qbd/QBDRegister';
 import QBDReports from './qbd/QBDReports';
+import QBDTxnDetail from './qbd/QBDTxnDetail';
 import QBDJournalEntry from './qbd/QBDJournalEntry';
 import QBDDraftJournals from './qbd/QBDDraftJournals';
 import QBDAchInterestImport from './qbd/QBDAchInterestImport';
@@ -53,6 +54,7 @@ function App() {
             <Route path="accounts" element={<QBDChartOfAccounts />} />
             <Route path="register/:accountId" element={<QBDRegister />} />
             <Route path="reports" element={<QBDReports />} />
+            <Route path="transaction-detail" element={<QBDTxnDetail />} />
             <Route path="tax-financials" element={<QBDTaxFinancials />} />
             <Route path="journal" element={<QBDJournalEntry />} />
             <Route path="draft-journals" element={<QBDDraftJournals />} />
