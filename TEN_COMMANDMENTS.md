@@ -97,6 +97,16 @@ Concretely, this means:
   on top of a stub that would mislead Jerry into thinking the numbers are
   real.
 
+## 9. Hard period integrity (system-enforced, July 2026)
+
+- Period close is refused unless every monitored bank/card account has a
+  CLOSED reconciliation covering that month at **$0.00** difference.
+- Plug / "Enter Adjustment" / `reconcile-adjustment` journal entries are
+  **permanently disabled** in the app.
+- Assistants must call
+  `GET /api/entities/:entityId/accounting/periods/integrity` and may only
+  say a month is closed when **`isClosed: true`**. Chat memory is not proof.
+
 ---
 *This file is the durable source of truth for these standing rules. Any
 assistant working on this codebase should read it before doing reconciliation,

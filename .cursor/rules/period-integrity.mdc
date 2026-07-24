@@ -1,0 +1,33 @@
+---
+description: Hard period integrity — no fake closes, no plug entries
+alwaysApply: true
+---
+
+# Period Integrity (Hard Bar)
+
+These rules override convenience. They exist because assistants previously claimed months were closed when they were not, and used plug entries.
+
+## Before saying anything is "closed"
+
+1. Call the live API (never invent status from chat memory):
+   - `GET /api/entities/:entityId/accounting/periods/integrity?periodStart=YYYY-MM-DD&periodEnd=YYYY-MM-DD`
+   - or `?postingDate=YYYY-MM-DD` / `?year=2026&month=6`
+2. You may tell Jerry a period is **closed** only if the JSON has **`isClosed: true`**.
+3. If `databasePeriodStatus` is `CLOSED` but `isClosed` is false (`closedButCompromised`), say the period was marked closed but **fails integrity** — list `blockers`. Do not call it reliably closed.
+4. If `canClose` is false, say what is missing (from `blockers` / `accounts`). Do not close by force.
+
+## No plug entries
+
+- Never create, suggest, or post `reconcile-adjustment` / force-balance / "enter adjustment" JEs.
+- The API returns **403 `PLUG_ENTRY_BLOCKED`** for that path. Do not work around it.
+- Fix real variances (missing txn, wrong account, duplicate) until bank recon difference is **$0.00**.
+
+## Period close
+
+- `POST .../accounting/periods/close` refuses (**409**) unless every monitored bank/card account has a **CLOSED** reconciliation covering that month with **$0.00** difference and no plug JEs in the period.
+- Do not ask Jerry to "accept" a variance to close.
+
+## Reports / narrative
+
+- When summarizing month status, attach or quote `isClosed`, `canClose`, and any `blockers` from the integrity endpoint.
+- Soft language ("close enough", "immaterial plug") is forbidden unless Jerry explicitly approved a named exception.

@@ -318,6 +318,8 @@ export const interestAPI = {
 
 export const accountingAPI = {
   listPeriods: (entityId) => client.get(`/api/entities/${entityId}/accounting/periods`),
+  periodIntegrity: (entityId, params) =>
+    client.get(`/api/entities/${entityId}/accounting/periods/integrity`, { params }),
   closePeriod: (entityId, data) => client.post(`/api/entities/${entityId}/accounting/periods/close`, data),
   reopenPeriod: (entityId, data) => client.post(`/api/entities/${entityId}/accounting/periods/reopen`, data),
   previewOpeningBalances: (entityId, data) =>

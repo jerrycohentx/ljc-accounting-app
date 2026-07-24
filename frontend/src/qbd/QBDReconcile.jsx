@@ -817,30 +817,9 @@ export default function QBDReconcile() {
   };
 
   const enterAdjustment = () => {
-    if (balanced) {
-      showToast && showToast('Difference is already zero');
-      return;
-    }
-    if (!window.confirm(
-      'Enter Adjustment posts a journal entry for the current difference. Intuit recommends resolving differences manually and consulting your accountant before using this. Continue?'
-    )) return;
-    setBusy(true);
-    bankReconAPI.adjustment({
-      entityId,
-      accountId,
-      statementDate: stmtDate,
-      difference,
-      glIds: checkedIds,
-      serviceCharge: svc,
-      interestEarned: int,
-      statementEndingBalance: target,
-    })
-      .then((r) => {
-        showToast && showToast(r.data.message || 'Adjustment posted');
-        return loadWorksheet();
-      })
-      .catch((e) => showToast && showToast('Adjustment failed: ' + (e.response?.data?.error || e.message)))
-      .finally(() => setBusy(false));
+    showToast && showToast(
+      'Hard rule: plug adjustments are permanently disabled. Resolve the difference to $0.00 with real transactions.'
+    );
   };
 
   const finish = (advance = false) => {
@@ -1310,8 +1289,14 @@ export default function QBDReconcile() {
         )}
         <span className="sp" />
         {!balanced && (
-          <button type="button" className="qbd-btn" disabled={busy} onClick={enterAdjustment} title="Last resort — posts a journal entry for the difference">
-            Enter Adjustment…
+          <button
+            type="button"
+            className="qbd-btn"
+            disabled
+            title="Permanently disabled — plug / force-balance entries are prohibited"
+            onClick={enterAdjustment}
+          >
+            Enter Adjustment… (blocked)
           </button>
         )}
         <button className="qbd-btn" disabled={busy} onClick={() => {

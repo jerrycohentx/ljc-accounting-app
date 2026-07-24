@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Decimal from 'decimal.js';
 import { getDatabase } from '../config/database.js';
 import { entityAccessMiddleware, requireRole } from '../middleware/auth.js';
+import { assertNotPlugJournal } from '../lib/period-integrity.js';
 import { postJournalEntryToGl } from '../lib/post-journal.js';
 import { reverseJournalEntry } from '../lib/reverse-journal.js';
 
@@ -133,11 +134,13 @@ router.get('/:id', entityAccessMiddleware, async (req, res) => {
 // POST /api/entities/:entityId/journals - Create new JE
 router.post('/', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
   try {
-    const { description, postingDate, lines, memo } = req.body;
+    const { description, postingDate, lines, memo, source } = req.body;
 
     if (!description || !postingDate || !lines || lines.length === 0) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+
+    assertNotPlugJournal({ source, description });
 
     const db = await getDatabase();
 
@@ -189,7 +192,10 @@ router.post('/', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], a
       totalDebit: totals.debit.toString(),
       totalCredit: totals.credit.toString()
     });
-  } catch (error) {
+    } catch (error) {
+    if (error.code === 'PLUG_ENTRY_BLOCKED') {
+      return res.status(403).json({ error: error.message, code: error.code });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -197,7 +203,8 @@ router.post('/', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], a
 // PUT /api/entities/:entityId/journals/:id - Update draft JE
 router.put('/:id', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
   try {
-    const { description, postingDate, lines, memo } = req.body;
+    const { description, postingDate, lines, memo, source } = req.body;
+    assertNotPlugJournal({ source, description });
     const db = await getDatabase();
 
     const journal = await db.get(
@@ -247,6 +254,9 @@ router.put('/:id', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
 
     res.json({ message: 'Journal entry updated' });
   } catch (error) {
+    if (error.code === 'PLUG_ENTRY_BLOCKED') {
+      return res.status(403).json({ error: error.message, code: error.code });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -298,6 +308,9 @@ router.post('/:id/post', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTA
     if (error.message.includes('not found')) return res.status(404).json({ error: error.message });
     if (error.message.includes('already posted')) return res.status(409).json({ error: error.message });
     if (error.message.includes('closed period')) return res.status(409).json({ error: error.message });
+    if (error.code === 'PLUG_ENTRY_BLOCKED') {
+      return res.status(403).json({ error: error.message, code: error.code });
+    }
     res.status(500).json({ error: error.message });
   }
 });

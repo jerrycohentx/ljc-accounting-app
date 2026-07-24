@@ -190,10 +190,12 @@ router.post('/:id/resolve', [entityAccessMiddleware, requireRole('ADMIN')], asyn
       return res.status(409).json({ error: 'Already resolved' });
     }
 
-    // If variance exists, could require JE to clear it
-    if (Math.abs(recon.variance) > 0.01 && !journalEntryId) {
-      return res.status(400).json({ 
-        error: 'Variance exists. Create adjustment journal entry or confirm acceptance.' 
+    // Hard rule: never resolve with an open variance or plug JE.
+    if (Math.abs(recon.variance) > 0.01) {
+      return res.status(409).json({
+        error: 'Variance must be $0.00 to resolve. Plug / force-balance journal entries are prohibited.',
+        code: 'RECON_VARIANCE_BLOCKED',
+        variance: recon.variance,
       });
     }
 

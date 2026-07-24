@@ -8,6 +8,7 @@ import {
   closeMonthContaining,
   monthBounds,
 } from '../lib/period-lock.js';
+import { getPeriodIntegrityStatus } from '../lib/period-integrity.js';
 import { previewOpeningBalances, postOpeningBalances, parseOpeningBalanceCsv } from '../lib/opening-balances.js';
 import { previewYearEndClose, postYearEndClose } from '../lib/year-end-close.js';
 import { runLonestarBalanceFixes } from '../lib/fix-lonestar-opening-balance.js';
@@ -26,8 +27,36 @@ router.get('/periods', entityAccessMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/entities/:entityId/accounting/periods/close
-// Zero-suspense gate (ledger-integrity guardrail #3): report any non-zero
+/**
+ * GET /api/entities/:entityId/accounting/periods/integrity
+ * Authoritative close / closable status. Agents MUST use this before claiming a month is closed.
+ * Query: periodStart & periodEnd, or postingDate (calendar month), or year+month.
+ */
+router.get('/periods/integrity', entityAccessMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    let { periodStart, periodEnd, postingDate, year, month } = req.query;
+
+    if ((!periodStart || !periodEnd) && year && month) {
+      const bounds = monthBounds(`${year}-${String(month).padStart(2, '0')}-15`);
+      periodStart = bounds.periodStart;
+      periodEnd = bounds.periodEnd;
+    }
+
+    const status = await getPeriodIntegrityStatus(db, {
+      entityId: req.entityId,
+      periodStart: periodStart || null,
+      periodEnd: periodEnd || null,
+      postingDate: postingDate || null,
+    });
+    res.json(status);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// GET /api/entities/:entityId/accounting/suspense-check
+// Zero-suspense gate (ledger-integrity guardrail): report any non-zero
 // clearing/suspense/uncategorized account as of a date. Read-only.
 router.get('/suspense-check', entityAccessMiddleware, async (req, res) => {
   try {
@@ -39,19 +68,22 @@ router.get('/suspense-check', entityAccessMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/entities/:entityId/accounting/periods/close
 router.post('/periods/close', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
   try {
-    const { periodStart, periodEnd, postingDate, notes, force } = req.body;
+    const { periodStart, periodEnd, postingDate, notes } = req.body;
     const db = await getDatabase();
 
-    // Zero-suspense gate: money must not be stranded in clearing/suspense
-    // accounts when a period closes. Block unless the caller explicitly forces.
+    // Zero-suspense gate: money must not be stranded in clearing/suspense accounts.
+    // Hard bar — no force override.
     const suspenseAsOf = postingDate || periodEnd || null;
     const suspense = await checkSuspenseAccounts(db, req.entityId, suspenseAsOf);
-    if (!suspense.clean && !force) {
+    if (!suspense.clean) {
       return res.status(409).json({
-        error: `Cannot close: $${suspense.totalAbs} stranded in ${suspense.nonZero.length} suspense/clearing account(s). Resolve them, or resend with force:true to override.`,
+        error: `Cannot close: $${suspense.totalAbs} stranded in ${suspense.nonZero.length} suspense/clearing account(s). Resolve them before closing.`,
+        code: 'SUSPENSE_BLOCKED',
         suspense,
+        isClosed: false,
       });
     }
 
@@ -76,11 +108,20 @@ router.post('/periods/close', [entityAccessMiddleware, requireRole('ADMIN', 'ACC
     }
 
     res.json({
-      message: suspense.clean ? 'Period closed' : `Period closed (forced — $${suspense.totalAbs} in suspense)`,
+      message: 'Period closed',
       suspense,
       ...result,
+      isClosed: true,
     });
   } catch (error) {
+    if (error.code === 'PERIOD_INTEGRITY_BLOCKED') {
+      return res.status(409).json({
+        error: error.message,
+        code: error.code,
+        integrity: error.integrity,
+        isClosed: false,
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });

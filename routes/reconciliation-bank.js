@@ -27,7 +27,6 @@ import { buildReconciliationReport, saveReconciliationReport } from '../lib/reco
 import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
 import { ensureStatementFileSchema, saveStatementFile, getStatementFile } from '../lib/statement-file-schema.js';
 import { prepareReconciliation } from '../lib/reconcile-prepare.js';
-import { postReconcileAdjustment } from '../lib/reconcile-adjustment.js';
 import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/statement-auto-load.js';
 
 const router = express.Router();
@@ -677,42 +676,13 @@ router.post('/reconcile', async (req, res) => {
   }
 });
 
-// POST /api/reconciliation/bank/adjustment — QBD "Enter Adjustment" (last resort)
+// POST /api/reconciliation/bank/adjustment — PERMANENTLY DISABLED (no plug entries)
 router.post('/adjustment', async (req, res) => {
-  try {
-    const {
-      entityId,
-      accountId,
-      statementDate,
-      difference,
-      glIds = [],
-      serviceCharge = 0,
-      interestEarned = 0,
-      statementEndingBalance,
-    } = req.body;
-    if (!entityId || !accountId) {
-      return res.status(400).json({ error: 'entityId and accountId required' });
-    }
-    if (difference == null || Number.isNaN(Number(difference))) {
-      return res.status(400).json({ error: 'difference required' });
-    }
-    const db = await getDatabase();
-    const result = await postReconcileAdjustment(db, {
-      entityId,
-      accountId,
-      statementDate: statementDate || new Date().toISOString().split('T')[0],
-      difference: Number(difference),
-      glIds: Array.isArray(glIds) ? glIds : [],
-      serviceCharge: Number(serviceCharge) || 0,
-      interestEarned: Number(interestEarned) || 0,
-      statementEndingBalance: statementEndingBalance != null ? Number(statementEndingBalance) : undefined,
-      userId: req.user?.id || 'usr-admin',
-    });
-    return res.json(result);
-  } catch (error) {
-    console.error('Reconcile adjustment error:', error);
-    return res.status(500).json({ error: error.message || 'Adjustment failed' });
-  }
+  return res.status(403).json({
+    error:
+      'Hard rule: reconciliation plug adjustments are permanently disabled. Resolve the real variance to $0.00 — do not force-balance.',
+    code: 'PLUG_ENTRY_BLOCKED',
+  });
 });
 
 // POST /api/reconciliation/bank/import-statement — OFX or PDF while reconciling
