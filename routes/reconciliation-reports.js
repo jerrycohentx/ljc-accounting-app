@@ -6,6 +6,7 @@ import {
   listReconciliationReports,
   getReconciliationReport,
   pruneSupersededReconciliationReports,
+  deleteReconciliationReport,
 } from '../lib/reconciliation-report.js';
 import { renderReconciliationReportPdf } from '../lib/reconciliation-report-pdf.js';
 import { bankFolderMeta } from '../config/recon-bank-folders.js';
@@ -168,6 +169,18 @@ router.get('/:id', async (req, res) => {
     const report = await getReconciliationReport(db, req.params.id);
     if (!report) return res.status(404).json({ error: 'Report not found' });
     res.json({ report });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/** DELETE /api/reconciliation/reports/:id */
+router.delete('/:id', async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const ok = await deleteReconciliationReport(db, req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Report not found' });
+    res.json({ deleted: true, id: req.params.id });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
