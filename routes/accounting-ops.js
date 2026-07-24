@@ -17,6 +17,7 @@ import { runCutoverYearClose } from '../lib/cutover-year-close.js';
 import { closeH1_2026 } from '../lib/close-h1-2026.js';
 import { clearConversionSuspenseFor2026 } from '../lib/clear-conversion-suspense.js';
 import { reclassPostedUndepositedOffsets } from '../lib/reclass-posted-undeposited.js';
+import { reverseDuplicateBankImports } from '../lib/reverse-duplicate-bank-imports.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -327,6 +328,31 @@ router.post('/reclass-undeposited', [entityAccessMiddleware, requireRole('ADMIN'
       dryRun: !!req.body?.dryRun,
     });
     res.json({ message: result.clean ? '1100 cleared' : '1100 reclass ran', ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/entities/:entityId/accounting/reverse-duplicate-bank-imports
+ * Reverse JE twins that duplicate IMP/AMEX bank lines (H1 2026).
+ * Body: { confirm: "DEDUPE-BANK-<entityId>", dryRun?: boolean }
+ */
+router.post('/reverse-duplicate-bank-imports', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    if (req.entityId !== 'ent-ljc') {
+      return res.status(400).json({ error: 'Only implemented for ent-ljc' });
+    }
+    const expected = `DEDUPE-BANK-${req.entityId}`;
+    if (req.body?.confirm !== expected) {
+      return res.status(400).json({ error: `confirm must equal "${expected}"`, code: 'CONFIRM_REQUIRED' });
+    }
+    const db = await getDatabase();
+    const result = await reverseDuplicateBankImports(db, {
+      userId: req.user.id,
+      dryRun: !!req.body?.dryRun,
+    });
+    res.json({ message: `Reversed ${result.reversedCount} duplicate(s)`, ...result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
