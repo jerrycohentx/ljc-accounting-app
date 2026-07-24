@@ -142,8 +142,8 @@ router.put('/:id', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
       (account.is_active === true || account.is_active === 1 || account.is_active === '1');
     if (deactivating) {
       const hasEntries = await db.get(
-        'SELECT COUNT(*) as count FROM general_ledger WHERE account_id = ?',
-        req.params.id
+        'SELECT COUNT(*) as count FROM general_ledger WHERE account_id = ? AND entity_id = ?',
+        [req.params.id, req.entityId]
       );
       if (Number(hasEntries?.count || 0) > 0) {
         return res.status(409).json({
@@ -184,10 +184,10 @@ router.delete('/:id', [entityAccessMiddleware, requireRole('ADMIN')], async (req
       return res.status(404).json({ error: 'Account not found' });
     }
 
-    // Check if account has GL entries
+    // Check if account has GL entries (entity-scoped)
     const hasEntries = await db.get(
-      'SELECT COUNT(*) as count FROM general_ledger WHERE account_id = ?',
-      req.params.id
+      'SELECT COUNT(*) as count FROM general_ledger WHERE account_id = ? AND entity_id = ?',
+      [req.params.id, req.entityId]
     );
 
     if (hasEntries.count > 0) {
@@ -196,8 +196,8 @@ router.delete('/:id', [entityAccessMiddleware, requireRole('ADMIN')], async (req
 
     // Soft delete by deactivating
     await db.run(
-      'UPDATE accounts SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      req.params.id
+      'UPDATE accounts SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND entity_id = ?',
+      [req.params.id, req.entityId]
     );
 
     res.json({ message: 'Account deactivated' });

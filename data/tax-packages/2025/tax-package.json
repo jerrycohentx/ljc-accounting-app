@@ -1,8 +1,8 @@
 {
   "taxYear": 2025,
-  "generatedAt": "2026-06-28T04:38:36.138Z",
+  "generatedAt": "2026-07-24T04:38:53.383Z",
   "accountingBasis": "Cash",
-  "allTaxReturnReady": true,
+  "allTaxReturnReady": false,
   "intercompany": {
     "allTied": true,
     "pairs": [
@@ -131,6 +131,7 @@
         "endDate": "2025-12-31"
       },
       "asOfDate": "2025-12-31",
+      "statementSource": "qbo_rollup",
       "incomeStatement": {
         "period": {
           "startDate": "2025-01-01",
@@ -139,7 +140,7 @@
         "revenues": [
           {
             "accountNumber": "4000",
-            "accountName": "Interest Income",
+            "accountName": "Bounced-Checks",
             "amount": 418262.04
           },
           {
@@ -152,12 +153,12 @@
         "expenses": [
           {
             "accountNumber": "5000",
-            "accountName": "Interest Expense",
+            "accountName": "Automobile-Expense",
             "amount": 738194.74
           },
           {
             "accountNumber": "5100",
-            "accountName": "Draw & Inspection Fees",
+            "accountName": "Other-Operating",
             "amount": -9526.14
           },
           {
@@ -187,34 +188,35 @@
           },
           {
             "accountNumber": "5800",
-            "accountName": "Chargebacks & Reversals",
+            "accountName": "Lending Expenses (DLOC & Warehouse)",
             "amount": -38
           }
         ],
         "totalExpense": 913293.07,
-        "netIncome": -118785.16
+        "netIncome": -118785.16,
+        "source": "qbo_rollup"
       },
       "balanceSheet": {
         "asOfDate": "2025-12-31",
         "assets": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts - Simmons",
+            "accountName": "Accounts-Receivable",
             "amount": 225200.19
           },
           {
             "accountNumber": "1001",
             "accountName": "Cash - Lone Star Bank",
-            "amount": -193.15
+            "amount": 598.88
           },
           {
             "accountNumber": "1010",
-            "accountName": "Cash - Simmons Sub-Accounts (4177/4790/7036)",
+            "accountName": "Cash:B1-Bank-Ckg-1945",
             "amount": 210960.76
           },
           {
             "accountNumber": "1100",
-            "accountName": "Undeposited Funds",
+            "accountName": "Fixed-Assets:Furniture-And-Equipment",
             "amount": 9866.88
           },
           {
@@ -249,7 +251,7 @@
           },
           {
             "accountNumber": "1900",
-            "accountName": "Due From - GM",
+            "accountName": "Real-Estate:Accumulated-Depreciation",
             "amount": 370267.18
           },
           {
@@ -268,22 +270,27 @@
             "amount": -1098753.78
           }
         ],
-        "totalAssets": 9480990.58,
+        "totalAssets": 9481782.61,
         "liabilities": [
           {
             "accountNumber": "2000",
-            "accountName": "Accounts Payable",
+            "accountName": "Accounts-Payable",
             "amount": 406
           },
           {
             "accountNumber": "2010",
-            "accountName": "Credit Card - American Express",
+            "accountName": "Accrued-Liabilities",
             "amount": 158318.51
           },
           {
             "accountNumber": "2110",
             "accountName": "DLOC - Simmons Bank",
             "amount": 4676217
+          },
+          {
+            "accountNumber": "2999",
+            "accountName": "Other Liabilities (Opening Rollup)",
+            "amount": 4977737.74
           },
           {
             "accountNumber": "2901",
@@ -299,11 +306,6 @@
             "accountNumber": "2910",
             "accountName": "Due To - 4J&L Partners",
             "amount": 3333146.6
-          },
-          {
-            "accountNumber": "2999",
-            "accountName": "Other Liabilities (Opening Rollup)",
-            "amount": 4977737.74
           }
         ],
         "totalLiabilities": 13355960.93,
@@ -316,22 +318,23 @@
           {
             "accountNumber": "3900",
             "accountName": "Opening Balance Equity",
-            "amount": -3306084.97
+            "amount": -3305292.94
           }
         ],
-        "totalEquity": -3756185.19,
-        "totalLiabilitiesAndEquity": 9599775.74,
-        "balanceSheetBalanced": true,
+        "totalEquity": -3755393.16,
         "currentYearNetIncome": -118785.16,
-        "totalEquityWithNetIncome": -3874970.35,
-        "totalLiabilitiesAndEquityWithNetIncome": 9480990.58
+        "totalEquityWithNetIncome": -3874178.32,
+        "totalLiabilitiesAndEquity": 9481782.61,
+        "totalLiabilitiesAndEquityWithNetIncome": 9481782.61,
+        "balanceSheetBalanced": true,
+        "source": "qbo_rollup"
       },
       "trialBalance": {
         "asOfDate": "2025-12-31",
         "entries": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts - Simmons",
+            "accountName": "Accounts-Receivable",
             "accountType": "ASSET",
             "debit": 225200.19,
             "credit": 0
@@ -340,19 +343,19 @@
             "accountNumber": "1001",
             "accountName": "Cash - Lone Star Bank",
             "accountType": "ASSET",
-            "debit": 0,
-            "credit": 193.15
+            "debit": 598.88,
+            "credit": 0
           },
           {
             "accountNumber": "1010",
-            "accountName": "Cash - Simmons Sub-Accounts (4177/4790/7036)",
+            "accountName": "Cash:B1-Bank-Ckg-1945",
             "accountType": "ASSET",
             "debit": 210960.76,
             "credit": 0
           },
           {
             "accountNumber": "1100",
-            "accountName": "Undeposited Funds",
+            "accountName": "Fixed-Assets:Furniture-And-Equipment",
             "accountType": "ASSET",
             "debit": 9866.88,
             "credit": 0
@@ -401,7 +404,7 @@
           },
           {
             "accountNumber": "1900",
-            "accountName": "Due From - GM",
+            "accountName": "Real-Estate:Accumulated-Depreciation",
             "accountType": "ASSET",
             "debit": 370267.18,
             "credit": 0
@@ -429,14 +432,14 @@
           },
           {
             "accountNumber": "2000",
-            "accountName": "Accounts Payable",
+            "accountName": "Accounts-Payable",
             "accountType": "LIABILITY",
             "debit": 0,
             "credit": 406
           },
           {
             "accountNumber": "2010",
-            "accountName": "Credit Card - American Express",
+            "accountName": "Accrued-Liabilities",
             "accountType": "LIABILITY",
             "debit": 0,
             "credit": 158318.51
@@ -447,27 +450,6 @@
             "accountType": "LIABILITY",
             "debit": 0,
             "credit": 4676217
-          },
-          {
-            "accountNumber": "2901",
-            "accountName": "Due To - Justin Cohen",
-            "accountType": "LIABILITY",
-            "debit": 0,
-            "credit": 187638.17
-          },
-          {
-            "accountNumber": "2902",
-            "accountName": "Due To - OMC",
-            "accountType": "LIABILITY",
-            "debit": 0,
-            "credit": 22496.91
-          },
-          {
-            "accountNumber": "2910",
-            "accountName": "Due To - 4J&L Partners",
-            "accountType": "LIABILITY",
-            "debit": 0,
-            "credit": 3333146.6
           },
           {
             "accountNumber": "2999",
@@ -484,15 +466,8 @@
             "credit": 0
           },
           {
-            "accountNumber": "3900",
-            "accountName": "Opening Balance Equity",
-            "accountType": "EQUITY",
-            "debit": 3306084.97,
-            "credit": 0
-          },
-          {
             "accountNumber": "4000",
-            "accountName": "Interest Income",
+            "accountName": "Bounced-Checks",
             "accountType": "REVENUE",
             "debit": 0,
             "credit": 418262.04
@@ -506,14 +481,14 @@
           },
           {
             "accountNumber": "5000",
-            "accountName": "Interest Expense",
+            "accountName": "Automobile-Expense",
             "accountType": "EXPENSE",
             "debit": 738194.74,
             "credit": 0
           },
           {
             "accountNumber": "5100",
-            "accountName": "Draw & Inspection Fees",
+            "accountName": "Other-Operating",
             "accountType": "EXPENSE",
             "debit": 0,
             "credit": 9526.14
@@ -555,17 +530,46 @@
           },
           {
             "accountNumber": "5800",
-            "accountName": "Chargebacks & Reversals",
+            "accountName": "Lending Expenses (DLOC & Warehouse)",
             "accountType": "EXPENSE",
             "debit": 0,
             "credit": 38
+          },
+          {
+            "accountNumber": "2901",
+            "accountName": "Due To - Justin Cohen",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 187638.17
+          },
+          {
+            "accountNumber": "2902",
+            "accountName": "Due To - OMC",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 22496.91
+          },
+          {
+            "accountNumber": "2910",
+            "accountName": "Due To - 4J&L Partners",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 3333146.6
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 3305292.94,
+            "credit": 0
           }
         ],
         "totals": {
-          "debit": 15504500.78,
-          "credit": 15504500.78
+          "debit": 15504307.63,
+          "credit": 15504307.63
         },
-        "isBalanced": true
+        "isBalanced": true,
+        "source": "qbo_rollup"
       },
       "payrollSummary": null,
       "qboSourceValidation": {
@@ -575,9 +579,92 @@
         "balanced": true,
         "basis": "Cash (per QBO export footer)"
       },
+      "appGlCrossCheck": {
+        "totalAssets": 8648037.859999996,
+        "netIncome": -510735.74000000063,
+        "note": "App GL year-end balances are consistent in scale with QBO rollup."
+      },
+      "periodIntegrity": {
+        "isClosed": false,
+        "canClose": false,
+        "databasePeriodStatus": "OPEN",
+        "blockers": [
+          "1000 2025-01: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-02: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-03: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-04: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-05: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-06: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-07: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-08: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-09: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-10: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-11: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-12: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1001 2025-01: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-02: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-03: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-04: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-05: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-06: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-07: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-08: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-09: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-10: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-11: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "1001 2025-12: Account 1001 (Cash - Lone Star Bank) has no bank reconciliation covering this month.",
+          "2010 2025-01: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-02: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-03: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-04: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-05: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-06: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-07: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-08: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-09: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-10: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-11: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month.",
+          "2010 2025-12: Account 2010 (Accrued-Liabilities) has no bank reconciliation covering this month."
+        ]
+      },
+      "disclosures": [
+        {
+          "accountNumber": "1100",
+          "accountName": "Undeposited Funds",
+          "amount": 9866.88,
+          "accountType": "ASSET",
+          "note": "Undeposited Funds — clear or document before CPA finalizes"
+        },
+        {
+          "accountNumber": "1999",
+          "accountName": "Other Assets (Opening Rollup)",
+          "amount": -1098753.78,
+          "accountType": "ASSET",
+          "note": "Other Assets rollup from QBO migration — reclass to detail for CPA if material"
+        },
+        {
+          "accountNumber": "2999",
+          "accountName": "Other Liabilities (Opening Rollup)",
+          "amount": 4977737.74,
+          "accountType": "LIABILITY",
+          "note": "Other Liabilities rollup from QBO migration — reclass to detail for CPA if material"
+        },
+        {
+          "accountNumber": "3900",
+          "accountName": "Opening Balance Equity",
+          "amount": -3305292.94,
+          "accountType": "EQUITY",
+          "note": "Opening Balance Equity — conversion plug; reclass to permanent equity after CPA review"
+        }
+      ],
       "readiness": {
-        "allPass": true,
+        "allPass": false,
         "checks": [
+          {
+            "id": "rollup_present",
+            "pass": true,
+            "label": "QBO rolled opening-balance file present for tax year-end"
+          },
           {
             "id": "tb_balanced",
             "pass": true,
@@ -586,7 +673,7 @@
           {
             "id": "bs_balanced",
             "pass": true,
-            "label": "Balance sheet assets equal liabilities + equity"
+            "label": "Balance sheet assets equal liabilities + equity (incl. net income)"
           },
           {
             "id": "qbo_source",
@@ -596,17 +683,27 @@
           {
             "id": "has_pl",
             "pass": true,
-            "label": "Profit & loss reviewed (activity or zero)"
+            "label": "Profit & loss has QBO year activity (or inactive holding entity with BS only)"
           },
           {
-            "id": "has_bs",
+            "id": "material_bs",
             "pass": true,
-            "label": "Balance sheet has balances"
+            "label": "Balance sheet has material balances (full year-end TB, not thin cutover GL)"
+          },
+          {
+            "id": "period_closed",
+            "pass": false,
+            "label": "Accounting period closed with integrity (isClosed: true)"
+          },
+          {
+            "id": "disclosures_listed",
+            "pass": true,
+            "label": "4 conversion/clearing account(s) disclosed for CPA review"
           }
         ]
       },
-      "taxReturnReady": true,
-      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+      "taxReturnReady": false,
+      "disclaimer": "Cash-basis financial package from QBO year-end trial balance rollup for CPA return preparation. Does not file returns, compute tax, or produce K-1/partner allocations. Conversion/clearing accounts are listed under disclosures."
     },
     {
       "entityId": "ent-justin",
@@ -618,6 +715,7 @@
         "endDate": "2025-12-31"
       },
       "asOfDate": "2025-12-31",
+      "statementSource": "qbo_rollup",
       "incomeStatement": {
         "period": {
           "startDate": "2025-01-01",
@@ -628,19 +726,20 @@
         "expenses": [
           {
             "accountNumber": "5000",
-            "accountName": "Operating Expenses",
+            "accountName": "Bank-Service-Charges",
             "amount": 18115.51
           }
         ],
         "totalExpense": 18115.51,
-        "netIncome": -18115.51
+        "netIncome": -18115.51,
+        "source": "qbo_rollup"
       },
       "balanceSheet": {
         "asOfDate": "2025-12-31",
         "assets": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts",
+            "accountName": "Cash:Ckg-At-Simmons-5865",
             "amount": 18632.32
           },
           {
@@ -663,7 +762,7 @@
         "liabilities": [
           {
             "accountNumber": "2000",
-            "accountName": "Accounts Payable",
+            "accountName": "Accounts-Payable",
             "amount": 525763.44
           },
           {
@@ -672,14 +771,14 @@
             "amount": 1689386
           },
           {
-            "accountNumber": "2901",
-            "accountName": "Due To - LJC Financial (Intercompany)",
-            "amount": 798180.76
-          },
-          {
             "accountNumber": "2910",
             "accountName": "Due To - 4J&L Partners",
             "amount": 643522.69
+          },
+          {
+            "accountNumber": "2901",
+            "accountName": "Due To - LJC Financial (Intercompany)",
+            "amount": 798180.76
           }
         ],
         "totalLiabilities": 3656852.89,
@@ -696,18 +795,19 @@
           }
         ],
         "totalEquity": -2030168.94,
-        "totalLiabilitiesAndEquity": 1626683.95,
-        "balanceSheetBalanced": true,
         "currentYearNetIncome": -18115.51,
         "totalEquityWithNetIncome": -2048284.45,
-        "totalLiabilitiesAndEquityWithNetIncome": 1608568.44
+        "totalLiabilitiesAndEquity": 1608568.44,
+        "totalLiabilitiesAndEquityWithNetIncome": 1608568.44,
+        "balanceSheetBalanced": true,
+        "source": "qbo_rollup"
       },
       "trialBalance": {
         "asOfDate": "2025-12-31",
         "entries": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts",
+            "accountName": "Cash:Ckg-At-Simmons-5865",
             "accountType": "ASSET",
             "debit": 18632.32,
             "credit": 0
@@ -735,7 +835,7 @@
           },
           {
             "accountNumber": "2000",
-            "accountName": "Accounts Payable",
+            "accountName": "Accounts-Payable",
             "accountType": "LIABILITY",
             "debit": 0,
             "credit": 525763.44
@@ -746,13 +846,6 @@
             "accountType": "LIABILITY",
             "debit": 0,
             "credit": 1689386
-          },
-          {
-            "accountNumber": "2901",
-            "accountName": "Due To - LJC Financial (Intercompany)",
-            "accountType": "LIABILITY",
-            "debit": 0,
-            "credit": 798180.76
           },
           {
             "accountNumber": "2910",
@@ -769,17 +862,24 @@
             "credit": 0
           },
           {
+            "accountNumber": "5000",
+            "accountName": "Bank-Service-Charges",
+            "accountType": "EXPENSE",
+            "debit": 18115.51,
+            "credit": 0
+          },
+          {
+            "accountNumber": "2901",
+            "accountName": "Due To - LJC Financial (Intercompany)",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 798180.76
+          },
+          {
             "accountNumber": "3900",
             "accountName": "Opening Balance Equity",
             "accountType": "EQUITY",
             "debit": 1035680.76,
-            "credit": 0
-          },
-          {
-            "accountNumber": "5000",
-            "accountName": "Operating Expenses",
-            "accountType": "EXPENSE",
-            "debit": 18115.51,
             "credit": 0
           }
         ],
@@ -787,7 +887,8 @@
           "debit": 3656852.89,
           "credit": 3656852.89
         },
-        "isBalanced": true
+        "isBalanced": true,
+        "source": "qbo_rollup"
       },
       "payrollSummary": null,
       "qboSourceValidation": {
@@ -797,9 +898,47 @@
         "balanced": true,
         "basis": "Cash (per QBO export footer)"
       },
+      "appGlCrossCheck": {
+        "totalAssets": 803332.09,
+        "netIncome": -18115.510000000002,
+        "note": "App GL at 12/31 is thinner than QBO rollup — tax package uses QBO rollup as source of truth (OB likely dated next-year 1/1)."
+      },
+      "periodIntegrity": {
+        "isClosed": false,
+        "canClose": false,
+        "databasePeriodStatus": "OPEN",
+        "blockers": [
+          "1000 2025-01: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-02: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-03: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-04: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-05: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-06: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-07: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-08: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-09: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-10: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-11: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month.",
+          "1000 2025-12: Account 1000 (Cash:Ckg-At-Simmons-5865) has no bank reconciliation covering this month."
+        ]
+      },
+      "disclosures": [
+        {
+          "accountNumber": "3900",
+          "accountName": "Opening Balance Equity",
+          "amount": -1035680.76,
+          "accountType": "EQUITY",
+          "note": "Opening Balance Equity — conversion plug; reclass to permanent equity after CPA review"
+        }
+      ],
       "readiness": {
-        "allPass": true,
+        "allPass": false,
         "checks": [
+          {
+            "id": "rollup_present",
+            "pass": true,
+            "label": "QBO rolled opening-balance file present for tax year-end"
+          },
           {
             "id": "tb_balanced",
             "pass": true,
@@ -808,7 +947,7 @@
           {
             "id": "bs_balanced",
             "pass": true,
-            "label": "Balance sheet assets equal liabilities + equity"
+            "label": "Balance sheet assets equal liabilities + equity (incl. net income)"
           },
           {
             "id": "qbo_source",
@@ -818,17 +957,27 @@
           {
             "id": "has_pl",
             "pass": true,
-            "label": "Profit & loss reviewed (activity or zero)"
+            "label": "Profit & loss has QBO year activity (or inactive holding entity with BS only)"
           },
           {
-            "id": "has_bs",
+            "id": "material_bs",
             "pass": true,
-            "label": "Balance sheet has balances"
+            "label": "Balance sheet has material balances (full year-end TB, not thin cutover GL)"
+          },
+          {
+            "id": "period_closed",
+            "pass": false,
+            "label": "Accounting period closed with integrity (isClosed: true)"
+          },
+          {
+            "id": "disclosures_listed",
+            "pass": true,
+            "label": "1 conversion/clearing account(s) disclosed for CPA review"
           }
         ]
       },
-      "taxReturnReady": true,
-      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+      "taxReturnReady": false,
+      "disclaimer": "Cash-basis financial package from QBO year-end trial balance rollup for CPA return preparation. Does not file returns, compute tax, or produce K-1/partner allocations. Conversion/clearing accounts are listed under disclosures."
     },
     {
       "entityId": "ent-omc",
@@ -840,6 +989,7 @@
         "endDate": "2025-12-31"
       },
       "asOfDate": "2025-12-31",
+      "statementSource": "qbo_rollup",
       "incomeStatement": {
         "period": {
           "startDate": "2025-01-01",
@@ -848,7 +998,7 @@
         "revenues": [
           {
             "accountNumber": "4000",
-            "accountName": "Other Income",
+            "accountName": "Gain-Loss-On-Sale-Of-Real-Estate",
             "amount": 211122.41
           }
         ],
@@ -856,19 +1006,20 @@
         "expenses": [
           {
             "accountNumber": "5000",
-            "accountName": "Operating Expenses",
+            "accountName": "Bank-Service-Charges",
             "amount": 119638.78
           }
         ],
         "totalExpense": 119638.78,
-        "netIncome": 91483.63
+        "netIncome": 91483.63,
+        "source": "qbo_rollup"
       },
       "balanceSheet": {
         "asOfDate": "2025-12-31",
         "assets": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts",
+            "accountName": "Accounts-Receivable",
             "amount": 144648.17
           },
           {
@@ -893,11 +1044,16 @@
           },
           {
             "accountNumber": "1900",
-            "accountName": "Due From - LJC Financial",
+            "accountName": "Real-Estate:Accumulated-Depreciation",
             "amount": 22496.91
+          },
+          {
+            "accountNumber": "1999",
+            "accountName": "Account 1999",
+            "amount": -7281.78
           }
         ],
-        "totalAssets": 540186.09,
+        "totalAssets": 532904.31,
         "liabilities": [
           {
             "accountNumber": "2011",
@@ -920,22 +1076,23 @@
           {
             "accountNumber": "3900",
             "accountName": "Opening Balance Equity",
-            "amount": 82988.35
+            "amount": 75706.57
           }
         ],
-        "totalEquity": 187148.44,
-        "totalLiabilitiesAndEquity": 448702.46,
-        "balanceSheetBalanced": true,
+        "totalEquity": 179866.66,
         "currentYearNetIncome": 91483.63,
-        "totalEquityWithNetIncome": 278632.07,
-        "totalLiabilitiesAndEquityWithNetIncome": 540186.09
+        "totalEquityWithNetIncome": 271350.29,
+        "totalLiabilitiesAndEquity": 532904.31,
+        "totalLiabilitiesAndEquityWithNetIncome": 532904.31,
+        "balanceSheetBalanced": true,
+        "source": "qbo_rollup"
       },
       "trialBalance": {
         "asOfDate": "2025-12-31",
         "entries": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts",
+            "accountName": "Accounts-Receivable",
             "accountType": "ASSET",
             "debit": 144648.17,
             "credit": 0
@@ -970,10 +1127,17 @@
           },
           {
             "accountNumber": "1900",
-            "accountName": "Due From - LJC Financial",
+            "accountName": "Real-Estate:Accumulated-Depreciation",
             "accountType": "ASSET",
             "debit": 22496.91,
             "credit": 0
+          },
+          {
+            "accountNumber": "1999",
+            "accountName": "Account 1999",
+            "accountType": "ASSET",
+            "debit": 0,
+            "credit": 7281.78
           },
           {
             "accountNumber": "2011",
@@ -997,32 +1161,33 @@
             "credit": 104160.09
           },
           {
-            "accountNumber": "3900",
-            "accountName": "Opening Balance Equity",
-            "accountType": "EQUITY",
-            "debit": 0,
-            "credit": 82988.35
-          },
-          {
             "accountNumber": "4000",
-            "accountName": "Other Income",
+            "accountName": "Gain-Loss-On-Sale-Of-Real-Estate",
             "accountType": "REVENUE",
             "debit": 0,
             "credit": 211122.41
           },
           {
             "accountNumber": "5000",
-            "accountName": "Operating Expenses",
+            "accountName": "Bank-Service-Charges",
             "accountType": "EXPENSE",
             "debit": 119638.78,
             "credit": 0
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 0,
+            "credit": 75706.57
           }
         ],
         "totals": {
           "debit": 661588.56,
           "credit": 661588.56
         },
-        "isBalanced": true
+        "isBalanced": true,
+        "source": "qbo_rollup"
       },
       "payrollSummary": null,
       "qboSourceValidation": {
@@ -1032,9 +1197,54 @@
         "balanced": true,
         "basis": "Cash (per QBO export footer)"
       },
+      "appGlCrossCheck": {
+        "totalAssets": 29970.250000000004,
+        "netIncome": 108,
+        "note": "App GL at 12/31 is thinner than QBO rollup — tax package uses QBO rollup as source of truth (OB likely dated next-year 1/1)."
+      },
+      "periodIntegrity": {
+        "isClosed": false,
+        "canClose": false,
+        "databasePeriodStatus": "OPEN",
+        "blockers": [
+          "1000 2025-01: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-02: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-03: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-04: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-05: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-06: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-07: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-08: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-09: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-10: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-11: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-12: Account 1000 (Accounts-Receivable) has no bank reconciliation covering this month."
+        ]
+      },
+      "disclosures": [
+        {
+          "accountNumber": "1999",
+          "accountName": "Other Assets (Opening Rollup)",
+          "amount": -7281.78,
+          "accountType": "ASSET",
+          "note": "Other Assets rollup from QBO migration — reclass to detail for CPA if material"
+        },
+        {
+          "accountNumber": "3900",
+          "accountName": "Opening Balance Equity",
+          "amount": 75706.57,
+          "accountType": "EQUITY",
+          "note": "Opening Balance Equity — conversion plug; reclass to permanent equity after CPA review"
+        }
+      ],
       "readiness": {
-        "allPass": true,
+        "allPass": false,
         "checks": [
+          {
+            "id": "rollup_present",
+            "pass": true,
+            "label": "QBO rolled opening-balance file present for tax year-end"
+          },
           {
             "id": "tb_balanced",
             "pass": true,
@@ -1043,7 +1253,7 @@
           {
             "id": "bs_balanced",
             "pass": true,
-            "label": "Balance sheet assets equal liabilities + equity"
+            "label": "Balance sheet assets equal liabilities + equity (incl. net income)"
           },
           {
             "id": "qbo_source",
@@ -1053,17 +1263,27 @@
           {
             "id": "has_pl",
             "pass": true,
-            "label": "Profit & loss reviewed (activity or zero)"
+            "label": "Profit & loss has QBO year activity (or inactive holding entity with BS only)"
           },
           {
-            "id": "has_bs",
+            "id": "material_bs",
             "pass": true,
-            "label": "Balance sheet has balances"
+            "label": "Balance sheet has material balances (full year-end TB, not thin cutover GL)"
+          },
+          {
+            "id": "period_closed",
+            "pass": false,
+            "label": "Accounting period closed with integrity (isClosed: true)"
+          },
+          {
+            "id": "disclosures_listed",
+            "pass": true,
+            "label": "2 conversion/clearing account(s) disclosed for CPA review"
           }
         ]
       },
-      "taxReturnReady": true,
-      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+      "taxReturnReady": false,
+      "disclaimer": "Cash-basis financial package from QBO year-end trial balance rollup for CPA return preparation. Does not file returns, compute tax, or produce K-1/partner allocations. Conversion/clearing accounts are listed under disclosures."
     },
     {
       "entityId": "ent-gm",
@@ -1075,6 +1295,7 @@
         "endDate": "2025-12-31"
       },
       "asOfDate": "2025-12-31",
+      "statementSource": "qbo_rollup",
       "incomeStatement": {
         "period": {
           "startDate": "2025-01-01",
@@ -1083,7 +1304,7 @@
         "revenues": [
           {
             "accountNumber": "4000",
-            "accountName": "Services Income",
+            "accountName": "Other-Income",
             "amount": 13682.17
           }
         ],
@@ -1091,7 +1312,7 @@
         "expenses": [
           {
             "accountNumber": "5000",
-            "accountName": "Operating Expenses",
+            "accountName": "Contract-Labor:Agency-Staffing",
             "amount": 94964.53
           },
           {
@@ -1101,14 +1322,15 @@
           }
         ],
         "totalExpense": 189541.53,
-        "netIncome": -175859.36
+        "netIncome": -175859.36,
+        "source": "qbo_rollup"
       },
       "balanceSheet": {
         "asOfDate": "2025-12-31",
         "assets": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts",
+            "accountName": "Accounts-Receivable:Resident",
             "amount": -8.74
           },
           {
@@ -1164,18 +1386,19 @@
           }
         ],
         "totalEquity": -544123.55,
-        "totalLiabilitiesAndEquity": 235987,
-        "balanceSheetBalanced": true,
         "currentYearNetIncome": -175859.36,
         "totalEquityWithNetIncome": -719982.91,
-        "totalLiabilitiesAndEquityWithNetIncome": 60127.64
+        "totalLiabilitiesAndEquity": 60127.64,
+        "totalLiabilitiesAndEquityWithNetIncome": 60127.64,
+        "balanceSheetBalanced": true,
+        "source": "qbo_rollup"
       },
       "trialBalance": {
         "asOfDate": "2025-12-31",
         "entries": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts",
+            "accountName": "Accounts-Receivable:Resident",
             "accountType": "ASSET",
             "debit": 0,
             "credit": 8.74
@@ -1223,13 +1446,6 @@
             "credit": 380933.58
           },
           {
-            "accountNumber": "2900",
-            "accountName": "Due To - LJC Financial",
-            "accountType": "LIABILITY",
-            "debit": 0,
-            "credit": 370267.18
-          },
-          {
             "accountNumber": "3100",
             "accountName": "Retained Earnings",
             "accountType": "EQUITY",
@@ -1237,22 +1453,15 @@
             "credit": 0
           },
           {
-            "accountNumber": "3900",
-            "accountName": "Opening Balance Equity",
-            "accountType": "EQUITY",
-            "debit": 370267.18,
-            "credit": 0
-          },
-          {
             "accountNumber": "4000",
-            "accountName": "Services Income",
+            "accountName": "Other-Income",
             "accountType": "REVENUE",
             "debit": 0,
             "credit": 13682.17
           },
           {
             "accountNumber": "5000",
-            "accountName": "Operating Expenses",
+            "accountName": "Contract-Labor:Agency-Staffing",
             "accountType": "EXPENSE",
             "debit": 94964.53,
             "credit": 0
@@ -1263,24 +1472,39 @@
             "accountType": "EXPENSE",
             "debit": 94577,
             "credit": 0
+          },
+          {
+            "accountNumber": "2900",
+            "accountName": "Due To - LJC Financial",
+            "accountType": "LIABILITY",
+            "debit": 0,
+            "credit": 370267.18
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 370267.18,
+            "credit": 0
           }
         ],
         "totals": {
           "debit": 795766.57,
           "credit": 795766.57
         },
-        "isBalanced": true
+        "isBalanced": true,
+        "source": "qbo_rollup"
       },
       "payrollSummary": [
         {
-          "accountNumber": "2100",
-          "accountName": "Payroll Liabilities",
-          "amount": 1965.11
-        },
-        {
           "accountNumber": "6000",
           "accountName": "Payroll Expense - Wages",
-          "amount": 94577
+          "amount": 0
+        },
+        {
+          "accountNumber": "2100",
+          "accountName": "Payroll Liabilities",
+          "amount": 0
         }
       ],
       "qboSourceValidation": {
@@ -1290,9 +1514,47 @@
         "balanced": true,
         "basis": "Cash (per QBO export footer)"
       },
+      "appGlCrossCheck": {
+        "totalAssets": -2898646.8100000005,
+        "netIncome": 0,
+        "note": "App GL year-end balances are consistent in scale with QBO rollup."
+      },
+      "periodIntegrity": {
+        "isClosed": false,
+        "canClose": false,
+        "databasePeriodStatus": "OPEN",
+        "blockers": [
+          "1000 2025-01: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-02: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-03: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-04: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-05: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-06: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-07: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-08: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-09: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-10: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-11: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month.",
+          "1000 2025-12: Account 1000 (Accounts-Receivable:Resident) has no bank reconciliation covering this month."
+        ]
+      },
+      "disclosures": [
+        {
+          "accountNumber": "3900",
+          "accountName": "Opening Balance Equity",
+          "amount": -370267.18,
+          "accountType": "EQUITY",
+          "note": "Opening Balance Equity — conversion plug; reclass to permanent equity after CPA review"
+        }
+      ],
       "readiness": {
-        "allPass": true,
+        "allPass": false,
         "checks": [
+          {
+            "id": "rollup_present",
+            "pass": true,
+            "label": "QBO rolled opening-balance file present for tax year-end"
+          },
           {
             "id": "tb_balanced",
             "pass": true,
@@ -1301,7 +1563,7 @@
           {
             "id": "bs_balanced",
             "pass": true,
-            "label": "Balance sheet assets equal liabilities + equity"
+            "label": "Balance sheet assets equal liabilities + equity (incl. net income)"
           },
           {
             "id": "qbo_source",
@@ -1311,12 +1573,22 @@
           {
             "id": "has_pl",
             "pass": true,
-            "label": "Profit & loss reviewed (activity or zero)"
+            "label": "Profit & loss has QBO year activity (or inactive holding entity with BS only)"
           },
           {
-            "id": "has_bs",
+            "id": "material_bs",
             "pass": true,
-            "label": "Balance sheet has balances"
+            "label": "Balance sheet has material balances (full year-end TB, not thin cutover GL)"
+          },
+          {
+            "id": "period_closed",
+            "pass": false,
+            "label": "Accounting period closed with integrity (isClosed: true)"
+          },
+          {
+            "id": "disclosures_listed",
+            "pass": true,
+            "label": "1 conversion/clearing account(s) disclosed for CPA review"
           },
           {
             "id": "payroll",
@@ -1325,8 +1597,8 @@
           }
         ]
       },
-      "taxReturnReady": true,
-      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+      "taxReturnReady": false,
+      "disclaimer": "Cash-basis financial package from QBO year-end trial balance rollup for CPA return preparation. Does not file returns, compute tax, or produce K-1/partner allocations. Conversion/clearing accounts are listed under disclosures."
     },
     {
       "entityId": "ent-qof",
@@ -1338,6 +1610,7 @@
         "endDate": "2025-12-31"
       },
       "asOfDate": "2025-12-31",
+      "statementSource": "qbo_rollup",
       "incomeStatement": {
         "period": {
           "startDate": "2025-01-01",
@@ -1347,7 +1620,8 @@
         "totalRevenue": 0,
         "expenses": [],
         "totalExpense": 0,
-        "netIncome": 0
+        "netIncome": 0,
+        "source": "qbo_rollup"
       },
       "balanceSheet": {
         "asOfDate": "2025-12-31",
@@ -1375,11 +1649,12 @@
           }
         ],
         "totalEquity": -401546.08,
-        "totalLiabilitiesAndEquity": 10000,
-        "balanceSheetBalanced": true,
         "currentYearNetIncome": 0,
         "totalEquityWithNetIncome": -401546.08,
-        "totalLiabilitiesAndEquityWithNetIncome": 10000
+        "totalLiabilitiesAndEquity": 10000,
+        "totalLiabilitiesAndEquityWithNetIncome": 10000,
+        "balanceSheetBalanced": true,
+        "source": "qbo_rollup"
       },
       "trialBalance": {
         "asOfDate": "2025-12-31",
@@ -1410,7 +1685,8 @@
           "debit": 411546.08,
           "credit": 411546.08
         },
-        "isBalanced": true
+        "isBalanced": true,
+        "source": "qbo_rollup"
       },
       "payrollSummary": null,
       "qboSourceValidation": {
@@ -1420,9 +1696,47 @@
         "balanced": true,
         "basis": "Cash (per QBO export footer)"
       },
+      "appGlCrossCheck": {
+        "totalAssets": 405472.58,
+        "netIncome": 0,
+        "note": "App GL year-end balances are consistent in scale with QBO rollup."
+      },
+      "periodIntegrity": {
+        "isClosed": false,
+        "canClose": false,
+        "databasePeriodStatus": "OPEN",
+        "blockers": [
+          "1000 2025-01: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-02: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-03: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-04: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-05: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-06: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-07: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-08: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-09: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-10: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-11: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month.",
+          "1000 2025-12: Account 1000 (Accrued-Interest-Receivable) has no bank reconciliation covering this month."
+        ]
+      },
+      "disclosures": [
+        {
+          "accountNumber": "3900",
+          "accountName": "Opening Balance Equity",
+          "amount": -401546.08,
+          "accountType": "EQUITY",
+          "note": "Opening Balance Equity — conversion plug; reclass to permanent equity after CPA review"
+        }
+      ],
       "readiness": {
-        "allPass": true,
+        "allPass": false,
         "checks": [
+          {
+            "id": "rollup_present",
+            "pass": true,
+            "label": "QBO rolled opening-balance file present for tax year-end"
+          },
           {
             "id": "tb_balanced",
             "pass": true,
@@ -1431,7 +1745,7 @@
           {
             "id": "bs_balanced",
             "pass": true,
-            "label": "Balance sheet assets equal liabilities + equity"
+            "label": "Balance sheet assets equal liabilities + equity (incl. net income)"
           },
           {
             "id": "qbo_source",
@@ -1441,17 +1755,27 @@
           {
             "id": "has_pl",
             "pass": true,
-            "label": "Profit & loss reviewed (activity or zero)"
+            "label": "Profit & loss has QBO year activity (or inactive holding entity with BS only)"
           },
           {
-            "id": "has_bs",
+            "id": "material_bs",
             "pass": true,
-            "label": "Balance sheet has balances"
+            "label": "Balance sheet has material balances (full year-end TB, not thin cutover GL)"
+          },
+          {
+            "id": "period_closed",
+            "pass": false,
+            "label": "Accounting period closed with integrity (isClosed: true)"
+          },
+          {
+            "id": "disclosures_listed",
+            "pass": true,
+            "label": "1 conversion/clearing account(s) disclosed for CPA review"
           }
         ]
       },
-      "taxReturnReady": true,
-      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+      "taxReturnReady": false,
+      "disclaimer": "Cash-basis financial package from QBO year-end trial balance rollup for CPA return preparation. Does not file returns, compute tax, or produce K-1/partner allocations. Conversion/clearing accounts are listed under disclosures."
     },
     {
       "entityId": "ent-4jl",
@@ -1463,6 +1787,7 @@
         "endDate": "2025-12-31"
       },
       "asOfDate": "2025-12-31",
+      "statementSource": "qbo_rollup",
       "incomeStatement": {
         "period": {
           "startDate": "2025-01-01",
@@ -1471,7 +1796,7 @@
         "revenues": [
           {
             "accountNumber": "4000",
-            "accountName": "Rental Income",
+            "accountName": "Interest-Income-Banks",
             "amount": 350164.46
           }
         ],
@@ -1479,19 +1804,20 @@
         "expenses": [
           {
             "accountNumber": "5000",
-            "accountName": "Operating Expenses",
+            "accountName": "Ask-My-Accountant",
             "amount": 52260.25
           }
         ],
         "totalExpense": 52260.25,
-        "netIncome": 297904.21
+        "netIncome": 297904.21,
+        "source": "qbo_rollup"
       },
       "balanceSheet": {
         "asOfDate": "2025-12-31",
         "assets": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts",
+            "accountName": "4302-Westheimer-escrows:Insurance",
             "amount": -4871.13
           },
           {
@@ -1501,18 +1827,18 @@
           },
           {
             "accountNumber": "1900",
-            "accountName": "Due From - LJC Financial",
+            "accountName": "Loan-Fee-GE-Capital:Accumulated-Amortization",
             "amount": 3333146.6
-          },
-          {
-            "accountNumber": "1901",
-            "accountName": "Due From - Justin Financial",
-            "amount": 643522.69
           },
           {
             "accountNumber": "1999",
             "accountName": "Other Assets (Opening Rollup)",
             "amount": 574035.45
+          },
+          {
+            "accountNumber": "1901",
+            "accountName": "Due From - Justin Financial",
+            "amount": 643522.69
           }
         ],
         "totalAssets": 5024141.49,
@@ -1531,18 +1857,19 @@
           }
         ],
         "totalEquity": 4726237.28,
-        "totalLiabilitiesAndEquity": 4726237.28,
-        "balanceSheetBalanced": true,
         "currentYearNetIncome": 297904.21,
         "totalEquityWithNetIncome": 5024141.49,
-        "totalLiabilitiesAndEquityWithNetIncome": 5024141.49
+        "totalLiabilitiesAndEquity": 5024141.49,
+        "totalLiabilitiesAndEquityWithNetIncome": 5024141.49,
+        "balanceSheetBalanced": true,
+        "source": "qbo_rollup"
       },
       "trialBalance": {
         "asOfDate": "2025-12-31",
         "entries": [
           {
             "accountNumber": "1000",
-            "accountName": "Cash & Bank Accounts",
+            "accountName": "4302-Westheimer-escrows:Insurance",
             "accountType": "ASSET",
             "debit": 0,
             "credit": 4871.13
@@ -1556,16 +1883,9 @@
           },
           {
             "accountNumber": "1900",
-            "accountName": "Due From - LJC Financial",
+            "accountName": "Loan-Fee-GE-Capital:Accumulated-Amortization",
             "accountType": "ASSET",
             "debit": 3333146.6,
-            "credit": 0
-          },
-          {
-            "accountNumber": "1901",
-            "accountName": "Due From - Justin Financial",
-            "accountType": "ASSET",
-            "debit": 643522.69,
             "credit": 0
           },
           {
@@ -1583,32 +1903,40 @@
             "credit": 4082714.59
           },
           {
-            "accountNumber": "3900",
-            "accountName": "Opening Balance Equity",
-            "accountType": "EQUITY",
-            "debit": 0,
-            "credit": 643522.69
-          },
-          {
             "accountNumber": "4000",
-            "accountName": "Rental Income",
+            "accountName": "Interest-Income-Banks",
             "accountType": "REVENUE",
             "debit": 0,
             "credit": 350164.46
           },
           {
             "accountNumber": "5000",
-            "accountName": "Operating Expenses",
+            "accountName": "Ask-My-Accountant",
             "accountType": "EXPENSE",
             "debit": 52260.25,
             "credit": 0
+          },
+          {
+            "accountNumber": "1901",
+            "accountName": "Due From - Justin Financial",
+            "accountType": "ASSET",
+            "debit": 643522.69,
+            "credit": 0
+          },
+          {
+            "accountNumber": "3900",
+            "accountName": "Opening Balance Equity",
+            "accountType": "EQUITY",
+            "debit": 0,
+            "credit": 643522.69
           }
         ],
         "totals": {
           "debit": 5081272.87,
           "credit": 5081272.87
         },
-        "isBalanced": true
+        "isBalanced": true,
+        "source": "qbo_rollup"
       },
       "payrollSummary": null,
       "qboSourceValidation": {
@@ -1618,9 +1946,54 @@
         "balanced": true,
         "basis": "Cash (per QBO export footer)"
       },
+      "appGlCrossCheck": {
+        "totalAssets": 4402677.15,
+        "netIncome": -362807.14,
+        "note": "App GL year-end balances are consistent in scale with QBO rollup."
+      },
+      "periodIntegrity": {
+        "isClosed": false,
+        "canClose": false,
+        "databasePeriodStatus": "OPEN",
+        "blockers": [
+          "1000 2025-01: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-02: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-03: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-04: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-05: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-06: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-07: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-08: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-09: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-10: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-11: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month.",
+          "1000 2025-12: Account 1000 (4302-Westheimer-escrows:Insurance) has no bank reconciliation covering this month."
+        ]
+      },
+      "disclosures": [
+        {
+          "accountNumber": "1999",
+          "accountName": "Other Assets (Opening Rollup)",
+          "amount": 574035.45,
+          "accountType": "ASSET",
+          "note": "Other Assets rollup from QBO migration — reclass to detail for CPA if material"
+        },
+        {
+          "accountNumber": "3900",
+          "accountName": "Opening Balance Equity",
+          "amount": 643522.69,
+          "accountType": "EQUITY",
+          "note": "Opening Balance Equity — conversion plug; reclass to permanent equity after CPA review"
+        }
+      ],
       "readiness": {
-        "allPass": true,
+        "allPass": false,
         "checks": [
+          {
+            "id": "rollup_present",
+            "pass": true,
+            "label": "QBO rolled opening-balance file present for tax year-end"
+          },
           {
             "id": "tb_balanced",
             "pass": true,
@@ -1629,7 +2002,7 @@
           {
             "id": "bs_balanced",
             "pass": true,
-            "label": "Balance sheet assets equal liabilities + equity"
+            "label": "Balance sheet assets equal liabilities + equity (incl. net income)"
           },
           {
             "id": "qbo_source",
@@ -1639,17 +2012,27 @@
           {
             "id": "has_pl",
             "pass": true,
-            "label": "Profit & loss reviewed (activity or zero)"
+            "label": "Profit & loss has QBO year activity (or inactive holding entity with BS only)"
           },
           {
-            "id": "has_bs",
+            "id": "material_bs",
             "pass": true,
-            "label": "Balance sheet has balances"
+            "label": "Balance sheet has material balances (full year-end TB, not thin cutover GL)"
+          },
+          {
+            "id": "period_closed",
+            "pass": false,
+            "label": "Accounting period closed with integrity (isClosed: true)"
+          },
+          {
+            "id": "disclosures_listed",
+            "pass": true,
+            "label": "2 conversion/clearing account(s) disclosed for CPA review"
           }
         ]
       },
-      "taxReturnReady": true,
-      "disclaimer": "Financial statements only — does not file returns, compute tax, or produce K-1/partner allocations. Provide this package to your CPA for return preparation."
+      "taxReturnReady": false,
+      "disclaimer": "Cash-basis financial package from QBO year-end trial balance rollup for CPA return preparation. Does not file returns, compute tax, or produce K-1/partner allocations. Conversion/clearing accounts are listed under disclosures."
     }
   ]
 }

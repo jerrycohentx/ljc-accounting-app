@@ -1,20 +1,22 @@
 Tax Year Financial Package — Graceful Meadows Assisted Living LLC
 Tax Year,2025
 Basis,Cash
-Tax Return Ready,YES
+Statement Source,qbo_rollup
+Tax Return Ready,NO
+Period Closed,NO
 
 PROFIT AND LOSS
 Account,Amount
-4000 Services Income,13682.17
+4000 Other-Income,13682.17
 Total Revenue,13682.17
-5000 Operating Expenses,94964.53
+5000 Contract-Labor:Agency-Staffing,94964.53
 6000 Payroll Expense - Wages,94577
 Total Expense,189541.53
 Net Income,-175859.36
 
 BALANCE SHEET
 Section,Account,Amount
-Asset,1000 Cash & Bank Accounts,-8.74
+Asset,1000 Accounts-Receivable:Resident,-8.74
 Asset,1210 Prepaid Expenses,7500
 Asset,1500 Buildings,35346.51
 Asset,1510 Furniture & Fixtures,17289.87
@@ -29,25 +31,32 @@ Equity,Total Equity (incl. net income),-719982.91
 
 TRIAL BALANCE
 Account,Type,Debit,Credit
-1000 Cash & Bank Accounts,ASSET,0,8.74
+1000 Accounts-Receivable:Resident,ASSET,0,8.74
 1210 Prepaid Expenses,ASSET,7500,0
 1500 Buildings,ASSET,35346.51,0
 1510 Furniture & Fixtures,ASSET,17289.87,0
 2011 Credit Card - VISA,LIABILITY,0,30874.9
 2100 Payroll Liabilities,LIABILITY,1965.11,0
 2200 Loans from Shareholders,LIABILITY,0,380933.58
-2900 Due To - LJC Financial,LIABILITY,0,370267.18
 3100 Retained Earnings,EQUITY,173856.37,0
-3900 Opening Balance Equity,EQUITY,370267.18,0
-4000 Services Income,REVENUE,0,13682.17
-5000 Operating Expenses,EXPENSE,94964.53,0
+4000 Other-Income,REVENUE,0,13682.17
+5000 Contract-Labor:Agency-Staffing,EXPENSE,94964.53,0
 6000 Payroll Expense - Wages,EXPENSE,94577,0
+2900 Due To - LJC Financial,LIABILITY,0,370267.18
+3900 Opening Balance Equity,EQUITY,370267.18,0
 Totals,,795766.57,795766.57
 
+DISCLOSURES FOR CPA
+Account,Amount,Note
+3900 Opening Balance Equity,-370267.18,"Opening Balance Equity — conversion plug; reclass to permanent equity after CPA review"
+
 READINESS CHECKS
+QBO rolled opening-balance file present for tax year-end,PASS
 Trial balance debits equal credits,PASS
-Balance sheet assets equal liabilities + equity,PASS
+Balance sheet assets equal liabilities + equity (incl. net income),PASS
 QBO source trial balance balanced,PASS
-Profit & loss reviewed (activity or zero),PASS
-Balance sheet has balances,PASS
+Profit & loss has QBO year activity (or inactive holding entity with BS only),PASS
+Balance sheet has material balances (full year-end TB, not thin cutover GL),PASS
+Accounting period closed with integrity (isClosed: true),FAIL
+1 conversion/clearing account(s) disclosed for CPA review,PASS
 Payroll accounts included (Graceful Meadows),PASS

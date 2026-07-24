@@ -1,7 +1,9 @@
 Tax Year Financial Package — LJC QOF LLC
 Tax Year,2025
 Basis,Cash
-Tax Return Ready,YES
+Statement Source,qbo_rollup
+Tax Return Ready,NO
+Period Closed,NO
 
 PROFIT AND LOSS
 Account,Amount
@@ -24,9 +26,16 @@ Account,Type,Debit,Credit
 3900 Opening Balance Equity,EQUITY,401546.08,0
 Totals,,411546.08,411546.08
 
+DISCLOSURES FOR CPA
+Account,Amount,Note
+3900 Opening Balance Equity,-401546.08,"Opening Balance Equity — conversion plug; reclass to permanent equity after CPA review"
+
 READINESS CHECKS
+QBO rolled opening-balance file present for tax year-end,PASS
 Trial balance debits equal credits,PASS
-Balance sheet assets equal liabilities + equity,PASS
+Balance sheet assets equal liabilities + equity (incl. net income),PASS
 QBO source trial balance balanced,PASS
-Profit & loss reviewed (activity or zero),PASS
-Balance sheet has balances,PASS
+Profit & loss has QBO year activity (or inactive holding entity with BS only),PASS
+Balance sheet has material balances (full year-end TB, not thin cutover GL),PASS
+Accounting period closed with integrity (isClosed: true),FAIL
+1 conversion/clearing account(s) disclosed for CPA review,PASS

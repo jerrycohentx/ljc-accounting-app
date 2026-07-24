@@ -1,23 +1,25 @@
 Tax Year Financial Package — 4 J & L Partners, LTD
 Tax Year,2025
 Basis,Cash
-Tax Return Ready,YES
+Statement Source,qbo_rollup
+Tax Return Ready,NO
+Period Closed,NO
 
 PROFIT AND LOSS
 Account,Amount
-4000 Rental Income,350164.46
+4000 Interest-Income-Banks,350164.46
 Total Revenue,350164.46
-5000 Operating Expenses,52260.25
+5000 Ask-My-Accountant,52260.25
 Total Expense,52260.25
 Net Income,297904.21
 
 BALANCE SHEET
 Section,Account,Amount
-Asset,1000 Cash & Bank Accounts,-4871.13
+Asset,1000 4302-Westheimer-escrows:Insurance,-4871.13
 Asset,1410 Escrows & Reserves,478307.88
-Asset,1900 Due From - LJC Financial,3333146.6
-Asset,1901 Due From - Justin Financial,643522.69
+Asset,1900 Loan-Fee-GE-Capital:Accumulated-Amortization,3333146.6
 Asset,1999 Other Assets (Opening Rollup),574035.45
+Asset,1901 Due From - Justin Financial,643522.69
 Equity,3100 Retained Earnings / Partner Equity,4082714.59
 Equity,3900 Opening Balance Equity,643522.69
 Equity,Current Year Net Income,297904.21
@@ -25,20 +27,28 @@ Equity,Total Equity (incl. net income),5024141.49
 
 TRIAL BALANCE
 Account,Type,Debit,Credit
-1000 Cash & Bank Accounts,ASSET,0,4871.13
+1000 4302-Westheimer-escrows:Insurance,ASSET,0,4871.13
 1410 Escrows & Reserves,ASSET,478307.88,0
-1900 Due From - LJC Financial,ASSET,3333146.6,0
-1901 Due From - Justin Financial,ASSET,643522.69,0
+1900 Loan-Fee-GE-Capital:Accumulated-Amortization,ASSET,3333146.6,0
 1999 Other Assets (Opening Rollup),ASSET,574035.45,0
 3100 Retained Earnings / Partner Equity,EQUITY,0,4082714.59
+4000 Interest-Income-Banks,REVENUE,0,350164.46
+5000 Ask-My-Accountant,EXPENSE,52260.25,0
+1901 Due From - Justin Financial,ASSET,643522.69,0
 3900 Opening Balance Equity,EQUITY,0,643522.69
-4000 Rental Income,REVENUE,0,350164.46
-5000 Operating Expenses,EXPENSE,52260.25,0
 Totals,,5081272.87,5081272.87
 
+DISCLOSURES FOR CPA
+Account,Amount,Note
+1999 Other Assets (Opening Rollup),574035.45,"Other Assets rollup from QBO migration — reclass to detail for CPA if material"
+3900 Opening Balance Equity,643522.69,"Opening Balance Equity — conversion plug; reclass to permanent equity after CPA review"
+
 READINESS CHECKS
+QBO rolled opening-balance file present for tax year-end,PASS
 Trial balance debits equal credits,PASS
-Balance sheet assets equal liabilities + equity,PASS
+Balance sheet assets equal liabilities + equity (incl. net income),PASS
 QBO source trial balance balanced,PASS
-Profit & loss reviewed (activity or zero),PASS
-Balance sheet has balances,PASS
+Profit & loss has QBO year activity (or inactive holding entity with BS only),PASS
+Balance sheet has material balances (full year-end TB, not thin cutover GL),PASS
+Accounting period closed with integrity (isClosed: true),FAIL
+2 conversion/clearing account(s) disclosed for CPA review,PASS
