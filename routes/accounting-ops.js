@@ -14,6 +14,8 @@ import { previewYearEndClose, postYearEndClose } from '../lib/year-end-close.js'
 import { runLonestarBalanceFixes } from '../lib/fix-lonestar-opening-balance.js';
 import { checkSuspenseAccounts } from '../lib/suspense-check.js';
 import { runCutoverYearClose } from '../lib/cutover-year-close.js';
+import { closeH1_2026 } from '../lib/close-h1-2026.js';
+import { clearConversionSuspenseFor2026 } from '../lib/clear-conversion-suspense.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -277,6 +279,60 @@ router.post('/cutover-year-close', [entityAccessMiddleware, requireRole('ADMIN',
         detail: error.detail,
         integrity: error.integrity,
       });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/entities/:entityId/accounting/clear-conversion-suspense
+ * Clear stale 1100/1021 conversion clearing as of 2026-01-01 (LJC).
+ * Body: { confirm: "CLEAR-SUSPENSE-<entityId>" }
+ */
+router.post('/clear-conversion-suspense', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    if (req.entityId !== 'ent-ljc') {
+      return res.status(400).json({ error: 'Only implemented for ent-ljc' });
+    }
+    const expected = `CLEAR-SUSPENSE-${req.entityId}`;
+    if (req.body?.confirm !== expected) {
+      return res.status(400).json({ error: `confirm must equal "${expected}"`, code: 'CONFIRM_REQUIRED' });
+    }
+    const db = await getDatabase();
+    const result = await clearConversionSuspenseFor2026(db, { userId: req.user.id });
+    res.json({ message: result.cleanForH1 ? 'Suspense cleared for H1 2026' : 'Suspense clear ran but still dirty', ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/entities/:entityId/accounting/close-h1-2026
+ * Clear suspense (optional), auto-reconcile targets, close Jan–Jun 2026.
+ * Body: { confirm: "CLOSE-H1-2026-<entityId>", clearSuspense?: true }
+ */
+router.post('/close-h1-2026', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    if (req.entityId !== 'ent-ljc') {
+      return res.status(400).json({ error: 'Only implemented for ent-ljc' });
+    }
+    const expected = `CLOSE-H1-2026-${req.entityId}`;
+    if (req.body?.confirm !== expected) {
+      return res.status(400).json({ error: `confirm must equal "${expected}"`, code: 'CONFIRM_REQUIRED' });
+    }
+    const db = await getDatabase();
+    const result = await closeH1_2026(db, {
+      userId: req.user.id,
+      clearSuspense: req.body?.clearSuspense !== false,
+    });
+    const status = result.allClosed ? 200 : 409;
+    res.status(status).json({
+      message: result.allClosed ? 'Jan–Jun 2026 all closed' : 'H1 close incomplete — see months[].blockers',
+      ...result,
+    });
+  } catch (error) {
+    if (error.code === 'PERIOD_INTEGRITY_BLOCKED' || error.code === 'SUSPENSE_BLOCKED') {
+      return res.status(409).json({ error: error.message, code: error.code, integrity: error.integrity, suspense: error.suspense });
     }
     res.status(500).json({ error: error.message });
   }
