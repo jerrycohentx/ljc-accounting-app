@@ -894,27 +894,48 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   };
 
-  // Preview a QuickBooks-style reconciliation PDF (summary | detail | both) in-app.
+  // Instant HTML preview from live report JSON (PDF export remains available).
   const openReconPdf = (mode) => {
     if (!accountId || !stmtDate) { showToast && showToast('Pick an account and statement date first'); return; }
     setReportBusy(true);
-    reconReportAPI.renderPdfBlob({ entityId, accountId, statementDate: stmtDate, mode })
-      .then((blob) => {
-        const url = URL.createObjectURL(blob);
-        setPdfPreview((prev) => {
-          if (prev?.url) URL.revokeObjectURL(prev.url);
-          return { url, mode };
+    reconReportAPI.generate({ entityId, accountId, statementDate: stmtDate })
+      .then((r) => {
+        const built = r.data?.report;
+        if (!built) throw new Error('Empty report');
+        setPdfPreview({
+          mode,
+          full: {
+            account_number: built.header?.accountNumber,
+            account_name: built.header?.accountName,
+            statement_date: built.header?.statementDate || stmtDate,
+            is_closed: !!built.meta?.isClosed,
+            summary: built.summary,
+            detail: built.detail,
+          },
         });
         setShowReportPicker(false);
         setReportModal(null);
       })
-      .catch((e) => showToast && showToast('Report failed: ' + (e.message || e)))
+      .catch((e) => showToast && showToast('Report failed: ' + (e.response?.data?.error || e.message || e)))
       .finally(() => setReportBusy(false));
   };
 
-  useEffect(() => () => {
-    if (pdfPreview?.url) URL.revokeObjectURL(pdfPreview.url);
-  }, [pdfPreview?.url]);
+  const exportReconPdf = async () => {
+    if (!accountId || !stmtDate || !pdfPreview) return;
+    setReportBusy(true);
+    try {
+      await reconReportAPI.renderPdf({
+        entityId,
+        accountId,
+        statementDate: stmtDate,
+        mode: pdfPreview.mode || 'both',
+      });
+    } catch (e) {
+      showToast && showToast('PDF export failed: ' + (e.message || e));
+    } finally {
+      setReportBusy(false);
+    }
+  };
 
   const reportOverlay = (
     <>
@@ -961,11 +982,8 @@ export default function QBDReconcile() {
           </div>
         </div>
       )}
-      {pdfPreview?.url && (
-        <div className="qbd-modal-backdrop" onClick={() => {
-          URL.revokeObjectURL(pdfPreview.url);
-          setPdfPreview(null);
-        }}>
+      {pdfPreview?.full && (
+        <div className="qbd-modal-backdrop" onClick={() => setPdfPreview(null)}>
           <div
             className="qbd-window"
             style={{ width: 'min(1100px, 96vw)', height: 'min(90vh, 920px)', margin: 0, display: 'flex', flexDirection: 'column' }}
@@ -973,26 +991,85 @@ export default function QBDReconcile() {
           >
             <div className="qbd-wtitle">
               Reconciliation Preview — {stmtDate}
-              <span className="x" onClick={() => {
-                URL.revokeObjectURL(pdfPreview.url);
-                setPdfPreview(null);
-              }}>✕</span>
+              <span className="x" onClick={() => setPdfPreview(null)}>✕</span>
             </div>
             <div className="qbd-tools" style={{ gap: 6, flexWrap: 'wrap' }}>
-              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('summary')}>Summary</button>
-              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('detail')}>Detail</button>
-              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('both')}>Both</button>
+              <button type="button" className="qbd-btn" style={{ fontWeight: pdfPreview.mode === 'summary' ? 'bold' : 'normal' }} onClick={() => setPdfPreview((p) => ({ ...p, mode: 'summary' }))}>Summary</button>
+              <button type="button" className="qbd-btn" style={{ fontWeight: pdfPreview.mode === 'detail' ? 'bold' : 'normal' }} onClick={() => setPdfPreview((p) => ({ ...p, mode: 'detail' }))}>Detail</button>
+              <button type="button" className="qbd-btn" style={{ fontWeight: pdfPreview.mode === 'both' ? 'bold' : 'normal' }} onClick={() => setPdfPreview((p) => ({ ...p, mode: 'both' }))}>Both</button>
               <span className="sp" />
-              <a className="qbd-btn" href={pdfPreview.url} download={`Reconciliation_${stmtDate}_${pdfPreview.mode}.pdf`} style={{ textDecoration: 'none' }}>
-                Export PDF
-              </a>
-              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={() => {
-                URL.revokeObjectURL(pdfPreview.url);
-                setPdfPreview(null);
-              }}>Close</button>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={exportReconPdf}>
+                {reportBusy ? 'Building PDF…' : 'Export PDF'}
+              </button>
+              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={() => setPdfPreview(null)}>Close</button>
             </div>
-            <div className="qbd-wbody" style={{ flex: 1, minHeight: 0, padding: 0, background: '#525659' }}>
-              <iframe title="Reconciliation preview" src={pdfPreview.url} style={{ width: '100%', height: '100%', border: 0 }} />
+            <div className="qbd-recon-rep-body" style={{ flex: 1, minHeight: 0 }}>
+              {(() => {
+                const full = pdfPreview.full;
+                const summary = full.summary || {};
+                const detail = full.detail || {};
+                const pl = summary.paymentsLabel || 'Checks and Payments';
+                const dl = summary.depositsLabel || 'Deposits and Credits';
+                const mode = pdfPreview.mode || 'both';
+                const showSummary = mode === 'summary' || mode === 'both';
+                const showDetail = mode === 'detail' || mode === 'both';
+                const Section = ({ title, rows }) => {
+                  const list = rows || [];
+                  if (!list.length) return null;
+                  const total = list.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+                  return (
+                    <div className="qbd-recon-rep-section">
+                      <div className="qbd-recon-rep-h">{title} ({list.length})</div>
+                      <table className="qbd-reg">
+                        <thead><tr><th className="qbd-d">DATE</th><th>MEMO</th><th className="qbd-amt">AMOUNT</th></tr></thead>
+                        <tbody>
+                          {list.map((r) => (
+                            <tr key={r.glId || `${r.date}-${r.amount}`}>
+                              <td className="qbd-d">{fmtReconDate(r.date)}</td>
+                              <td>{r.description || ''}</td>
+                              <td className="qbd-amt">{fmt(r.amount)}</td>
+                            </tr>
+                          ))}
+                          <tr style={{ fontWeight: 'bold', background: '#eef4fb' }}>
+                            <td colSpan={2}>Total</td>
+                            <td className="qbd-amt">{fmt(total)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                };
+                return (
+                  <>
+                    <div className="qbd-recon-rep-title">
+                      <div><strong>{full.account_number} · {leafLabel(full.account_name)}</strong></div>
+                      <div className="qbd-muted">Period ending {fmtReconDate(full.statement_date)}</div>
+                    </div>
+                    {showSummary && (
+                      <div className="qbd-recon-rep-summary">
+                        <div className="sum-row"><span>Beginning Balance</span><span>{fmt(summary.beginningBalance)}</span></div>
+                        <div className="sum-row"><span>{pl} cleared</span><span>{fmt(summary.cleared?.paymentsTotal)}</span></div>
+                        <div className="sum-row"><span>{dl} cleared</span><span>{fmt(summary.cleared?.depositsTotal)}</span></div>
+                        <div className="sum-row sum-total"><span>Cleared Balance</span><span>{fmt(summary.clearedBalance)}</span></div>
+                        <div className="sum-row sum-total"><span>Ending Balance</span><span>{fmt(summary.endingBalance)}</span></div>
+                        {summary.statementEndingBalance != null && (
+                          <div className="sum-row"><span>Statement Ending</span><span>{fmt(summary.statementEndingBalance)}</span></div>
+                        )}
+                      </div>
+                    )}
+                    {showDetail && (
+                      <>
+                        <div className="qbd-recon-rep-h">Cleared</div>
+                        <Section title={pl} rows={detail.cleared?.payments} />
+                        <Section title={dl} rows={detail.cleared?.deposits} />
+                        <div className="qbd-recon-rep-h">Uncleared</div>
+                        <Section title={pl} rows={detail.uncleared?.payments} />
+                        <Section title={dl} rows={detail.uncleared?.deposits} />
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

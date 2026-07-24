@@ -153,6 +153,7 @@ export const reconReportAPI = {
     params: { entityId, accountId: accountId || undefined },
   }),
   get: (id) => client.get(`/api/reconciliation/reports/${id}`),
+  generate: (body) => client.post('/api/reconciliation/reports/generate', body),
   async _pdfBlob(url, opts = {}) {
     const token = localStorage.getItem('token');
     const res = await fetch(url, {

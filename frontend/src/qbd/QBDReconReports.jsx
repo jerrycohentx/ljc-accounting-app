@@ -4,8 +4,52 @@ import { useEntity } from './EntityContext';
 import { reconReportAPI } from '../services/api';
 import { fmt, leafLabel, fmtReconDate } from './helpers';
 
-/** Full-screen in-app PDF preview (view without downloading). */
-function ReconPdfPreviewModal({ title, pdfUrl, busy, onClose, onDownload, onModeChange, mode }) {
+function LineTable({ title, rows, paymentsLabel }) {
+  const list = rows || [];
+  if (!list.length) return null;
+  const total = list.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  return (
+    <div className="qbd-recon-rep-section">
+      <div className="qbd-recon-rep-h">{title} ({list.length})</div>
+      <table className="qbd-reg">
+        <thead>
+          <tr>
+            <th className="qbd-d">DATE</th>
+            <th>TYPE</th>
+            <th>MEMO</th>
+            <th className="qbd-amt">AMOUNT</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((r) => (
+            <tr key={r.glId || `${r.date}-${r.amount}-${r.description}`}>
+              <td className="qbd-d">{fmtReconDate(r.date)}</td>
+              <td>{r.type || ''}</td>
+              <td>{r.description || r.name || ''}</td>
+              <td className="qbd-amt">{fmt(r.amount)}</td>
+            </tr>
+          ))}
+          <tr style={{ fontWeight: 'bold', background: '#eef4fb' }}>
+            <td colSpan={3}>Total {paymentsLabel || title}</td>
+            <td className="qbd-amt">{fmt(total)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Instant HTML preview from archived report JSON (no Playwright wait). */
+function ReconHtmlPreviewModal({ title, full, mode, busy, exportBusy, onClose, onModeChange, onExport }) {
+  const summary = full?.summary || {};
+  const detail = full?.detail || {};
+  const pl = summary.paymentsLabel || detail.paymentsLabel || 'Checks and Payments';
+  const dl = summary.depositsLabel || detail.depositsLabel || 'Deposits and Credits';
+  const showSummary = mode === 'summary' || mode === 'both';
+  const showDetail = mode === 'detail' || mode === 'both';
+  const cleared = detail.cleared || {};
+  const uncleared = detail.uncleared || {};
+
   return (
     <div className="qbd-modal-backdrop" onClick={onClose}>
       <div
@@ -30,7 +74,7 @@ function ReconPdfPreviewModal({ title, pdfUrl, busy, onClose, onDownload, onMode
               key={m}
               type="button"
               className="qbd-btn"
-              disabled={busy || mode === m}
+              disabled={busy}
               style={{ fontWeight: mode === m ? 'bold' : 'normal', background: mode === m ? '#dce8f5' : undefined }}
               onClick={() => onModeChange(m)}
             >
@@ -38,24 +82,84 @@ function ReconPdfPreviewModal({ title, pdfUrl, busy, onClose, onDownload, onMode
             </button>
           ))}
           <span className="sp" />
-          <button type="button" className="qbd-btn" disabled={busy || !pdfUrl} onClick={onDownload}>
-            Export PDF
+          <button type="button" className="qbd-btn" disabled={exportBusy || !full} onClick={onExport}>
+            {exportBusy ? 'Building PDF…' : 'Export PDF'}
           </button>
           <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={onClose}>
             Close
           </button>
         </div>
-        <div className="qbd-wbody" style={{ flex: 1, minHeight: 0, padding: 0, background: '#525659' }}>
-          {busy && !pdfUrl ? (
-            <div className="qbd-loading" style={{ color: '#fff', padding: 40 }}>Preparing reconciliation preview…</div>
-          ) : pdfUrl ? (
-            <iframe
-              title="Reconciliation preview"
-              src={pdfUrl}
-              style={{ width: '100%', height: '100%', border: 0, background: '#525659' }}
-            />
+        <div className="qbd-recon-rep-body" style={{ flex: 1, minHeight: 0 }}>
+          {busy && !full ? (
+            <div className="qbd-loading">Loading reconciliation…</div>
+          ) : !full ? (
+            <div className="qbd-muted">No preview available.</div>
           ) : (
-            <div className="qbd-muted" style={{ color: '#fff', padding: 40 }}>No preview available.</div>
+            <>
+              <div className="qbd-recon-rep-title">
+                <div>
+                  <strong>
+                    {full.account_number} · {leafLabel(full.account_name)}
+                  </strong>
+                </div>
+                <div className="qbd-muted">
+                  Period ending {fmtReconDate(full.statement_date)}
+                  {full.is_closed ? ' · Closed' : ' · Open'}
+                </div>
+              </div>
+
+              {showSummary && (
+                <div className="qbd-recon-rep-summary">
+                  <div className="sum-row"><span>Beginning Balance</span><span>{fmt(summary.beginningBalance)}</span></div>
+                  <div className="sum-row">
+                    <span>{pl} cleared ({summary.cleared?.paymentsCount || 0})</span>
+                    <span>{fmt(summary.cleared?.paymentsTotal)}</span>
+                  </div>
+                  <div className="sum-row">
+                    <span>{dl} cleared ({summary.cleared?.depositsCount || 0})</span>
+                    <span>{fmt(summary.cleared?.depositsTotal)}</span>
+                  </div>
+                  <div className="sum-row sum-total"><span>Cleared Balance</span><span>{fmt(summary.clearedBalance)}</span></div>
+                  {(summary.uncleared?.paymentsCount || 0) + (summary.uncleared?.depositsCount || 0) > 0 && (
+                    <>
+                      <div className="sum-row">
+                        <span>Uncleared {pl} ({summary.uncleared?.paymentsCount || 0})</span>
+                        <span>{fmt(summary.uncleared?.paymentsTotal)}</span>
+                      </div>
+                      <div className="sum-row">
+                        <span>Uncleared {dl} ({summary.uncleared?.depositsCount || 0})</span>
+                        <span>{fmt(summary.uncleared?.depositsTotal)}</span>
+                      </div>
+                      <div className="sum-row sum-total">
+                        <span>Register as of statement</span>
+                        <span>{fmt(summary.registerBalance)}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="sum-row sum-total"><span>Ending Balance</span><span>{fmt(summary.endingBalance)}</span></div>
+                  {summary.statementEndingBalance != null && (
+                    <div className="sum-row">
+                      <span>Statement Ending</span>
+                      <span>{fmt(summary.statementEndingBalance)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {showDetail && (
+                <>
+                  <div className="qbd-recon-rep-h">Cleared Transactions</div>
+                  <LineTable title={pl} rows={cleared.payments} paymentsLabel={pl} />
+                  <LineTable title={dl} rows={cleared.deposits} paymentsLabel={dl} />
+                  <div className="qbd-recon-rep-h" style={{ marginTop: 12 }}>Uncleared Transactions</div>
+                  <LineTable title={pl} rows={uncleared.payments} paymentsLabel={pl} />
+                  <LineTable title={dl} rows={uncleared.deposits} paymentsLabel={dl} />
+                  {!(uncleared.payments || []).length && !(uncleared.deposits || []).length && (
+                    <div className="qbd-muted" style={{ padding: '4px 0' }}>None</div>
+                  )}
+                </>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -75,7 +179,8 @@ export default function QBDReconReports() {
   const [busyKey, setBusyKey] = useState(null);
   const [bankKey, setBankKey] = useState('');
   const [yearKey, setYearKey] = useState('');
-  const [preview, setPreview] = useState(null); // { report, mode, url }
+  const [preview, setPreview] = useState(null); // { report, mode, full }
+  const [exportBusy, setExportBusy] = useState(false);
 
   const load = useCallback(() => {
     if (!entityId) return;
@@ -87,10 +192,6 @@ export default function QBDReconReports() {
   }, [entityId]);
 
   useEffect(() => { load(); }, [load]);
-
-  useEffect(() => () => {
-    if (preview?.url) URL.revokeObjectURL(preview.url);
-  }, [preview?.url]);
 
   const banks = useMemo(() => {
     const map = new Map();
@@ -151,16 +252,13 @@ export default function QBDReconReports() {
   };
 
   const openPreview = async (report, mode = 'both') => {
-    const key = `${report.id}:preview:${mode}`;
-    setBusyKey(key);
-    setPreview({ report, mode, url: null });
+    setBusyKey(`${report.id}:preview`);
+    setPreview({ report, mode, full: null });
     try {
-      const blob = await reconReportAPI.fetchPdfBlob(report.id, mode);
-      const url = URL.createObjectURL(blob);
-      setPreview((prev) => {
-        if (prev?.url) URL.revokeObjectURL(prev.url);
-        return { report, mode, url };
-      });
+      const r = await reconReportAPI.get(report.id);
+      const full = r.data?.report || r.data;
+      if (!full) throw new Error('Report not found');
+      setPreview({ report, mode, full });
     } catch (e) {
       setPreview(null);
       showToast && showToast('Could not open the preview — try again in a moment.');
@@ -169,26 +267,18 @@ export default function QBDReconReports() {
     }
   };
 
-  const changePreviewMode = async (mode) => {
-    if (!preview?.report || preview.mode === mode) return;
-    await openPreview(preview.report, mode);
-  };
-
   const download = async (report, mode) => {
-    const key = `${report.id}:dl:${mode}`;
-    setBusyKey(key);
+    setExportBusy(true);
+    setBusyKey(`${report.id}:dl:${mode}`);
     try {
       await reconReportAPI.downloadPdf(report.id, mode, fileNameFor(report, mode));
+      showToast && showToast('PDF downloaded.');
     } catch (e) {
       showToast && showToast('Could not generate the PDF — try again in a moment.');
     } finally {
+      setExportBusy(false);
       setBusyKey(null);
     }
-  };
-
-  const closePreview = () => {
-    if (preview?.url) URL.revokeObjectURL(preview.url);
-    setPreview(null);
   };
 
   return (
@@ -197,7 +287,7 @@ export default function QBDReconReports() {
       <div className="qbd-wbody">
         <div style={{ color: '#5a6a7a', marginBottom: 12, fontSize: 13 }}>
           Organized like your bank folders: <strong>Bank → Year → reconciliations</strong>.
-          Click <strong>Preview</strong> to view on screen, or Export to download the PDF.
+          <strong> Preview</strong> opens instantly on screen; <strong>Export</strong> builds the PDF file.
         </div>
 
         {loading ? (
@@ -286,11 +376,9 @@ export default function QBDReconReports() {
                           disabled={!!busyKey}
                           onClick={() => openPreview(r, 'both')}
                         >
-                          {busyKey === `${r.id}:preview:both` || busyKey === `${r.id}:preview:summary` || busyKey === `${r.id}:preview:detail`
-                            ? '…'
-                            : 'Preview'}
+                          {busyKey === `${r.id}:preview` ? '…' : 'Preview'}
                         </button>{' '}
-                        <button type="button" className="qbd-btn" disabled={!!busyKey} onClick={() => download(r, 'both')}>
+                        <button type="button" className="qbd-btn" disabled={!!busyKey || exportBusy} onClick={() => download(r, 'both')}>
                           {busyKey === `${r.id}:dl:both` ? '…' : 'Export'}
                         </button>
                       </td>
@@ -309,14 +397,15 @@ export default function QBDReconReports() {
       </div>
 
       {preview && (
-        <ReconPdfPreviewModal
+        <ReconHtmlPreviewModal
           title={`Reconciliation Preview — ${preview.report.account_number} · ${fmtReconDate(preview.report.statement_date)}`}
-          pdfUrl={preview.url}
-          busy={!!busyKey}
+          full={preview.full}
           mode={preview.mode}
-          onClose={closePreview}
-          onModeChange={changePreviewMode}
-          onDownload={() => download(preview.report, preview.mode)}
+          busy={!!busyKey}
+          exportBusy={exportBusy}
+          onClose={() => setPreview(null)}
+          onModeChange={(m) => setPreview((p) => (p ? { ...p, mode: m } : p))}
+          onExport={() => download(preview.report, preview.mode)}
         />
       )}
     </div>
