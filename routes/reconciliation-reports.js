@@ -5,13 +5,29 @@ import {
   saveReconciliationReport,
   listReconciliationReports,
   getReconciliationReport,
+  pruneSupersededReconciliationReports,
 } from '../lib/reconciliation-report.js';
 import { renderReconciliationReportPdf } from '../lib/reconciliation-report-pdf.js';
+import { bankFolderMeta } from '../config/recon-bank-folders.js';
+import { normalizeIsoDate } from '../lib/bank-statement-view.js';
 
 const router = express.Router();
 
 function safeFilePart(s) {
   return String(s || '').replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '') || 'account';
+}
+
+function withFolderMeta(row) {
+  const sd = normalizeIsoDate(row.statement_date) || String(row.statement_date).slice(0, 10);
+  const meta = bankFolderMeta(row.account_number);
+  return {
+    ...row,
+    statement_date: sd,
+    bankFolder: meta.bankFolder,
+    bankLabel: meta.shortLabel,
+    year: sd.slice(0, 4),
+    reconciliationsFolder: meta.reconciliationsFolder,
+  };
 }
 
 /**
@@ -48,14 +64,98 @@ router.post('/generate', async (req, res) => {
   }
 });
 
-/** GET /api/reconciliation/reports?entityId=&accountId= -- history list for an entity (optionally one account). */
+/** GET /api/reconciliation/reports?entityId=&accountId=&canonicalOnly=1 -- history list. */
 router.get('/', async (req, res) => {
   try {
     const { entityId, accountId } = req.query;
     if (!entityId) return res.status(400).json({ error: 'entityId is required' });
+    const canonicalOnly = String(req.query.canonicalOnly ?? '1') !== '0';
     const db = await getDatabase();
-    const reports = await listReconciliationReports(db, { entityId, accountId: accountId || null });
-    res.json({ reports });
+    const reports = await listReconciliationReports(db, {
+      entityId,
+      accountId: accountId || null,
+      canonicalOnly,
+    });
+    res.json({
+      reports: (reports || []).map(withFolderMeta),
+      organization: 'Bank → Year → reconciliations (one report per statement period)',
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/reconciliation/reports/prune-duplicates
+ * Body: { entityId } — delete superseded archives (keep one Closed per account+date).
+ */
+router.post('/prune-duplicates', async (req, res) => {
+  try {
+    const entityId = req.body?.entityId;
+    if (!entityId) return res.status(400).json({ error: 'entityId required' });
+    const db = await getDatabase();
+    const result = await pruneSupersededReconciliationReports(db, { entityId });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/reconciliation/reports/refresh-closed
+ * Rebuild+save the authoritative Closed archive for each closed session in range.
+ * Body: { entityId, accountNumbers?: string[], fromDate?, toDate? }
+ */
+router.post('/refresh-closed', async (req, res) => {
+  try {
+    const { entityId, accountNumbers = null, fromDate = '2026-01-01', toDate = '2026-06-30' } = req.body || {};
+    if (!entityId) return res.status(400).json({ error: 'entityId required' });
+    const db = await getDatabase();
+    const params = [entityId, fromDate, toDate];
+    let sql = `
+      SELECT s.id, s.account_id, s.statement_date, a.account_number
+      FROM bank_reconciliation_sessions s
+      JOIN accounts a ON a.id = s.account_id
+      WHERE s.entity_id = ? AND s.status = 'CLOSED' AND ABS(COALESCE(s.difference,0)) < 0.005
+        AND s.statement_date >= ? AND s.statement_date <= ?`;
+    if (accountNumbers?.length) {
+      sql += ` AND a.account_number IN (${accountNumbers.map(() => '?').join(',')})`;
+      params.push(...accountNumbers.map(String));
+    }
+    sql += ' ORDER BY a.account_number, s.statement_date';
+    const sessions = await db.all(sql, params);
+    const saved = [];
+    for (const s of sessions || []) {
+      const report = await buildReconciliationReport(db, {
+        entityId,
+        accountId: s.account_id,
+        statementDate: normalizeIsoDate(s.statement_date) || String(s.statement_date).slice(0, 10),
+      });
+      const sess = await db.get(
+        'SELECT ending_balance, beginning_balance FROM bank_reconciliation_sessions WHERE id = ?',
+        [s.id]
+      );
+      if (sess) {
+        report.summary.statementEndingBalance = Number(sess.ending_balance);
+        report.summary.beginningBalance = Number(sess.beginning_balance);
+        report.summary.clearedBalance = Number(sess.ending_balance);
+      }
+      report.meta.isClosed = true;
+      report.meta.sessionId = s.id;
+      const id = await saveReconciliationReport(db, report, { userId: req.user?.id || null });
+      saved.push({
+        id,
+        accountNumber: s.account_number,
+        statementDate: normalizeIsoDate(s.statement_date),
+        ending: report.summary.statementEndingBalance ?? report.summary.endingBalance,
+        folder: withFolderMeta({
+          account_number: s.account_number,
+          statement_date: s.statement_date,
+        }),
+      });
+    }
+    const pruned = await pruneSupersededReconciliationReports(db, { entityId });
+    res.json({ saved, pruned });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
