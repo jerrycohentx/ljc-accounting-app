@@ -1,6 +1,9 @@
 /**
  * Open the source document behind a reconciliation line.
- * Prefer a JE-attached file; otherwise the stored bank-statement PDF for the period.
+ *
+ * Line drill-down opens ONLY a file attached to that journal entry
+ * (receipt, check image, mgmt report, etc.). It does NOT open the bank
+ * statement PDF — that is the period document, not the line's source.
  */
 import { journalAPI, mgmtReportAPI, bankReconAPI } from '../services/api';
 
@@ -11,6 +14,7 @@ function base64ToObjectUrl(b64, mime = 'application/pdf') {
   return URL.createObjectURL(new Blob([bytes], { type: mime }));
 }
 
+/** Explicit "view statement" action (toolbar) — not used for line drill-down. */
 export async function openStatementPdf(entityId, accountId, statementDate) {
   if (!entityId || !accountId || !statementDate) return false;
   const r = await bankReconAPI.statementFile(entityId, accountId, statementDate);
@@ -41,36 +45,28 @@ export async function openJournalSourceDocument(entityId, journalEntryId) {
 }
 
 /**
- * Drill a recon report/worksheet line to its source document.
- * @returns {{ opened: boolean, journal?: object|null, kind?: string }}
+ * Drill a recon line to its attached source document only.
+ * Never opens the bank statement PDF.
+ * @returns {{ opened: boolean, journal?: object|null, kind?: string|null }}
  */
 export async function drillReconLineSource({
   entityId,
-  accountId,
-  statementDate,
   journalEntryId,
   glId = null,
 }) {
   let jeId = journalEntryId || null;
-  let acctId = accountId || null;
   if (!jeId && glId) {
     try {
       const resolved = await bankReconAPI.resolveGl(entityId, glId);
       jeId = resolved.data?.journalEntryId || null;
-      if (!acctId && resolved.data?.accountId) acctId = resolved.data.accountId;
     } catch {
       /* GL may be missing on older archives */
     }
   }
 
-  if (jeId) {
-    const jeResult = await openJournalSourceDocument(entityId, jeId);
-    if (jeResult.opened) return jeResult;
-    const stmtOk = await openStatementPdf(entityId, acctId, statementDate);
-    if (stmtOk) return { opened: true, journal: jeResult.journal, kind: 'statement' };
-    return { opened: false, journal: jeResult.journal, kind: null };
-  }
-  const stmtOk = await openStatementPdf(entityId, acctId, statementDate);
-  if (stmtOk) return { opened: true, journal: null, kind: 'statement' };
-  return { opened: false, journal: null, kind: null };
+  if (!jeId) return { opened: false, journal: null, kind: null };
+
+  const jeResult = await openJournalSourceDocument(entityId, jeId);
+  if (jeResult.opened) return jeResult;
+  return { opened: false, journal: jeResult.journal, kind: null };
 }

@@ -184,7 +184,7 @@ function ReconHtmlPreviewModal({
                 <div className="qbd-muted">
                   Period ending {fmtReconDate(full.statement_date)}
                   {full.is_closed ? ' · Closed' : ' · Open'}
-                  {showDetail ? ' · Double-click a line to open its source document' : ''}
+                  {showDetail ? ' · Double-click a line to open its attached source document' : ''}
                 </div>
               </div>
 
@@ -369,21 +369,16 @@ export default function QBDReconReports() {
     try {
       const result = await drillReconLineSource({
         entityId,
-        accountId: preview.full.account_id || preview.report.account_id,
-        statementDate: preview.full.statement_date || preview.report.statement_date,
         journalEntryId: line.journalEntryId || line.journal_entry_id || null,
         glId: line.glId || line.id || null,
       });
       if (result.opened) {
-        if (result.journal) setDrillEntry(result.journal);
-        showToast && showToast(
-          result.kind === 'statement' ? 'Opened bank statement.' : 'Opened source document.'
-        );
+        showToast && showToast('Opened source document.');
         return;
       }
       if (result.journal) {
         setDrillEntry(result.journal);
-        showToast && showToast('No attached file — showing the journal entry.');
+        showToast && showToast('No source document attached to this entry yet.');
         return;
       }
       showToast && showToast('No source document on file for this line yet.');

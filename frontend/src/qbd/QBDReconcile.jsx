@@ -720,43 +720,33 @@ export default function QBDReconcile() {
 
   const drillEntryOpen = (entry) => {
     const jeId = entry?.journal_entry_id || entry?.journalEntryId;
-    if (!jeId) {
-      // Preview lines / statement-backed rows: open the period statement PDF.
-      drillReconLineSource({
-        entityId,
-        accountId,
-        statementDate: stmtDate || data?.statementDate,
-        journalEntryId: null,
-      })
-        .then((r) => {
-          if (r.opened) {
-            showToast && showToast('Opened bank statement.');
-            return;
-          }
-          showToast && showToast('No transaction detail available for this line');
-        })
-        .catch((e) => showToast && showToast(e.message || 'Could not open source document'));
+    const glId = entry?.id || entry?.glId || null;
+    if (!jeId && !glId) {
+      showToast && showToast('No transaction detail available for this line');
       return;
     }
     drillReconLineSource({
       entityId,
-      accountId,
-      statementDate: stmtDate || data?.statementDate,
-      journalEntryId: jeId,
+      journalEntryId: jeId || null,
+      glId,
     })
       .then((r) => {
         if (r.opened) {
-          if (r.journal) setDrillEntry(r.journal);
-          showToast && showToast(
-            r.kind === 'statement' ? 'Opened bank statement.' : 'Opened source document.'
-          );
+          showToast && showToast('Opened source document.');
           return;
         }
         if (r.journal) {
           setDrillEntry(r.journal);
+          showToast && showToast('No source document attached to this entry yet.');
           return;
         }
-        return journalAPI.get(entityId, jeId).then((res) => setDrillEntry(res.data));
+        if (jeId) {
+          return journalAPI.get(entityId, jeId).then((res) => {
+            setDrillEntry(res.data);
+            showToast && showToast('No source document attached to this entry yet.');
+          });
+        }
+        showToast && showToast('No source document on file for this line yet.');
       })
       .catch((e) => showToast && showToast('Could not open transaction: ' + (e.response?.data?.error || e.message)));
   };
