@@ -33,6 +33,7 @@ import {
   reopenBankReconciliation,
   ensureBankReconSessionTables,
 } from '../lib/bank-reconcile-session.js';
+import { rebuildLonestarRecons } from '../lib/rebuild-lonestar-recons.js';
 import { RECONCILIATION_TARGETS } from '../config/bank-import-targets.js';
 import { normalizeIsoDate } from '../lib/bank-statement-view.js';
 
@@ -288,6 +289,7 @@ router.get('/recon-session-diagnose', entityAccessMiddleware, async (req, res) =
        JOIN general_ledger gl ON gl.id = sl.gl_id
        LEFT JOIN journal_entries je ON je.id = gl.journal_entry_id
        WHERE sl.session_id = ?
+         AND (je.id IS NULL OR (je.status = 'POSTED' AND je.reversed_by_je_id IS NULL AND je.reverses_je_id IS NULL))
        ORDER BY gl.posting_date, gl.id`,
       [session.id]
     );
@@ -311,6 +313,37 @@ router.get('/recon-session-diagnose', entityAccessMiddleware, async (req, res) =
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * POST /api/entities/:entityId/accounting/rebuild-lonestar-recons
+ * Reopen + rebuild Lone Star (1001) from live statement lines (skip reversed JEs / OFX twins).
+ * Body: { confirm: "REBUILD-LONESTAR-<entityId>", throughMonth?: "YYYY-MM", reopen?: boolean }
+ */
+router.post(
+  '/rebuild-lonestar-recons',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const expected = `REBUILD-LONESTAR-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const db = await getDatabase();
+      const result = await rebuildLonestarRecons(db, {
+        entityId: req.entityId,
+        userId: req.user.id,
+        throughMonth: req.body?.throughMonth || '2026-05',
+        reopen: req.body?.reopen !== false,
+      });
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 /**
  * POST /api/entities/:entityId/accounting/rebuild-amex-recons
