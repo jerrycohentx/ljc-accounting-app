@@ -315,12 +315,15 @@ router.get('/recon-session-diagnose', entityAccessMiddleware, async (req, res) =
   }
 });
 
+/** In-memory status for long Simmons rebuilds (Render request timeout workaround). */
+const simmonsRebuildJobs = new Map();
+
 /**
  * POST /api/entities/:entityId/accounting/rebuild-simmons-recons
  * Reopen + rebuild Simmons (1000) from statement PDF lines.
  * January/February use statement dates 2026-02-01 / 2026-03-01 (not calendar month-end).
- * Body: { confirm: "REBUILD-SIMMONS-<entityId>", throughMonth?: "YYYY-MM", reopen?: boolean }
- * throughMonth is the cover month (e.g. 2026-03 rebuilds Jan–Mar).
+ * Body: { confirm: "REBUILD-SIMMONS-<entityId>", throughMonth?: "YYYY-MM", reopen?: boolean, async?: boolean }
+ * Default async=true so Render proxy does not 502 mid-rebuild. Poll GET .../rebuild-simmons-recons/status
  */
 router.post(
   '/rebuild-simmons-recons',
@@ -334,17 +337,72 @@ router.post(
           code: 'CONFIRM_REQUIRED',
         });
       }
-      const db = await getDatabase();
-      const result = await rebuildSimmonsRecons(db, {
+      const throughMonth = req.body?.throughMonth || '2026-03';
+      const reopen = req.body?.reopen !== false;
+      const runAsync = req.body?.async !== false;
+      const jobId = `simmons-${req.entityId}-${throughMonth}-${Date.now()}`;
+      const job = {
+        id: jobId,
         entityId: req.entityId,
-        userId: req.user.id,
-        throughMonth: req.body?.throughMonth || '2026-03',
-        reopen: req.body?.reopen !== false,
-      });
-      res.json(result);
+        throughMonth,
+        status: 'running',
+        startedAt: new Date().toISOString(),
+        result: null,
+        error: null,
+      };
+      simmonsRebuildJobs.set(req.entityId, job);
+
+      const run = async () => {
+        try {
+          const db = await getDatabase();
+          const result = await rebuildSimmonsRecons(db, {
+            entityId: req.entityId,
+            userId: req.user.id,
+            throughMonth,
+            reopen,
+          });
+          job.status = 'done';
+          job.finishedAt = new Date().toISOString();
+          job.result = result;
+        } catch (error) {
+          job.status = 'error';
+          job.finishedAt = new Date().toISOString();
+          job.error = error.message;
+        }
+      };
+
+      if (runAsync) {
+        setImmediate(() => {
+          run().catch((e) => {
+            job.status = 'error';
+            job.error = e.message;
+            job.finishedAt = new Date().toISOString();
+          });
+        });
+        return res.status(202).json({
+          accepted: true,
+          jobId,
+          throughMonth,
+          statusUrl: `/api/entities/${req.entityId}/accounting/rebuild-simmons-recons/status`,
+        });
+      }
+
+      await run();
+      if (job.status === 'error') return res.status(500).json({ error: job.error });
+      return res.json(job.result);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
+  }
+);
+
+router.get(
+  '/rebuild-simmons-recons/status',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    const job = simmonsRebuildJobs.get(req.entityId);
+    if (!job) return res.json({ status: 'none' });
+    res.json(job);
   }
 );
 
