@@ -343,6 +343,7 @@ export default function QBDReconcile() {
   // QuickBooks-style "Reconciliation Report" print picker (Summary / Detail / Both).
   const [showReportPicker, setShowReportPicker] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
+  const [pdfPreview, setPdfPreview] = useState(null); // { url, mode }
   const [showNum, setShowNum] = useState(() => localStorage.getItem('qbd-recon-col-num') !== 'false');
   const [showType, setShowType] = useState(() => localStorage.getItem('qbd-recon-col-type') !== 'false');
   const [showDate, setShowDate] = useState(() => localStorage.getItem('qbd-recon-col-date') !== 'false');
@@ -893,17 +894,27 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   };
 
-  // Open a QuickBooks-style reconciliation PDF (summary | detail | both) for the
-  // current account / period in a new tab, from which the user can print or
-  // "Save as PDF". Works whether or not the reconciliation has been closed.
+  // Preview a QuickBooks-style reconciliation PDF (summary | detail | both) in-app.
   const openReconPdf = (mode) => {
     if (!accountId || !stmtDate) { showToast && showToast('Pick an account and statement date first'); return; }
     setReportBusy(true);
-    reconReportAPI.renderPdf({ entityId, accountId, statementDate: stmtDate, mode })
-      .then(() => { setShowReportPicker(false); setReportModal(null); })
+    reconReportAPI.renderPdfBlob({ entityId, accountId, statementDate: stmtDate, mode })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        setPdfPreview((prev) => {
+          if (prev?.url) URL.revokeObjectURL(prev.url);
+          return { url, mode };
+        });
+        setShowReportPicker(false);
+        setReportModal(null);
+      })
       .catch((e) => showToast && showToast('Report failed: ' + (e.message || e)))
       .finally(() => setReportBusy(false));
   };
+
+  useEffect(() => () => {
+    if (pdfPreview?.url) URL.revokeObjectURL(pdfPreview.url);
+  }, [pdfPreview?.url]);
 
   const reportOverlay = (
     <>
@@ -916,7 +927,7 @@ export default function QBDReconcile() {
             </div>
             <div className="qbd-modal-body" style={{ fontSize: 12, lineHeight: 1.55 }}>
               <p><strong>{data?.account ? `${data.account.account_number} · ${leafLabel(data.account.account_name)}` : (accountId ? 'Selected account' : 'Pick an account')}</strong>{stmtDate ? <> — statement ending <strong>{stmtDate}</strong></> : null}</p>
-              <p>Select the type of reconciliation report you would like. It opens as a printable PDF — choose your printer or &ldquo;Save as PDF.&rdquo;</p>
+              <p>Preview the reconciliation on screen (Summary, Detail, or Both). You can export the PDF from the preview.</p>
             </div>
             <div className="qbd-foot" style={{ flexWrap: 'wrap', gap: 6 }}>
               <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('summary')}>Summary</button>
@@ -938,7 +949,7 @@ export default function QBDReconcile() {
             <div className="qbd-modal-body" style={{ fontSize: 12, lineHeight: 1.55 }}>
               <p style={{ color: '#2f6b3a', fontWeight: 'bold' }}>✓ Congratulations! Your account is balanced.</p>
               <p><strong>{reportModal.accountLabel}</strong> — statement ending <strong>{reportModal.statementDate}</strong></p>
-              <p>{reportModal.reconciledCount} transaction(s) reconciled. Select the type of reconciliation report you would like to see.</p>
+              <p>{reportModal.reconciledCount} transaction(s) reconciled. Preview the report on screen, or cancel.</p>
             </div>
             <div className="qbd-foot" style={{ flexWrap: 'wrap', gap: 6 }}>
               <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('summary')}>Summary</button>
@@ -946,6 +957,42 @@ export default function QBDReconcile() {
               <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} disabled={reportBusy} onClick={() => openReconPdf('both')}>Both</button>
               <span className="sp" />
               <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => setReportModal(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {pdfPreview?.url && (
+        <div className="qbd-modal-backdrop" onClick={() => {
+          URL.revokeObjectURL(pdfPreview.url);
+          setPdfPreview(null);
+        }}>
+          <div
+            className="qbd-window"
+            style={{ width: 'min(1100px, 96vw)', height: 'min(90vh, 920px)', margin: 0, display: 'flex', flexDirection: 'column' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="qbd-wtitle">
+              Reconciliation Preview — {stmtDate}
+              <span className="x" onClick={() => {
+                URL.revokeObjectURL(pdfPreview.url);
+                setPdfPreview(null);
+              }}>✕</span>
+            </div>
+            <div className="qbd-tools" style={{ gap: 6, flexWrap: 'wrap' }}>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('summary')}>Summary</button>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('detail')}>Detail</button>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('both')}>Both</button>
+              <span className="sp" />
+              <a className="qbd-btn" href={pdfPreview.url} download={`Reconciliation_${stmtDate}_${pdfPreview.mode}.pdf`} style={{ textDecoration: 'none' }}>
+                Export PDF
+              </a>
+              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={() => {
+                URL.revokeObjectURL(pdfPreview.url);
+                setPdfPreview(null);
+              }}>Close</button>
+            </div>
+            <div className="qbd-wbody" style={{ flex: 1, minHeight: 0, padding: 0, background: '#525659' }}>
+              <iframe title="Reconciliation preview" src={pdfPreview.url} style={{ width: '100%', height: '100%', border: 0 }} />
             </div>
           </div>
         </div>
@@ -1219,7 +1266,7 @@ export default function QBDReconcile() {
             </div>
           )}
         </div>
-        <button type="button" className="qbd-btn" disabled={busy || reportBusy} onClick={() => setShowReportPicker(true)} title="Print a QuickBooks-style reconciliation report (Summary / Detail / Both)">
+        <button type="button" className="qbd-btn" disabled={busy || reportBusy} onClick={() => setShowReportPicker(true)} title="Preview a QuickBooks-style reconciliation report on screen">
           {reportBusy ? 'Preparing…' : '🖨 Reconciliation Report'}
         </button>
         <span className="sp" />

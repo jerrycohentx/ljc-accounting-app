@@ -4,6 +4,65 @@ import { useEntity } from './EntityContext';
 import { reconReportAPI } from '../services/api';
 import { fmt, leafLabel, fmtReconDate } from './helpers';
 
+/** Full-screen in-app PDF preview (view without downloading). */
+function ReconPdfPreviewModal({ title, pdfUrl, busy, onClose, onDownload, onModeChange, mode }) {
+  return (
+    <div className="qbd-modal-backdrop" onClick={onClose}>
+      <div
+        className="qbd-window"
+        style={{
+          width: 'min(1100px, 96vw)',
+          height: 'min(90vh, 920px)',
+          margin: 0,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="qbd-wtitle">
+          {title}
+          <span className="x" onClick={onClose}>✕</span>
+        </div>
+        <div className="qbd-tools" style={{ gap: 6, flexWrap: 'wrap' }}>
+          <span className="qbd-muted">View</span>
+          {['summary', 'detail', 'both'].map((m) => (
+            <button
+              key={m}
+              type="button"
+              className="qbd-btn"
+              disabled={busy || mode === m}
+              style={{ fontWeight: mode === m ? 'bold' : 'normal', background: mode === m ? '#dce8f5' : undefined }}
+              onClick={() => onModeChange(m)}
+            >
+              {m === 'both' ? 'Both' : m === 'summary' ? 'Summary' : 'Detail'}
+            </button>
+          ))}
+          <span className="sp" />
+          <button type="button" className="qbd-btn" disabled={busy || !pdfUrl} onClick={onDownload}>
+            Export PDF
+          </button>
+          <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className="qbd-wbody" style={{ flex: 1, minHeight: 0, padding: 0, background: '#525659' }}>
+          {busy && !pdfUrl ? (
+            <div className="qbd-loading" style={{ color: '#fff', padding: 40 }}>Preparing reconciliation preview…</div>
+          ) : pdfUrl ? (
+            <iframe
+              title="Reconciliation preview"
+              src={pdfUrl}
+              style={{ width: '100%', height: '100%', border: 0, background: '#525659' }}
+            />
+          ) : (
+            <div className="qbd-muted" style={{ color: '#fff', padding: 40 }}>No preview available.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Browse archived reconciliations like Jerry's bank folders:
  *   Bank → Year → reconciliations
@@ -16,6 +75,7 @@ export default function QBDReconReports() {
   const [busyKey, setBusyKey] = useState(null);
   const [bankKey, setBankKey] = useState('');
   const [yearKey, setYearKey] = useState('');
+  const [preview, setPreview] = useState(null); // { report, mode, url }
 
   const load = useCallback(() => {
     if (!entityId) return;
@@ -27,6 +87,10 @@ export default function QBDReconReports() {
   }, [entityId]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => () => {
+    if (preview?.url) URL.revokeObjectURL(preview.url);
+  }, [preview?.url]);
 
   const banks = useMemo(() => {
     const map = new Map();
@@ -80,19 +144,51 @@ export default function QBDReconReports() {
     )
     : [];
 
-  const download = async (report, mode) => {
-    const key = `${report.id}:${mode}`;
-    setBusyKey(key);
+  const fileNameFor = (report, mode) => {
     const bank = (report.bankLabel || report.account_name || 'account').replace(/[^A-Za-z0-9]+/g, '_');
     const sd = String(report.statement_date).slice(0, 10);
-    const fname = `Reconciliation_${bank}_${sd}_${mode}.pdf`;
+    return `Reconciliation_${bank}_${sd}_${mode}.pdf`;
+  };
+
+  const openPreview = async (report, mode = 'both') => {
+    const key = `${report.id}:preview:${mode}`;
+    setBusyKey(key);
+    setPreview({ report, mode, url: null });
     try {
-      await reconReportAPI.downloadPdf(report.id, mode, fname);
+      const blob = await reconReportAPI.fetchPdfBlob(report.id, mode);
+      const url = URL.createObjectURL(blob);
+      setPreview((prev) => {
+        if (prev?.url) URL.revokeObjectURL(prev.url);
+        return { report, mode, url };
+      });
+    } catch (e) {
+      setPreview(null);
+      showToast && showToast('Could not open the preview — try again in a moment.');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const changePreviewMode = async (mode) => {
+    if (!preview?.report || preview.mode === mode) return;
+    await openPreview(preview.report, mode);
+  };
+
+  const download = async (report, mode) => {
+    const key = `${report.id}:dl:${mode}`;
+    setBusyKey(key);
+    try {
+      await reconReportAPI.downloadPdf(report.id, mode, fileNameFor(report, mode));
     } catch (e) {
       showToast && showToast('Could not generate the PDF — try again in a moment.');
     } finally {
       setBusyKey(null);
     }
+  };
+
+  const closePreview = () => {
+    if (preview?.url) URL.revokeObjectURL(preview.url);
+    setPreview(null);
   };
 
   return (
@@ -101,7 +197,7 @@ export default function QBDReconReports() {
       <div className="qbd-wbody">
         <div style={{ color: '#5a6a7a', marginBottom: 12, fontSize: 13 }}>
           Organized like your bank folders: <strong>Bank → Year → reconciliations</strong>.
-          One report per statement period (drafts and duplicates are cleaned up).
+          Click <strong>Preview</strong> to view on screen, or Export to download the PDF.
         </div>
 
         {loading ? (
@@ -171,7 +267,7 @@ export default function QBDReconReports() {
                     <th className="qbd-bal">BEGINNING</th>
                     <th className="qbd-bal">STATEMENT ENDING</th>
                     <th>STATUS</th>
-                    <th>PDF</th>
+                    <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -183,14 +279,19 @@ export default function QBDReconReports() {
                       <td className="qbd-bal">{fmt(r.ending_balance)}</td>
                       <td>{r.is_closed ? '✅ Closed' : 'Open'}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        <button type="button" className="qbd-btn" disabled={busyKey === `${r.id}:summary`} onClick={() => download(r, 'summary')}>
-                          {busyKey === `${r.id}:summary` ? '…' : 'Summary'}
+                        <button
+                          type="button"
+                          className="qbd-btn"
+                          style={{ fontWeight: 'bold' }}
+                          disabled={!!busyKey}
+                          onClick={() => openPreview(r, 'both')}
+                        >
+                          {busyKey === `${r.id}:preview:both` || busyKey === `${r.id}:preview:summary` || busyKey === `${r.id}:preview:detail`
+                            ? '…'
+                            : 'Preview'}
                         </button>{' '}
-                        <button type="button" className="qbd-btn" disabled={busyKey === `${r.id}:detail`} onClick={() => download(r, 'detail')}>
-                          {busyKey === `${r.id}:detail` ? '…' : 'Detail'}
-                        </button>{' '}
-                        <button type="button" className="qbd-btn" disabled={busyKey === `${r.id}:both`} onClick={() => download(r, 'both')}>
-                          {busyKey === `${r.id}:both` ? '…' : 'Both'}
+                        <button type="button" className="qbd-btn" disabled={!!busyKey} onClick={() => download(r, 'both')}>
+                          {busyKey === `${r.id}:dl:both` ? '…' : 'Export'}
                         </button>
                       </td>
                     </tr>
@@ -206,6 +307,18 @@ export default function QBDReconReports() {
           </div>
         )}
       </div>
+
+      {preview && (
+        <ReconPdfPreviewModal
+          title={`Reconciliation Preview — ${preview.report.account_number} · ${fmtReconDate(preview.report.statement_date)}`}
+          pdfUrl={preview.url}
+          busy={!!busyKey}
+          mode={preview.mode}
+          onClose={closePreview}
+          onModeChange={changePreviewMode}
+          onDownload={() => download(preview.report, preview.mode)}
+        />
+      )}
     </div>
   );
 }

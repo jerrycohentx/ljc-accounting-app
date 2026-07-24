@@ -153,38 +153,43 @@ export const reconReportAPI = {
     params: { entityId, accountId: accountId || undefined },
   }),
   get: (id) => client.get(`/api/reconciliation/reports/${id}`),
-  // Build + render a QuickBooks-style reconciliation PDF on demand (no saved id
-  // required) and open it in a new tab for printing / save-as-PDF. Uses fetch so
-  // the Bearer token is attached; a plain window.open would not authenticate.
-  async renderPdf({ entityId, accountId, statementDate, companyName, mode }) {
+  async _pdfBlob(url, opts = {}) {
     const token = localStorage.getItem('token');
-    const res = await fetch('/api/reconciliation/reports/render-pdf', {
-      method: 'POST',
+    const res = await fetch(url, {
+      ...opts,
       headers: {
-        'Content-Type': 'application/json',
+        ...(opts.headers || {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ entityId, accountId, statementDate, companyName, mode }),
     });
     if (!res.ok) {
-      let msg = 'Could not generate the reconciliation report';
+      let msg = 'Could not generate the reconciliation PDF';
       try { msg = (await res.json()).error || msg; } catch { /* non-JSON */ }
       throw new Error(msg);
     }
-    const blob = await res.blob();
+    return res.blob();
+  },
+  // Build + render a QuickBooks-style reconciliation PDF on demand (no saved id).
+  async renderPdfBlob({ entityId, accountId, statementDate, companyName, mode }) {
+    return this._pdfBlob('/api/reconciliation/reports/render-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityId, accountId, statementDate, companyName, mode }),
+    });
+  },
+  async renderPdf(args) {
+    const blob = await this.renderPdfBlob(args);
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return url;
   },
-  // Fetch the on-demand PDF (summary | detail | both) and save it. Uses fetch so
-  // the Bearer token is attached; a plain <a href> would not authenticate.
+  async fetchPdfBlob(id, mode) {
+    return this._pdfBlob(`/api/reconciliation/reports/${id}/pdf?mode=${mode || 'both'}`);
+  },
+  // Fetch the on-demand PDF (summary | detail | both) and save it.
   async downloadPdf(id, mode, filename) {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`/api/reconciliation/reports/${id}/pdf?mode=${mode}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) throw new Error('Could not generate the reconciliation PDF');
-    const blob = await res.blob();
+    const blob = await this.fetchPdfBlob(id, mode);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
