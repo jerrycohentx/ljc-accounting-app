@@ -55,7 +55,7 @@ services:
       - key: PLAID_SECRET
         sync: false
       - key: PLAID_ENV
-        value: sandbox
+        value: production
       - key: PLAID_SIMMONS_INSTITUTION_IDS
         value: ins_111008
       - key: PLAID_WEBHOOK_URL
