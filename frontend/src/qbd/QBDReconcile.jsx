@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { accountAPI, bankReconAPI, journalAPI, reconReportAPI } from '../services/api';
+import { accountAPI, bankReconAPI, journalAPI, reconReportAPI, mgmtReportAPI } from '../services/api';
 import { useBackupStatus } from './QBDBackupDialog';
 import {
   fmt,
@@ -15,6 +15,7 @@ import {
   computeReconcileTotals,
   entrySide,
 } from './helpers';
+import { drillReconLineSource } from './reconSourceDrill';
 
 const REGISTER_SPLIT_STORAGE_KEY = 'qbd-recon-register-split-pct';
 const HIDE_AFTER_END_KEY = 'qbd-recon-hide-after-end';
@@ -154,7 +155,7 @@ function RegisterTable({
               onMouseLeave={() => onHover && onHover(null)}
               onClick={() => { onSelect && onSelect(e.id); onToggle(e.id); }}
               onDoubleClick={() => onDrill && onDrill(e)}
-              title="Click to check/uncheck · double-click to open transaction"
+              title="Click to check/uncheck · double-click to open source document"
             >
               <td style={{ textAlign: 'center' }}>
                 <input
@@ -228,6 +229,20 @@ function TxnDetailModal({ entry, entityId, onClose }) {
           <span className="qbd-muted">Date</span><b>{fmtReconDate(entry.posting_date)}</b>
           <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{entry.description || ''}</span>
           <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {entry.status}</span>
+          {entry.sourceDocument?.hasFile && (
+            <button
+              type="button"
+              className="qbd-btn"
+              style={{ marginLeft: 12 }}
+              title={entry.sourceDocument.fileName || 'Source document'}
+              onClick={() => (entry.sourceDocument.documentId
+                ? journalAPI.viewDocument(entityId, entry.id)
+                : mgmtReportAPI.viewFile(entry.sourceDocument.mgmtReportId, entry.sourceDocument.fileName)
+              ).catch((e) => window.alert(e.message))}
+            >
+              View source document
+            </button>
+          )}
         </div>
         <div className="qbd-wbody">
           <table className="qbd-reg">
@@ -704,12 +719,45 @@ export default function QBDReconcile() {
   };
 
   const drillEntryOpen = (entry) => {
-    if (!entry?.journal_entry_id) {
-      showToast && showToast('No transaction detail available for this line');
+    const jeId = entry?.journal_entry_id || entry?.journalEntryId;
+    if (!jeId) {
+      // Preview lines / statement-backed rows: open the period statement PDF.
+      drillReconLineSource({
+        entityId,
+        accountId,
+        statementDate: stmtDate || data?.statementDate,
+        journalEntryId: null,
+      })
+        .then((r) => {
+          if (r.opened) {
+            showToast && showToast('Opened bank statement.');
+            return;
+          }
+          showToast && showToast('No transaction detail available for this line');
+        })
+        .catch((e) => showToast && showToast(e.message || 'Could not open source document'));
       return;
     }
-    journalAPI.get(entityId, entry.journal_entry_id)
-      .then((r) => setDrillEntry(r.data))
+    drillReconLineSource({
+      entityId,
+      accountId,
+      statementDate: stmtDate || data?.statementDate,
+      journalEntryId: jeId,
+    })
+      .then((r) => {
+        if (r.opened) {
+          if (r.journal) setDrillEntry(r.journal);
+          showToast && showToast(
+            r.kind === 'statement' ? 'Opened bank statement.' : 'Opened source document.'
+          );
+          return;
+        }
+        if (r.journal) {
+          setDrillEntry(r.journal);
+          return;
+        }
+        return journalAPI.get(entityId, jeId).then((res) => setDrillEntry(res.data));
+      })
       .catch((e) => showToast && showToast('Could not open transaction: ' + (e.response?.data?.error || e.message)));
   };
 
@@ -1024,7 +1072,17 @@ export default function QBDReconcile() {
                         <thead><tr><th className="qbd-d">DATE</th><th>MEMO</th><th className="qbd-amt">AMOUNT</th></tr></thead>
                         <tbody>
                           {list.map((r) => (
-                            <tr key={r.glId || `${r.date}-${r.amount}`}>
+                            <tr
+                              key={r.glId || `${r.date}-${r.amount}`}
+                              className="qbd-drill"
+                              style={{ cursor: 'pointer' }}
+                              title="Double-click to open source document"
+                              onDoubleClick={() => drillEntryOpen({
+                                journal_entry_id: r.journalEntryId || r.journal_entry_id,
+                                journalEntryId: r.journalEntryId || r.journal_entry_id,
+                                glId: r.glId,
+                              })}
+                            >
                               <td className="qbd-d">{fmtReconDate(r.date)}</td>
                               <td>{r.description || ''}</td>
                               <td className="qbd-amt">{fmt(r.amount)}</td>

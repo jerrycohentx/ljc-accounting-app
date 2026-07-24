@@ -787,6 +787,32 @@ router.get('/statement-file', async (req, res) => {
   }
 });
 
+/** Resolve a GL line to its journal entry (for recon preview drill-down). */
+router.get('/resolve-gl', async (req, res) => {
+  try {
+    const { entityId, glId } = req.query;
+    if (!entityId || !glId) {
+      return res.status(400).json({ error: 'entityId and glId required' });
+    }
+    const db = await getDatabase();
+    const row = await db.get(
+      `SELECT gl.id, gl.journal_entry_id, gl.account_id, gl.posting_date
+       FROM general_ledger gl
+       WHERE gl.id = ? AND gl.entity_id = ?`,
+      [glId, entityId]
+    );
+    if (!row) return res.status(404).json({ error: 'GL line not found' });
+    return res.json({
+      glId: row.id,
+      journalEntryId: row.journal_entry_id,
+      accountId: row.account_id,
+      postingDate: row.posting_date,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Failed to resolve GL line' });
+  }
+});
+
 // DELETE /api/reconciliation/bank/statement-file — remove a statement PDF saved
 // under the wrong account/period. Exists because the 2026-07-16 cross-account
 // upload incident left a Simmons PDF filed under Lone Star 3/31: the LINE

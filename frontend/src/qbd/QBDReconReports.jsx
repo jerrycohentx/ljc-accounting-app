@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { reconReportAPI } from '../services/api';
+import { reconReportAPI, journalAPI, mgmtReportAPI } from '../services/api';
 import { fmt, leafLabel, fmtReconDate } from './helpers';
+import { drillReconLineSource } from './reconSourceDrill';
 
-function LineTable({ title, rows, paymentsLabel }) {
+function LineTable({ title, rows, paymentsLabel, onDrillLine }) {
   const list = rows || [];
   if (!list.length) return null;
   const total = list.reduce((s, r) => s + (Number(r.amount) || 0), 0);
@@ -22,7 +23,13 @@ function LineTable({ title, rows, paymentsLabel }) {
         </thead>
         <tbody>
           {list.map((r) => (
-            <tr key={r.glId || `${r.date}-${r.amount}-${r.description}`}>
+            <tr
+              key={r.glId || `${r.date}-${r.amount}-${r.description}`}
+              className={onDrillLine ? 'qbd-drill' : undefined}
+              style={onDrillLine ? { cursor: 'pointer' } : undefined}
+              title={onDrillLine ? 'Double-click to open source document' : undefined}
+              onDoubleClick={() => onDrillLine && onDrillLine(r)}
+            >
               <td className="qbd-d">{fmtReconDate(r.date)}</td>
               <td>{r.type || ''}</td>
               <td>{r.description || r.name || ''}</td>
@@ -39,8 +46,80 @@ function LineTable({ title, rows, paymentsLabel }) {
   );
 }
 
+function TxnDetailModal({ entry, entityId, onClose }) {
+  const lines = entry.lines || [];
+  let td = 0;
+  let tc = 0;
+  return (
+    <div className="qbd-modal-backdrop" onClick={onClose}>
+      <div className="qbd-window" style={{ width: 680, maxHeight: '80vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
+        <div className="qbd-wtitle">
+          Transaction Detail — {entry.je_number}
+          <span className="x" onClick={onClose}>✕</span>
+        </div>
+        <div className="qbd-tools">
+          <span className="qbd-muted">Date</span><b>{fmtReconDate(entry.posting_date)}</b>
+          <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{entry.description || ''}</span>
+          <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {entry.status}</span>
+          {entry.sourceDocument?.hasFile && (
+            <button
+              type="button"
+              className="qbd-btn"
+              style={{ marginLeft: 12 }}
+              title={entry.sourceDocument.fileName || 'Source document'}
+              onClick={() => (entry.sourceDocument.documentId
+                ? journalAPI.viewDocument(entityId, entry.id)
+                : mgmtReportAPI.viewFile(entry.sourceDocument.mgmtReportId, entry.sourceDocument.fileName)
+              ).catch((e) => window.alert(e.message))}
+            >
+              View source document
+            </button>
+          )}
+        </div>
+        <div className="qbd-wbody">
+          <table className="qbd-reg">
+            <thead><tr><th>ACCOUNT</th><th className="qbd-amt">DEBIT</th><th className="qbd-amt">CREDIT</th></tr></thead>
+            <tbody>
+              {lines.map((l) => {
+                td += +l.debit || 0;
+                tc += +l.credit || 0;
+                return (
+                  <tr key={l.id}>
+                    <td>{l.account_number} · {(l.account_name || '').split(':').pop()}</td>
+                    <td className="qbd-amt">{(+l.debit) ? fmt(+l.debit) : ''}</td>
+                    <td className="qbd-amt">{(+l.credit) ? fmt(+l.credit) : ''}</td>
+                  </tr>
+                );
+              })}
+              <tr style={{ fontWeight: 'bold', background: '#eef4fb' }}>
+                <td>TOTAL</td>
+                <td className="qbd-amt">{fmt(td)}</td>
+                <td className="qbd-amt">{fmt(tc)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="qbd-foot">
+          <span className="sp" />
+          <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Instant HTML preview from archived report JSON (no Playwright wait). */
-function ReconHtmlPreviewModal({ title, full, mode, busy, exportBusy, onClose, onModeChange, onExport }) {
+function ReconHtmlPreviewModal({
+  title,
+  full,
+  mode,
+  busy,
+  exportBusy,
+  onClose,
+  onModeChange,
+  onExport,
+  onDrillLine,
+}) {
   const summary = full?.summary || {};
   const detail = full?.detail || {};
   const pl = summary.paymentsLabel || detail.paymentsLabel || 'Checks and Payments';
@@ -105,6 +184,7 @@ function ReconHtmlPreviewModal({ title, full, mode, busy, exportBusy, onClose, o
                 <div className="qbd-muted">
                   Period ending {fmtReconDate(full.statement_date)}
                   {full.is_closed ? ' · Closed' : ' · Open'}
+                  {showDetail ? ' · Double-click a line to open its source document' : ''}
                 </div>
               </div>
 
@@ -149,11 +229,11 @@ function ReconHtmlPreviewModal({ title, full, mode, busy, exportBusy, onClose, o
               {showDetail && (
                 <>
                   <div className="qbd-recon-rep-h">Cleared Transactions</div>
-                  <LineTable title={pl} rows={cleared.payments} paymentsLabel={pl} />
-                  <LineTable title={dl} rows={cleared.deposits} paymentsLabel={dl} />
+                  <LineTable title={pl} rows={cleared.payments} paymentsLabel={pl} onDrillLine={onDrillLine} />
+                  <LineTable title={dl} rows={cleared.deposits} paymentsLabel={dl} onDrillLine={onDrillLine} />
                   <div className="qbd-recon-rep-h" style={{ marginTop: 12 }}>Uncleared Transactions</div>
-                  <LineTable title={pl} rows={uncleared.payments} paymentsLabel={pl} />
-                  <LineTable title={dl} rows={uncleared.deposits} paymentsLabel={dl} />
+                  <LineTable title={pl} rows={uncleared.payments} paymentsLabel={pl} onDrillLine={onDrillLine} />
+                  <LineTable title={dl} rows={uncleared.deposits} paymentsLabel={dl} onDrillLine={onDrillLine} />
                   {!(uncleared.payments || []).length && !(uncleared.deposits || []).length && (
                     <div className="qbd-muted" style={{ padding: '4px 0' }}>None</div>
                   )}
@@ -181,6 +261,8 @@ export default function QBDReconReports() {
   const [yearKey, setYearKey] = useState('');
   const [preview, setPreview] = useState(null); // { report, mode, full }
   const [exportBusy, setExportBusy] = useState(false);
+  const [drillEntry, setDrillEntry] = useState(null);
+  const [drillBusy, setDrillBusy] = useState(false);
 
   const load = useCallback(() => {
     if (!entityId) return;
@@ -278,6 +360,37 @@ export default function QBDReconReports() {
     } finally {
       setExportBusy(false);
       setBusyKey(null);
+    }
+  };
+
+  const drillPreviewLine = async (line) => {
+    if (!preview?.full || drillBusy) return;
+    setDrillBusy(true);
+    try {
+      const result = await drillReconLineSource({
+        entityId,
+        accountId: preview.full.account_id || preview.report.account_id,
+        statementDate: preview.full.statement_date || preview.report.statement_date,
+        journalEntryId: line.journalEntryId || line.journal_entry_id || null,
+        glId: line.glId || line.id || null,
+      });
+      if (result.opened) {
+        if (result.journal) setDrillEntry(result.journal);
+        showToast && showToast(
+          result.kind === 'statement' ? 'Opened bank statement.' : 'Opened source document.'
+        );
+        return;
+      }
+      if (result.journal) {
+        setDrillEntry(result.journal);
+        showToast && showToast('No attached file — showing the journal entry.');
+        return;
+      }
+      showToast && showToast('No source document on file for this line yet.');
+    } catch (e) {
+      showToast && showToast(e.response?.data?.error || e.message || 'Could not open source document.');
+    } finally {
+      setDrillBusy(false);
     }
   };
 
@@ -406,7 +519,11 @@ export default function QBDReconReports() {
           onClose={() => setPreview(null)}
           onModeChange={(m) => setPreview((p) => (p ? { ...p, mode: m } : p))}
           onExport={() => download(preview.report, preview.mode)}
+          onDrillLine={drillPreviewLine}
         />
+      )}
+      {drillEntry && (
+        <TxnDetailModal entry={drillEntry} entityId={entityId} onClose={() => setDrillEntry(null)} />
       )}
     </div>
   );

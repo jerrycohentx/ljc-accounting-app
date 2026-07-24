@@ -145,6 +145,9 @@ export const bankReconAPI = {
   statementFile: (entityId, accountId, statementDate) => client.get('/api/reconciliation/bank/statement-file', {
     params: { entityId, accountId, statementDate },
   }),
+  resolveGl: (entityId, glId) => client.get('/api/reconciliation/bank/resolve-gl', {
+    params: { entityId, glId },
+  }),
   adjustment: (data) => client.post('/api/reconciliation/bank/adjustment', data),
 };
 
