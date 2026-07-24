@@ -32,7 +32,8 @@ export const ENTITY_ROLLUP_CONFIG = {
     mappings: [
       { pattern: /^simmons bank ckg-0260/i, accountNumber: '1030' },
       { pattern: /lone star ckg-7367|lone star bank checking|lone star money market/i, accountNumber: '1001' },
-      { pattern: /^csb-checking|^b1 bank ckg|^fidelity$|marketable securities|retirement accounts|subsidiaries:/i, accountNumber: '1010' },
+      { pattern: /^csb-checking/i, accountNumber: '1002' },
+      { pattern: /^b1 bank ckg|^fidelity$|marketable securities|retirement accounts|subsidiaries:/i, accountNumber: '1010' },
       { pattern: /^undeposited funds/i, accountNumber: '1100' },
       { pattern: /^accounts receivable|^centerpoint-/i, accountNumber: '1200' },
       { pattern: /notes receivable.*simmons dloc|notes receivable-lending:notes receivable-simmons dloc/i, accountNumber: '1310' },

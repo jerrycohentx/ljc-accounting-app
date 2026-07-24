@@ -9,6 +9,7 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '1000', name: 'Cash & Bank Accounts - Simmons', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1030', name: 'Cash:Simmons-Bank-Ckg-0260', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1001', name: 'Cash - Lone Star Bank', type: 'ASSET' },
+  { entity: 'ent-ljc', number: '1002', name: 'Cash - CSB Checking', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1010', name: 'Cash - Simmons Sub-Accounts (4177/4790/7036)', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1100', name: 'Undeposited Funds', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1200', name: 'Accounts Receivable', type: 'ASSET' },

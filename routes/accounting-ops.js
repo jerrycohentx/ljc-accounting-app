@@ -13,6 +13,7 @@ import { previewOpeningBalances, postOpeningBalances, parseOpeningBalanceCsv } f
 import { previewYearEndClose, postYearEndClose } from '../lib/year-end-close.js';
 import { runLonestarBalanceFixes } from '../lib/fix-lonestar-opening-balance.js';
 import { checkSuspenseAccounts } from '../lib/suspense-check.js';
+import { runCutoverYearClose } from '../lib/cutover-year-close.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -231,6 +232,51 @@ router.post('/year-end/close', [entityAccessMiddleware, requireRole('ADMIN', 'AC
   } catch (error) {
     if (/already posted|closed period/i.test(error.message)) {
       return res.status(409).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/entities/:entityId/accounting/cutover-year-close
+ * Full cutover-year close: $0 dormant-month recons → YEC → period close.
+ * Body: { year: 2025, confirm: "CLOSE-2025-<entityId>", memo? }
+ */
+router.post('/cutover-year-close', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    const year = Number(req.body?.year);
+    const confirm = req.body?.confirm;
+    const expected = `CLOSE-${year}-${req.entityId}`;
+    if (!year || confirm !== expected) {
+      return res.status(400).json({
+        error: `confirm must equal "${expected}"`,
+        code: 'CONFIRM_REQUIRED',
+      });
+    }
+    const db = await getDatabase();
+    const result = await runCutoverYearClose(db, {
+      entityId: req.entityId,
+      year,
+      userId: req.user.id,
+      memo: req.body?.memo || null,
+    });
+    if (!result.isClosed) {
+      return res.status(409).json({
+        error: 'Cutover close ran but integrity isClosed is still false',
+        code: 'PERIOD_INTEGRITY_BLOCKED',
+        ...result,
+      });
+    }
+    res.json({ message: `${year} closed`, ...result });
+  } catch (error) {
+    if (error.code === 'SUSPENSE_BLOCKED' || error.code === 'RECON_BLOCKED' || error.code === 'PERIOD_INTEGRITY_BLOCKED') {
+      return res.status(409).json({
+        error: error.message,
+        code: error.code,
+        suspense: error.suspense,
+        detail: error.detail,
+        integrity: error.integrity,
+      });
     }
     res.status(500).json({ error: error.message });
   }

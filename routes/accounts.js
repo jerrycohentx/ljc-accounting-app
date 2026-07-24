@@ -136,12 +136,30 @@ router.put('/:id', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
       return res.status(404).json({ error: 'Account not found' });
     }
 
+    const nextActive = isActive !== undefined ? isActive : account.is_active;
+    const deactivating =
+      (nextActive === false || nextActive === 0 || nextActive === '0') &&
+      (account.is_active === true || account.is_active === 1 || account.is_active === '1');
+    if (deactivating) {
+      const hasEntries = await db.get(
+        'SELECT COUNT(*) as count FROM general_ledger WHERE account_id = ?',
+        req.params.id
+      );
+      if (Number(hasEntries?.count || 0) > 0) {
+        return res.status(409).json({
+          error:
+            'Cannot deactivate an account that has general ledger history — it would drop from the trial balance and break the books.',
+          code: 'ACCOUNT_HAS_GL',
+        });
+      }
+    }
+
     await db.run(
       `UPDATE accounts 
        SET account_name = ?, description = ?, is_active = ?, parent_account_id = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND entity_id = ?`,
       [accountName || account.account_name, description || account.description, 
-       isActive !== undefined ? isActive : account.is_active, 
+       nextActive, 
        parentAccountId !== undefined ? parentAccountId : account.parent_account_id,
        req.params.id, req.entityId]
     );

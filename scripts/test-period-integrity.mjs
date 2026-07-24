@@ -7,6 +7,7 @@ import {
   statementCoversMonth,
   monitoredAccountNumbers,
   assertNotPlugJournal,
+  eachMonthInRange,
   PLUG_JOURNAL_SOURCES,
 } from '../lib/period-integrity.js';
 
@@ -15,6 +16,13 @@ assert.strictEqual(statementCoversMonth('2026-02-01', '2026-02-01', '2026-02-28'
 assert.strictEqual(statementCoversMonth('2026-01-31', '2026-01-01', '2026-01-31'), true, 'Jan 31 → January');
 assert.strictEqual(statementCoversMonth('2026-03-31', '2026-03-01', '2026-03-31'), true, 'Mar 31 → March');
 assert.strictEqual(statementCoversMonth('2026-03-01', '2026-02-01', '2026-02-28'), true, 'Mar 1 → February');
+
+const yearMonths = eachMonthInRange('2025-01-01', '2025-12-31');
+assert.strictEqual(yearMonths.length, 12, '2025 has 12 months');
+assert.strictEqual(yearMonths[0].periodStart, '2025-01-01');
+assert.strictEqual(yearMonths[0].periodEnd, '2025-01-31');
+assert.strictEqual(yearMonths[11].periodStart, '2025-12-01');
+assert.strictEqual(yearMonths[11].periodEnd, '2025-12-31');
 
 const ljc = monitoredAccountNumbers('ent-ljc');
 assert.ok(ljc.includes('1000'), 'Simmons monitored');
