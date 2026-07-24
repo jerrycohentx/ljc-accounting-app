@@ -106,6 +106,11 @@ Concretely, this means:
 - Assistants must call
   `GET /api/entities/:entityId/accounting/periods/integrity` and may only
   say a month is closed when **`isClosed: true`**. Chat memory is not proof.
+- **No equity / rollup plugs for tax or recon:** never post (or claim ready
+  based on) force-balance true-ups to **3900 Opening Balance Equity**, dumps
+  into **2999 / 1999** rollup accounts, or a QBO cutover rollup that was
+  balanced by plugging residual to 3900. `taxReturnReady` requires the **live
+  app ledger**, period integrity, and **$0** in plug/rollup/suspense accounts.
 
 ---
 *This file is the durable source of truth for these standing rules. Any

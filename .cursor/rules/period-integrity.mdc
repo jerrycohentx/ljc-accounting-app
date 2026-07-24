@@ -19,8 +19,11 @@ These rules override convenience. They exist because assistants previously claim
 ## No plug entries
 
 - Never create, suggest, or post `reconcile-adjustment` / force-balance / "enter adjustment" JEs.
+- Never post bank/card “true-up” or “ledger tie-out” entries to **3900 Opening Balance Equity** or **2999/1999** rollup accounts.
+- Never balance a QBO rollup trial balance by plugging residual to 3900.
 - The API returns **403 `PLUG_ENTRY_BLOCKED`** for that path. Do not work around it.
 - Fix real variances (missing txn, wrong account, duplicate) until bank recon difference is **$0.00**.
+- `taxReturnReady` must be **false** while plug/rollup/suspense accounts (1999, 2999, 3020, 3900, 3995, 1100, 1020, 1021) have non-zero balances, or while the tax package uses rollup-as-SOT instead of the live ledger.
 
 ## Period close
 
