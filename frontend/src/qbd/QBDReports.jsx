@@ -510,7 +510,24 @@ function StatementView({ data, nav, showCompare }) {
   return (
     <div className="qbd-rpt">
       <h2>{h.title}</h2>
-      <div className="sub">{h.companyName} · {periodText}</div>
+      <div className="sub">{h.companyName} · {periodText}{h.basis ? ` · ${h.basis}` : ''}</div>
+      {h.sourceNote && (
+        <div
+          style={{
+            margin: '10px 0 14px',
+            padding: '10px 12px',
+            background: '#fff8e1',
+            border: '1px solid #f0c36d',
+            borderRadius: 4,
+            fontSize: 13,
+            lineHeight: 1.45,
+            maxWidth: 720,
+          }}
+        >
+          <strong>Showing QBO year-end P&amp;L</strong>
+          <div style={{ marginTop: 4, color: '#5a4a20' }}>{h.sourceNote}</div>
+        </div>
+      )}
       <table>
         <thead>
           <tr>

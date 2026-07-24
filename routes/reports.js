@@ -6,6 +6,7 @@ import { entityAccessMiddleware } from '../middleware/auth.js';
 import { POSTED_GL_SUBQUERY, calculateAccountBalance } from '../lib/posted-gl.js';
 import reportAnalyticsRoutes from './report-analytics.js';
 import { buildBalanceSheet, buildProfitLoss, mergeStatements } from '../lib/financial-statement.js';
+import { buildProfitLossFromQboTb, isEmptyAppProfitLoss } from '../lib/qbo-profit-loss.js';
 import { deriveComparePeriod } from '../lib/report-comparison.js';
 import { renderFinancialStatementPdf } from '../lib/financial-statement-pdf.js';
 
@@ -28,9 +29,16 @@ async function resolveCompanyName(db, entityId) {
 async function buildStatement(db, entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd }) {
   const companyName = await resolveCompanyName(db, entityId);
   const isBS = reportType === 'balance_sheet';
-  const primary = isBS
+  let primary = isBS
     ? await buildBalanceSheet(db, { entityId, asOfDate, companyName })
     : await buildProfitLoss(db, { entityId, startDate, endDate, companyName });
+
+  // When app GL has no P&L activity for a full tax year (common for 2025 —
+  // loaded as 1/1/2026 openings), show the QBO YE trial-balance P&L instead.
+  if (!isBS && isEmptyAppProfitLoss(primary)) {
+    const qboPl = buildProfitLossFromQboTb(process.cwd(), entityId, { startDate, endDate, companyName });
+    if (qboPl) primary = qboPl;
+  }
 
   if (!compareMode || compareMode === 'none') return primary;
 
