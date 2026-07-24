@@ -25,9 +25,15 @@ These rules override convenience. They exist because assistants previously claim
 - Fix real variances (missing txn, wrong account, duplicate) until bank recon difference is **$0.00**.
 - `taxReturnReady` must be **false** while plug/rollup/suspense accounts (1999, 2999, 3020, 3900, 3995, 1100, 1020, 1021) have non-zero balances, or while the tax package uses rollup-as-SOT instead of the live ledger.
 
+## Cleared Balance = statement (hard)
+
+- A CLOSED recon is valid only when **live Cleared Balance** (beginning + session-locked lines) equals **statement ending**, not merely when the stored `difference` column is 0.
+- Cleared for a CLOSED session = `bank_reconciliation_session_lines` only. Orphan `RECONCILED` rows with `reconciliation_session_id IS NULL` must not inflate Cleared or keep a fake close.
+- Integrity code `CLEARED_NE_STATEMENT` means Cleared ≠ bank — treat as **not closed**; fix the session lines (never plug).
+
 ## Period close
 
-- `POST .../accounting/periods/close` refuses (**409**) unless every monitored bank/card account has a **CLOSED** reconciliation covering that month with **$0.00** difference and no plug JEs in the period.
+- `POST .../accounting/periods/close` refuses (**409**) unless every monitored bank/card account has a **CLOSED** reconciliation covering that month with **$0.00** live difference (Cleared = statement) and no plug JEs in the period.
 - Do not ask Jerry to "accept" a variance to close.
 
 ## Reports / narrative

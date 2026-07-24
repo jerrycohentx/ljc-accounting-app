@@ -26,6 +26,7 @@ import {
   correctIvymountRentalMispost,
   IVYMOUNT_CORR_CONFIRM,
 } from '../lib/correct-ivymount-rental-mispost.js';
+import { repairOrphanReconciledInClosedPeriods } from '../lib/recon-cleared-integrity.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -217,6 +218,29 @@ router.post(
       if (error.code === 'PLUG_ENTRY_BLOCKED') {
         return res.status(403).json({ error: error.message, code: error.code });
       }
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/entities/:entityId/accounting/repair-orphan-reconciled
+ * Unmark RECONCILED GL rows with null session_id inside CLOSED recon periods
+ * so Cleared Balance cannot be inflated past the statement.
+ * Body: { accountId?: string }
+ */
+router.post(
+  '/repair-orphan-reconciled',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const db = await getDatabase();
+      const result = await repairOrphanReconciledInClosedPeriods(db, {
+        entityId: req.entityId,
+        accountId: req.body?.accountId || null,
+      });
+      res.json(result);
+    } catch (error) {
       res.status(500).json({ error: error.message });
     }
   }
