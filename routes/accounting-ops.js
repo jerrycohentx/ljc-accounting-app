@@ -376,6 +376,7 @@ router.post('/close-h1-2026', [entityAccessMiddleware, requireRole('ADMIN', 'ACC
     const result = await closeH1_2026(db, {
       userId: req.user.id,
       clearSuspense: req.body?.clearSuspense !== false,
+      runImports: req.body?.runImports !== false,
     });
     const status = result.allClosed ? 200 : 409;
     res.status(status).json({
