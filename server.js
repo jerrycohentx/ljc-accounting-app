@@ -49,6 +49,7 @@ import { ingestLoanTrackerEvent } from './lib/loan-event-ingest.js';
 import { loanTrackerKeyMiddleware } from './middleware/loan-tracker-auth.js';
 import { syncAdminPhoneFromEnv } from './lib/user-phone.js';
 import { ensurePlaywrightBrowsers, getPlaywrightBrowsersPath } from './lib/playwright-browsers.js';
+import { isRebuildFreezeActive } from './lib/rebuild-freeze.js';
 
 dotenv.config();
 getPlaywrightBrowsersPath();
@@ -285,19 +286,16 @@ async function start() {
     // contaminated the Lone Star bank account, BEFORE any statement auto-load runs.
     await removeDeprecatedRules(db).catch((e) => console.warn('Rule cleanup skipped:', e.message));
     startAutoBackup();
-    // REBUILD FREEZE (2026-07-10): the 2026 books are being purged and re-imported
-    // cleanly. All auto-importers are paused so they cannot re-create duplicate
-    // transactions during the rebuild. Backups above stay ON. Re-enable by setting
-    // this flag back to false (or REBUILD_FREEZE=0) and redeploying once the clean
-    // re-import + reconciliation is complete.
-    const REBUILD_FREEZE = process.env.REBUILD_FREEZE !== '0';
-    if (REBUILD_FREEZE) {
-      console.log('⏸ REBUILD FREEZE active — auto-importers paused (statement/email/ACH/Plaid)');
+    // Auto-importers (email / OFX folder / ACH inbox / Plaid). Opt-in freeze only:
+    // set REBUILD_FREEZE=1 during a purge/rebuild. Default is ON (automatic).
+    if (isRebuildFreezeActive()) {
+      console.log('⏸ REBUILD FREEZE active (REBUILD_FREEZE=1) — auto-importers paused');
     } else {
       startStatementAutoLoad(getDatabase);
       startStatementEmailIngest(getDatabase);
       startAchJeInboxScan(getDatabase);
       startPlaidAutoSync(getDatabase);
+      console.log('✓ Auto-importers started (statement email, OFX folder, ACH inbox, Plaid)');
     }
   } catch (error) {
     console.error('Database initialization failed:', error);

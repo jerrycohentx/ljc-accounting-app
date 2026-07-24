@@ -76,6 +76,18 @@ services:
         value: https://ljc-accounting-app.onrender.com/api/email/gmail/callback
       - key: FRONTEND_URL
         value: https://ljc-accounting-app.onrender.com
+      - key: REBUILD_FREEZE
+        value: "0"
+      - key: STATEMENT_EMAIL_ENABLED
+        value: "1"
+      - key: STATEMENT_AUTO_LOAD_ENABLED
+        value: "1"
+      - key: PLAID_AUTO_SYNC_ENABLED
+        value: "1"
+      - key: STATEMENT_EMAIL_INTERVAL_HOURS
+        value: "6"
+      - key: PLAID_AUTO_SYNC_INTERVAL_HOURS
+        value: "24"
       - key: PLAYWRIGHT_BROWSERS_PATH
         value: /opt/render/project/src/.playwright-browsers
     healthCheckPath: /health
