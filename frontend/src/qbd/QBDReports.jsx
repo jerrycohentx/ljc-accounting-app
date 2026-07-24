@@ -526,6 +526,17 @@ function StatementView({ data, nav, showCompare }) {
         >
           <strong>Showing QBO year-end P&amp;L</strong>
           <div style={{ marginTop: 4, color: '#5a4a20' }}>{h.sourceNote}</div>
+          {Array.isArray(h.appliedAdjustments) && h.appliedAdjustments.length > 0 && (
+            <ul style={{ margin: '8px 0 0', paddingLeft: 18, color: '#5a4a20' }}>
+              {h.appliedAdjustments.map((a) => (
+                <li key={a.id}>
+                  Corrected {a.accountName}: removed {fmt(a.reduceRevenueBy)}
+                  {a.offsetAccountNumber ? ` → ${a.offsetAccountNumber}` : ''}
+                  {a.amountAfter != null ? ` (now ${fmt(a.amountAfter)})` : ''}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
       <table>

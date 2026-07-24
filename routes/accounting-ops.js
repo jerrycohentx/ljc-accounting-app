@@ -22,6 +22,10 @@ import {
   reclassOpeningBalanceEquity,
   previewReclassOpeningBalanceEquity,
 } from '../lib/reclass-opening-balance-equity.js';
+import {
+  correctIvymountRentalMispost,
+  IVYMOUNT_CORR_CONFIRM,
+} from '../lib/correct-ivymount-rental-mispost.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -213,6 +217,41 @@ router.post(
       if (error.code === 'PLUG_ENTRY_BLOCKED') {
         return res.status(403).json({ error: error.message, code: error.code });
       }
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/entities/:entityId/accounting/correct-ivymount-rental-mispost
+ * Dr 4100 / Cr 1901 $215,000 — Ivymount REO conveyance wrongly booked as rent.
+ * Body: { confirm: "CORR-IVYMOUNT-215K-<entityId>", reclose? }
+ */
+router.post(
+  '/correct-ivymount-rental-mispost',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const expected = IVYMOUNT_CORR_CONFIRM(req.entityId);
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const db = await getDatabase();
+      const result = await correctIvymountRentalMispost(db, {
+        entityId: req.entityId,
+        userId: req.user.id,
+        reclose: req.body?.reclose !== false,
+      });
+      res.json({
+        message: result.skipped
+          ? 'Ivymount correction already posted'
+          : 'Ivymount $215k removed from rental income and posted to Due from Justin Financial',
+        ...result,
+      });
+    } catch (error) {
       res.status(500).json({ error: error.message });
     }
   }
