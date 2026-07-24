@@ -315,7 +315,8 @@ router.get('/recon-session-diagnose', entityAccessMiddleware, async (req, res) =
 /**
  * POST /api/entities/:entityId/accounting/rebuild-amex-recons
  * Reopen + auto-reconcile Amex (2010) for configured 2026 statement targets.
- * Body: { confirm: "REBUILD-AMEX-<entityId>", throughMonth?: "YYYY-MM" }
+ * Body: { confirm: "REBUILD-AMEX-<entityId>", throughMonth?: "YYYY-MM", reopen?: boolean }
+ * Default reopen=false — restores OPEN sessions that still hold begin/end balances.
  */
 router.post(
   '/rebuild-amex-recons',
@@ -331,6 +332,7 @@ router.post(
       }
       const db = await getDatabase();
       const throughMonth = req.body?.throughMonth || '2026-06';
+      const doReopen = req.body?.reopen === true;
       const targets = (RECONCILIATION_TARGETS[req.entityId]?.['2010'] || []).filter((t) =>
         String(t.statementDate || '').slice(0, 7) <= throughMonth
       );
@@ -340,34 +342,64 @@ router.post(
       );
       if (!amex) return res.status(404).json({ error: 'Account 2010 not found' });
 
-      // Reopen newest → oldest so later sessions release lines before earlier rebuild.
+      // Drop cutover stub that forces beginning balance to $0.
+      await db.run(
+        `DELETE FROM bank_reconciliation_session_lines
+         WHERE session_id IN (
+           SELECT id FROM bank_reconciliation_sessions
+           WHERE entity_id = ? AND account_id = ? AND statement_date = '2025-12-31'
+             AND ABS(COALESCE(ending_balance, 0)) < 0.01
+         )`,
+        [req.entityId, amex.id]
+      );
+      await db.run(
+        `DELETE FROM bank_reconciliation_sessions
+         WHERE entity_id = ? AND account_id = ? AND statement_date = '2025-12-31'
+           AND ABS(COALESCE(ending_balance, 0)) < 0.01`,
+        [req.entityId, amex.id]
+      );
+
       const reopenResults = [];
-      for (const target of [...targets].reverse()) {
-        try {
-          const r = await reopenBankReconciliation(db, {
-            entityId: req.entityId,
-            accountId: amex.id,
-            statementDate: target.statementDate,
-          });
-          reopenResults.push({ statementDate: target.statementDate, ...r });
-        } catch (e) {
-          reopenResults.push({ statementDate: target.statementDate, reopenError: e.message });
+      if (doReopen) {
+        for (const target of [...targets].reverse()) {
+          try {
+            const r = await reopenBankReconciliation(db, {
+              entityId: req.entityId,
+              accountId: amex.id,
+              statementDate: target.statementDate,
+            });
+            reopenResults.push({ statementDate: target.statementDate, ...r });
+          } catch (e) {
+            reopenResults.push({ statementDate: target.statementDate, reopenError: e.message });
+          }
         }
       }
 
       const results = [];
+      let prevStatementDate = '2025-12-09'; // Amex Jan cycle starts after prior stmt close
       for (const target of targets) {
+        const open = await db.get(
+          `SELECT beginning_balance, ending_balance FROM bank_reconciliation_sessions
+           WHERE entity_id = ? AND account_id = ? AND statement_date = ?`,
+          [req.entityId, amex.id, target.statementDate]
+        );
         const r = await autoReconcileToTarget(db, {
           entityId: req.entityId,
           accountNumber: '2010',
           statementDate: target.statementDate,
           endingBalance: target.endingBalance,
           userId: req.user.id,
-          notes: `Rebuild Amex recon ${target.statementDate}`,
+          notes: open?.notes || `Rebuild Amex recon ${target.statementDate}`,
+          clearedAfterDate: prevStatementDate,
+          beginningBalanceOverride:
+            open && Math.abs(Number(open.beginning_balance) || 0) >= 0.01
+              ? Number(open.beginning_balance)
+              : null,
         });
         results.push(r);
+        if (r.reconciled) prevStatementDate = target.statementDate;
       }
-      res.json({ throughMonth, reopenResults, results });
+      res.json({ throughMonth, reopen: doReopen, reopenResults, results });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
