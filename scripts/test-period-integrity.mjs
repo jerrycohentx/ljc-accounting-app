@@ -16,6 +16,16 @@ assert.strictEqual(statementCoversMonth('2026-02-01', '2026-02-01', '2026-02-28'
 assert.strictEqual(statementCoversMonth('2026-01-31', '2026-01-01', '2026-01-31'), true, 'Jan 31 → January');
 assert.strictEqual(statementCoversMonth('2026-03-31', '2026-03-01', '2026-03-31'), true, 'Mar 31 → March');
 assert.strictEqual(statementCoversMonth('2026-03-01', '2026-02-01', '2026-02-28'), true, 'Mar 1 → February');
+assert.strictEqual(
+  statementCoversMonth(new Date('2025-12-31T00:00:00.000Z'), '2025-12-01', '2025-12-31'),
+  true,
+  'PG Date object Dec 31 → December'
+);
+assert.strictEqual(
+  statementCoversMonth('2025-12-31T00:00:00.000Z', '2025-12-01', '2025-12-31'),
+  true,
+  'ISO timestamp Dec 31 → December'
+);
 
 const yearMonths = eachMonthInRange('2025-01-01', '2025-12-31');
 assert.strictEqual(yearMonths.length, 12, '2025 has 12 months');
