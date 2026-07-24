@@ -290,7 +290,7 @@ router.get('/recon-session-diagnose', entityAccessMiddleware, async (req, res) =
        JOIN general_ledger gl ON gl.id = sl.gl_id
        LEFT JOIN journal_entries je ON je.id = gl.journal_entry_id
        WHERE sl.session_id = ?
-         AND (je.id IS NULL OR (je.status = 'POSTED' AND je.reversed_by_je_id IS NULL AND je.reverses_je_id IS NULL))
+         AND (je.id IS NULL OR je.status = 'POSTED')
        ORDER BY gl.posting_date, gl.id`,
       [session.id]
     );
