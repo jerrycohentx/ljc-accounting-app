@@ -34,6 +34,7 @@ import {
   ensureBankReconSessionTables,
 } from '../lib/bank-reconcile-session.js';
 import { rebuildLonestarRecons } from '../lib/rebuild-lonestar-recons.js';
+import { rebuildSimmonsRecons } from '../lib/rebuild-simmons-recons.js';
 import { RECONCILIATION_TARGETS } from '../config/bank-import-targets.js';
 import { normalizeIsoDate } from '../lib/bank-statement-view.js';
 
@@ -316,8 +317,10 @@ router.get('/recon-session-diagnose', entityAccessMiddleware, async (req, res) =
 
 /**
  * POST /api/entities/:entityId/accounting/rebuild-simmons-recons
- * Reopen + auto-reconcile Simmons (1000) for 2026 statement months.
- * Body: { confirm: "REBUILD-SIMMONS-<entityId>", throughMonth?: "YYYY-MM" }
+ * Reopen + rebuild Simmons (1000) from statement PDF lines.
+ * January/February use statement dates 2026-02-01 / 2026-03-01 (not calendar month-end).
+ * Body: { confirm: "REBUILD-SIMMONS-<entityId>", throughMonth?: "YYYY-MM", reopen?: boolean }
+ * throughMonth is the cover month (e.g. 2026-03 rebuilds Jan–Mar).
  */
 router.post(
   '/rebuild-simmons-recons',
@@ -332,71 +335,13 @@ router.post(
         });
       }
       const db = await getDatabase();
-      const throughMonth = req.body?.throughMonth || '2026-03';
-      const acc = await db.get(
-        `SELECT id FROM accounts WHERE entity_id = ? AND account_number = '1000'`,
-        [req.entityId]
-      );
-      if (!acc) return res.status(404).json({ error: 'Account 1000 not found' });
-
-      // Prefer calendar month-end dates (not the mislabeled 02-01 / 03-01 stubs).
-      const targets = [
-        { statementDate: '2026-01-31', endingBalance: 15880.28 },
-        { statementDate: '2026-02-28', endingBalance: 9912.36 },
-        { statementDate: '2026-03-31', endingBalance: 33074.61 },
-        { statementDate: '2026-04-30', endingBalance: 79722.84 },
-        { statementDate: '2026-05-31', endingBalance: 19977.13 },
-        { statementDate: '2026-06-26', endingBalance: 29603.53 },
-      ].filter((t) => String(t.statementDate).slice(0, 7) <= throughMonth);
-
-      const reopenResults = [];
-      for (const target of [...targets].reverse()) {
-        try {
-          reopenResults.push({
-            statementDate: target.statementDate,
-            ...(await reopenBankReconciliation(db, {
-              entityId: req.entityId,
-              accountId: acc.id,
-              statementDate: target.statementDate,
-            })),
-          });
-        } catch (e) {
-          reopenResults.push({ statementDate: target.statementDate, reopenError: e.message });
-        }
-      }
-
-      // Drop known bad stub sessions on the 1st that duplicate prior month ending.
-      for (const stub of ['2026-02-01', '2026-03-01']) {
-        await db.run(
-          `DELETE FROM bank_reconciliation_session_lines WHERE session_id IN (
-             SELECT id FROM bank_reconciliation_sessions
-             WHERE entity_id = ? AND account_id = ? AND statement_date = ?
-           )`,
-          [req.entityId, acc.id, stub]
-        );
-        await db.run(
-          `DELETE FROM bank_reconciliation_sessions
-           WHERE entity_id = ? AND account_id = ? AND statement_date = ?`,
-          [req.entityId, acc.id, stub]
-        );
-      }
-
-      const results = [];
-      let prev = '2025-12-31';
-      for (const target of targets) {
-        const r = await autoReconcileToTarget(db, {
-          entityId: req.entityId,
-          accountNumber: '1000',
-          statementDate: target.statementDate,
-          endingBalance: target.endingBalance,
-          userId: req.user.id,
-          notes: `Rebuild Simmons ${target.statementDate}`,
-          clearedAfterDate: prev,
-        });
-        results.push(r);
-        if (r.reconciled) prev = target.statementDate;
-      }
-      res.json({ throughMonth, reopenResults, results });
+      const result = await rebuildSimmonsRecons(db, {
+        entityId: req.entityId,
+        userId: req.user.id,
+        throughMonth: req.body?.throughMonth || '2026-03',
+        reopen: req.body?.reopen !== false,
+      });
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
