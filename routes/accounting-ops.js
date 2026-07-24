@@ -18,6 +18,10 @@ import { closeH1_2026 } from '../lib/close-h1-2026.js';
 import { clearConversionSuspenseFor2026 } from '../lib/clear-conversion-suspense.js';
 import { reclassPostedUndepositedOffsets } from '../lib/reclass-posted-undeposited.js';
 import { reverseDuplicateBankImports } from '../lib/reverse-duplicate-bank-imports.js';
+import {
+  reclassOpeningBalanceEquity,
+  previewReclassOpeningBalanceEquity,
+} from '../lib/reclass-opening-balance-equity.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -150,6 +154,69 @@ router.post('/periods/reopen', [entityAccessMiddleware, requireRole('ADMIN')], a
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * GET /api/entities/:entityId/accounting/reclass-opening-balance-equity/preview
+ * Shows 3900 balance as of date and proposed Dr/Cr to Retained Earnings.
+ */
+router.get(
+  '/reclass-opening-balance-equity/preview',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const asOfDate = req.query.asOfDate || '2025-12-31';
+      const db = await getDatabase();
+      const preview = await previewReclassOpeningBalanceEquity(db, req.entityId, asOfDate);
+      res.json(preview);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/entities/:entityId/accounting/reclass-opening-balance-equity
+ * Real equity reclass: 3900 Opening Balance Equity → 3100 Retained Earnings (or 3000).
+ * Body: { confirm: "RECLASS-OBE-<entityId>-<asOfDate>", asOfDate?, targetAccountNumber?, reclose? }
+ */
+router.post(
+  '/reclass-opening-balance-equity',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const asOfDate = req.body?.asOfDate || '2025-12-31';
+      const expected = `RECLASS-OBE-${req.entityId}-${asOfDate}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const db = await getDatabase();
+      const result = await reclassOpeningBalanceEquity(db, {
+        entityId: req.entityId,
+        asOfDate,
+        userId: req.user.id,
+        targetAccountNumber: req.body?.targetAccountNumber || '3100',
+        reclose: req.body?.reclose !== false,
+      });
+      const status = result.skipped ? 200 : result.balance3900After === 0 ? 200 : 409;
+      res.status(status).json({
+        message: result.skipped
+          ? '3900 already clear'
+          : result.balance3900After === 0
+            ? 'Opening Balance Equity reclassified to permanent equity'
+            : 'Reclass posted but 3900 still non-zero — see response',
+        ...result,
+      });
+    } catch (error) {
+      if (error.code === 'PLUG_ENTRY_BLOCKED') {
+        return res.status(403).json({ error: error.message, code: error.code });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 // GET /api/entities/:entityId/accounting/periods/bounds?date=YYYY-MM-DD
 router.get('/periods/bounds', entityAccessMiddleware, async (req, res) => {
