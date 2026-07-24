@@ -16,6 +16,7 @@ import { checkSuspenseAccounts } from '../lib/suspense-check.js';
 import { runCutoverYearClose } from '../lib/cutover-year-close.js';
 import { closeH1_2026 } from '../lib/close-h1-2026.js';
 import { clearConversionSuspenseFor2026 } from '../lib/clear-conversion-suspense.js';
+import { reclassPostedUndepositedOffsets } from '../lib/reclass-posted-undeposited.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -301,6 +302,31 @@ router.post('/clear-conversion-suspense', [entityAccessMiddleware, requireRole('
     const db = await getDatabase();
     const result = await clearConversionSuspenseFor2026(db, { userId: req.user.id });
     res.json({ message: result.cleanForH1 ? 'Suspense cleared for H1 2026' : 'Suspense clear ran but still dirty', ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/entities/:entityId/accounting/reclass-undeposited
+ * Reclass posted IMP-* offsets out of 1100 using categorization rules.
+ * Body: { confirm: "RECLASS-1100-<entityId>", dryRun?: boolean }
+ */
+router.post('/reclass-undeposited', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    if (req.entityId !== 'ent-ljc') {
+      return res.status(400).json({ error: 'Only implemented for ent-ljc' });
+    }
+    const expected = `RECLASS-1100-${req.entityId}`;
+    if (req.body?.confirm !== expected) {
+      return res.status(400).json({ error: `confirm must equal "${expected}"`, code: 'CONFIRM_REQUIRED' });
+    }
+    const db = await getDatabase();
+    const result = await reclassPostedUndepositedOffsets(db, {
+      userId: req.user.id,
+      dryRun: !!req.body?.dryRun,
+    });
+    res.json({ message: result.clean ? '1100 cleared' : '1100 reclass ran', ...result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
