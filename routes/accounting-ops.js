@@ -27,6 +27,14 @@ import {
   IVYMOUNT_CORR_CONFIRM,
 } from '../lib/correct-ivymount-rental-mispost.js';
 import { repairOrphanReconciledInClosedPeriods } from '../lib/recon-cleared-integrity.js';
+import { verifySessionClearedMatchesStatement } from '../lib/recon-cleared-integrity.js';
+import {
+  autoReconcileToTarget,
+  reopenBankReconciliation,
+  ensureBankReconSessionTables,
+} from '../lib/bank-reconcile-session.js';
+import { RECONCILIATION_TARGETS } from '../config/bank-import-targets.js';
+import { normalizeIsoDate } from '../lib/bank-statement-view.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -240,6 +248,126 @@ router.post(
         accountId: req.body?.accountId || null,
       });
       res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * GET /api/entities/:entityId/accounting/recon-session-diagnose?accountNumber=2010&statementDate=2026-01-09
+ * Live Cleared vs statement for one closed session (debug / catch-up).
+ */
+router.get('/recon-session-diagnose', entityAccessMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    await ensureBankReconSessionTables(db);
+    const accountNumber = String(req.query.accountNumber || '').trim();
+    const statementDate = normalizeIsoDate(req.query.statementDate);
+    if (!accountNumber || !statementDate) {
+      return res.status(400).json({ error: 'accountNumber and statementDate required' });
+    }
+    const account = await db.get(
+      `SELECT id, account_number, account_name, normal_balance, account_type
+       FROM accounts WHERE entity_id = ? AND account_number = ?`,
+      [req.entityId, accountNumber]
+    );
+    if (!account) return res.status(404).json({ error: 'Account not found' });
+    const session = await db.get(
+      `SELECT *
+       FROM bank_reconciliation_sessions
+       WHERE entity_id = ? AND account_id = ? AND statement_date = ?
+       ORDER BY closed_at DESC NULLS LAST`,
+      [req.entityId, account.id, statementDate]
+    );
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+    const live = await verifySessionClearedMatchesStatement(db, session, account);
+    const lineRows = await db.all(
+      `SELECT gl.id, gl.posting_date, gl.debit, gl.credit, gl.description, je.je_number
+       FROM bank_reconciliation_session_lines sl
+       JOIN general_ledger gl ON gl.id = sl.gl_id
+       LEFT JOIN journal_entries je ON je.id = gl.journal_entry_id
+       WHERE sl.session_id = ?
+       ORDER BY gl.posting_date, gl.id`,
+      [session.id]
+    );
+    res.json({
+      account,
+      session: {
+        id: session.id,
+        status: session.status,
+        statementDate: normalizeIsoDate(session.statement_date),
+        beginningBalance: Number(session.beginning_balance),
+        endingBalance: Number(session.ending_balance),
+        clearedNet: Number(session.cleared_net),
+        difference: Number(session.difference),
+        notes: session.notes,
+      },
+      live,
+      lineCount: (lineRows || []).length,
+      lines: lineRows,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/entities/:entityId/accounting/rebuild-amex-recons
+ * Reopen + auto-reconcile Amex (2010) for configured 2026 statement targets.
+ * Body: { confirm: "REBUILD-AMEX-<entityId>", throughMonth?: "YYYY-MM" }
+ */
+router.post(
+  '/rebuild-amex-recons',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const expected = `REBUILD-AMEX-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const db = await getDatabase();
+      const throughMonth = req.body?.throughMonth || '2026-06';
+      const targets = (RECONCILIATION_TARGETS[req.entityId]?.['2010'] || []).filter((t) =>
+        String(t.statementDate || '').slice(0, 7) <= throughMonth
+      );
+      const amex = await db.get(
+        `SELECT id FROM accounts WHERE entity_id = ? AND account_number = '2010'`,
+        [req.entityId]
+      );
+      if (!amex) return res.status(404).json({ error: 'Account 2010 not found' });
+
+      // Reopen newest → oldest so later sessions release lines before earlier rebuild.
+      const reopenResults = [];
+      for (const target of [...targets].reverse()) {
+        try {
+          const r = await reopenBankReconciliation(db, {
+            entityId: req.entityId,
+            accountId: amex.id,
+            statementDate: target.statementDate,
+          });
+          reopenResults.push({ statementDate: target.statementDate, ...r });
+        } catch (e) {
+          reopenResults.push({ statementDate: target.statementDate, reopenError: e.message });
+        }
+      }
+
+      const results = [];
+      for (const target of targets) {
+        const r = await autoReconcileToTarget(db, {
+          entityId: req.entityId,
+          accountNumber: '2010',
+          statementDate: target.statementDate,
+          endingBalance: target.endingBalance,
+          userId: req.user.id,
+          notes: `Rebuild Amex recon ${target.statementDate}`,
+        });
+        results.push(r);
+      }
+      res.json({ throughMonth, reopenResults, results });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
