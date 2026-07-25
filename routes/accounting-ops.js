@@ -20,6 +20,8 @@ import { reclassPostedUndepositedOffsets } from '../lib/reclass-posted-undeposit
 import { reclassPostedByLearnedRules } from '../lib/reclass-posted-by-rules.js';
 import { learnCategorizationFromHistory } from '../lib/learn-categorization-from-history.js';
 import { categorizeDumpForApproval } from '../lib/categorize-dump-for-approval.js';
+import { buildCategorizationReview } from '../lib/categorization-review.js';
+import { learnFromUserCategory } from '../lib/category-learn.js';
 import {
   applyWentworthTenantUtilityTreatment,
   WENTWORTH_UTIL_CONFIRM,
@@ -791,6 +793,100 @@ router.post(
  * Reopens closed months as needed and recloses when canClose.
  * Body: { confirm: "RECLASS-RULES-<entityId>", dryRun?, startDate?, endDate?, sourceAccounts?, reclose? }
  */
+
+/**
+ * GET /api/entities/:entityId/accounting/categorization-review
+ * Draft categorizations grouped by feed type then month, with statement-style
+ * display fields for the review UI.
+ */
+router.get(
+  '/categorization-review',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const db = await getDatabase();
+      const result = await buildCategorizationReview(db, {
+        entityId: req.entityId,
+        limit: Math.min(parseInt(req.query.limit, 10) || 1000, 2000),
+      });
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/entities/:entityId/accounting/categorization-review/:draftId/category
+ * Change the expense account on a categorization draft and learn a durable rule.
+ * Body: { accountId }
+ */
+router.post(
+  '/categorization-review/:draftId/category',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const db = await getDatabase();
+      const draftId = req.params.draftId;
+      const accountId = req.body?.accountId;
+      if (!accountId) return res.status(400).json({ error: 'accountId required' });
+
+      const draft = await db.get(
+        'SELECT * FROM journal_entries WHERE id = ? AND entity_id = ?',
+        [draftId, req.entityId]
+      );
+      if (!draft) return res.status(404).json({ error: 'Draft not found' });
+      if (draft.status !== 'DRAFT') {
+        return res.status(409).json({ error: 'Only draft entries can be recategorized here' });
+      }
+
+      const target = await db.get(
+        'SELECT id, account_number, account_name FROM accounts WHERE id = ? AND entity_id = ?',
+        [accountId, req.entityId]
+      );
+      if (!target) return res.status(404).json({ error: 'Account not found' });
+
+      const lines = await db.all(
+        'SELECT jel.*, a.account_number FROM journal_entry_lines jel JOIN accounts a ON a.id = jel.account_id WHERE jel.journal_entry_id = ? ORDER BY jel.line_number',
+        [draftId]
+      );
+      const dumpNums = new Set(['5700', '4091']);
+      const categoryLine = lines.find((l) => !dumpNums.has(String(l.account_number)));
+      if (!categoryLine) {
+        return res.status(400).json({ error: 'Could not find the category line on this draft' });
+      }
+
+      await db.run('UPDATE journal_entry_lines SET account_id = ? WHERE id = ?', [
+        accountId,
+        categoryLine.id,
+      ]);
+
+      const srcMatch = String(draft.memo || '').match(/cat-approve:(je-[a-f0-9-]+)/i);
+      let learnDesc = draft.description || '';
+      if (srcMatch) {
+        const src = await db.get(
+          'SELECT description, memo FROM journal_entries WHERE id = ? AND entity_id = ?',
+          [srcMatch[1], req.entityId]
+        );
+        if (src?.description) learnDesc = src.description;
+      }
+      await learnFromUserCategory(db, {
+        entityId: req.entityId,
+        description: learnDesc,
+        offsetAccountId: accountId,
+      });
+
+      res.json({
+        ok: true,
+        categoryAccountId: target.id,
+        categoryAccountNumber: target.account_number,
+        categoryAccountName: target.account_name,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 /**
  * POST /api/entities/:entityId/accounting/categorize-dump-for-approval

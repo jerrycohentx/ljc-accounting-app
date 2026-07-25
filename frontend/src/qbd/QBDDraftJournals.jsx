@@ -1,385 +1,505 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { accountAPI, journalAPI } from '../services/api';
-import { fmt, leafLabel } from './helpers';
+import { accountingAPI, bankReconAPI, journalAPI } from '../services/api';
+import { leafLabel } from './helpers';
+import { fetchStatementObjectUrl } from './reconSourceDrill';
 
-/** Bank-feed / loan-event drafts are reviewed in Bank Feeds, not here. */
-const isAutoDraft = (j) => /^(IMP|LN)-/i.test(String(j.je_number || ''));
-const dateOf = (j) => String(j.posting_date || '').slice(0, 10);
-const sumLines = (lines, k) => (lines || []).reduce((s, l) => s + (Number(l[k]) || 0), 0);
-const flatAccts = (nodes, out) => {
-  (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flatAccts(n.children, out); });
-  return out;
+function fmtMoney(n) {
+  const v = Number(n) || 0;
+  return `$${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function fmtStmtDate(iso) {
+  const d = String(iso || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return '';
+  const [y, m, day] = d.split('-');
+  return `${m}/${day}/${y.slice(2)}`;
+}
+
+function base64ToObjectUrl(b64, mime = 'application/pdf') {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: mime }));
+}
+
+const styles = {
+  wrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: 'calc(100vh - 48px)',
+    minHeight: 560,
+    background: '#fff',
+    fontFamily: '"Segoe UI", system-ui, sans-serif',
+    color: '#1a1a1a',
+  },
+  head: {
+    padding: '12px 16px 8px',
+    borderBottom: '1px solid #ddd',
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 12,
+    flexShrink: 0,
+  },
+  title: { fontSize: 18, fontWeight: 650, margin: 0 },
+  sub: { fontSize: 13, color: '#555' },
+  body: { display: 'flex', flex: 1, minHeight: 0 },
+  folders: {
+    width: 220,
+    flexShrink: 0,
+    borderRight: '1px solid #ddd',
+    overflowY: 'auto',
+    background: '#f7f7f5',
+    padding: '8px 0',
+  },
+  feedBtn: {
+    display: 'block',
+    width: '100%',
+    textAlign: 'left',
+    border: 'none',
+    background: 'transparent',
+    padding: '7px 14px',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 650,
+  },
+  monthBtn: {
+    display: 'block',
+    width: '100%',
+    textAlign: 'left',
+    border: 'none',
+    background: 'transparent',
+    padding: '6px 14px 6px 28px',
+    cursor: 'pointer',
+    fontSize: 13,
+  },
+  main: { flex: 1, display: 'flex', minWidth: 0, minHeight: 0 },
+  listPane: {
+    flex: '1 1 52%',
+    minWidth: 320,
+    display: 'flex',
+    flexDirection: 'column',
+    borderRight: '1px solid #ddd',
+    minHeight: 0,
+  },
+  listHead: {
+    padding: '10px 16px',
+    borderBottom: '1px solid #e5e5e5',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    flexShrink: 0,
+    background: '#fafafa',
+  },
+  list: { flex: 1, overflowY: 'auto', padding: '0 8px 24px' },
+  row: {
+    display: 'grid',
+    gridTemplateColumns: '28px 72px 1fr 96px minmax(160px, 200px)',
+    gap: 10,
+    alignItems: 'start',
+    padding: '12px 8px',
+    borderBottom: '1px solid #e0e0e0',
+  },
+  date: { fontSize: 13, paddingTop: 2, color: '#222' },
+  desc: { fontSize: 13, lineHeight: 1.35, minWidth: 0 },
+  descLine: { whiteSpace: 'normal', wordBreak: 'break-word' },
+  amount: { fontSize: 13, textAlign: 'right', paddingTop: 2, fontVariantNumeric: 'tabular-nums' },
+  catSelect: { width: '100%', fontSize: 12, padding: '3px 4px' },
+  docPane: {
+    flex: '1 1 48%',
+    minWidth: 280,
+    display: 'flex',
+    flexDirection: 'column',
+    background: '#525659',
+    minHeight: 0,
+  },
+  docBar: {
+    padding: '8px 12px',
+    background: '#3d4043',
+    color: '#eee',
+    fontSize: 12,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  iframe: { flex: 1, width: '100%', border: 'none', background: '#525659' },
+  bot: {
+    borderTop: '1px solid #ddd',
+    padding: '8px 16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+    background: '#f5f5f5',
+  },
+  btn: {
+    border: '1px solid #aaa',
+    background: '#fff',
+    padding: '5px 12px',
+    fontSize: 13,
+    cursor: 'pointer',
+    borderRadius: 2,
+  },
+  btnPrimary: {
+    border: '1px solid #1a5f9e',
+    background: '#1a6fb5',
+    color: '#fff',
+    padding: '5px 14px',
+    fontSize: 13,
+    cursor: 'pointer',
+    borderRadius: 2,
+    fontWeight: 650,
+  },
+  empty: { padding: 32, color: '#666', fontSize: 14 },
 };
-const blankEditLine = () => ({ accountId: '', debit: '', credit: '', description: '' });
 
 export default function QBDDraftJournals() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const toast = (m) => (showToast ? showToast(m) : null);
 
-  const [rows, setRows] = useState([]);
+  const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  // Date limiter -- blank = no limit. Pre-set from ?through=YYYY-MM-DD when arriving
-  // from the Reconcile window, so you land on exactly the statement period's drafts.
-  const [through, setThrough] = useState(() => searchParams.get('through') || '');
-  // ?all=1 (set by the Reconcile window's "Review drafts" link) includes bank-feed
-  // drafts, so the count you land on matches the count the reconcile warned about.
-  const [includeAuto, setIncludeAuto] = useState(() => searchParams.get('all') === '1');
   const [sel, setSel] = useState(() => new Set());
-  // Multiple rows can be expanded at once, so a whole cycle can be compared side by side.
-  const [openIds, setOpenIds] = useState(() => new Set());
-  const [jeById, setJeById] = useState({});
-  // Inline correction of a DRAFT entry's lines (accounts / amounts / line memo).
-  const [accounts, setAccounts] = useState([]);
-  const [editingId, setEditingId] = useState(null);
-  const [editLines, setEditLines] = useState([]);
-  const [saving, setSaving] = useState(false);
-  // Manual "Attach document" — backs an entry with its statement / HUD / payoff
-  // letter so the support is one click away at review time (Jerry, 2026-07-16).
-  const [attachingId, setAttachingId] = useState(null);
+  const [feedKey, setFeedKey] = useState(null);
+  const [monthKey, setMonthKey] = useState(null);
+  const [openFeeds, setOpenFeeds] = useState(() => new Set(['amex', 'bank', 'other']));
+  const [docUrl, setDocUrl] = useState(null);
+  const [docLabel, setDocLabel] = useState('');
+  const [docBusy, setDocBusy] = useState(false);
+  const docUrlRef = useRef(null);
 
-  useEffect(() => {
-    if (!entityId) return;
-    accountAPI.list(entityId)
-      .then((r) => setAccounts(flatAccts(Array.isArray(r.data) ? r.data : (r.data && r.data.data) || [], [])))
-      .catch(() => setAccounts([]));
-  }, [entityId]);
+  const revokeDoc = () => {
+    if (docUrlRef.current) {
+      URL.revokeObjectURL(docUrlRef.current);
+      docUrlRef.current = null;
+    }
+    setDocUrl(null);
+  };
 
   const load = useCallback(() => {
     if (!entityId) return;
     setLoading(true);
-    journalAPI.list(entityId, { status: 'DRAFT', limit: 1000 })
+    accountingAPI.categorizationReview(entityId, { limit: 1000 })
       .then((r) => {
-        const all = (r.data && r.data.data) || (Array.isArray(r.data) ? r.data : []);
-        setRows(all.filter((j) => j.status === 'DRAFT'));
+        const data = r.data || r;
+        setPayload(data);
+        const feeds = data.feeds || [];
+        if (feeds.length) {
+          const first = feeds[0];
+          setFeedKey((prev) => prev || first.key);
+          const m0 = (first.months || [])[0];
+          setMonthKey((prev) => prev || (m0 && m0.key) || null);
+          setOpenFeeds((s) => {
+            const n = new Set(s);
+            feeds.forEach((f) => n.add(f.key));
+            return n;
+          });
+        }
       })
-      .catch(() => toast('Could not load draft journal entries'))
+      .catch(() => toast('Could not load charges to review'))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId]);
 
-  useEffect(() => { setSel(new Set()); setOpenIds(new Set()); load(); }, [load]);
+  useEffect(() => { setSel(new Set()); load(); }, [load]);
 
-  const inScope = rows.filter((j) => (includeAuto ? true : !isAutoDraft(j)));
-  const visible = inScope
-    .filter((j) => (through ? dateOf(j) <= through : true))
-    .sort((a, b) => {
-      const da = dateOf(a); const db = dateOf(b);
-      if (da !== db) return da < db ? -1 : 1;
-      return String(a.je_number || '').localeCompare(String(b.je_number || ''));
-    });
-  const hiddenByDate = inScope.length - visible.length;
+  useEffect(() => () => revokeDoc(), []);
 
-  const toggle = (id) => setSel((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const allSel = visible.length > 0 && visible.every((j) => sel.has(j.id));
-  const toggleAll = () => setSel(allSel ? new Set() : new Set(visible.map((j) => j.id)));
-  const selected = visible.filter((j) => sel.has(j.id));
+  const feeds = payload?.feeds || [];
+  const expenseAccounts = payload?.expenseAccounts || [];
+  const activeFeed = feeds.find((f) => f.key === feedKey) || feeds[0] || null;
+  const activeMonth = (activeFeed?.months || []).find((m) => m.key === monthKey)
+    || (activeFeed?.months || [])[0]
+    || null;
+  const items = activeMonth?.items || [];
 
-  const fetchJe = (id) => {
-    if (jeById[id] !== undefined) return;
-    journalAPI.get(entityId, id)
-      .then((r) => setJeById((m) => ({ ...m, [id]: r.data || null })))
-      .catch(() => setJeById((m) => ({ ...m, [id]: null })));
+  const allSelected = items.length > 0 && items.every((it) => sel.has(it.id));
+  const selectedItems = useMemo(
+    () => items.filter((it) => sel.has(it.id)),
+    [items, sel]
+  );
+
+  const toggle = (id) => setSel((s) => {
+    const n = new Set(s);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    return n;
+  });
+  const toggleAll = () => setSel(allSelected ? new Set() : new Set(items.map((it) => it.id)));
+
+  const selectMonth = (fk, mk) => {
+    setFeedKey(fk);
+    setMonthKey(mk);
+    setSel(new Set());
   };
 
-  const toggleOpen = (id) => {
-    setOpenIds((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-    fetchJe(id);
-  };
-
-  // Open every visible entry at once, so a whole cycle can be read together.
-  const expandAll = () => { visible.forEach((j) => fetchJe(j.id)); setOpenIds(new Set(visible.map((j) => j.id))); };
-  const collapseAll = () => setOpenIds(new Set());
-
-  // ---- Inline editing of a DRAFT entry's lines -----------------------------
-  const startEdit = (id, lines) => {
-    setEditingId(id);
-    setEditLines((lines || []).map((l) => ({
-      accountId: l.account_id,
-      debit: +l.debit ? String(+l.debit) : '',
-      credit: +l.credit ? String(+l.credit) : '',
-      description: l.description || '',
-    })));
-  };
-  const cancelEdit = () => { setEditingId(null); setEditLines([]); };
-  const setEditLine = (i, k, v) => setEditLines((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
-  const addEditLine = () => setEditLines((ls) => [...ls, blankEditLine()]);
-  const delEditLine = (i) => setEditLines((ls) => (ls.length > 2 ? ls.filter((_, j) => j !== i) : ls));
-
-  const editDebit = sumLines(editLines.map((l) => ({ debit: +l.debit || 0 })), 'debit');
-  const editCredit = sumLines(editLines.map((l) => ({ credit: +l.credit || 0 })), 'credit');
-  const editBalanced = Math.abs(editDebit - editCredit) < 0.005 && editDebit > 0;
-
-  const saveEdit = async (id) => {
-    const valid = editLines.filter((l) => l.accountId && ((+l.debit) || (+l.credit)));
-    if (valid.length < 2) { toast('An entry needs at least two lines with an account and an amount'); return; }
-    if (!editBalanced) { toast(`Debits must equal credits — currently out of balance by ${fmt(editDebit - editCredit)}`); return; }
-    setSaving(true);
-    try {
-      await journalAPI.update(entityId, id, {
-        lines: valid.map((l) => ({
-          accountId: l.accountId,
-          debit: +l.debit || 0,
-          credit: +l.credit || 0,
-          description: l.description || '',
-        })),
-      });
-      setJeById((m) => ({ ...m, [id]: undefined }));   // force a re-fetch of the corrected entry
-      const r = await journalAPI.get(entityId, id);
-      setJeById((m) => ({ ...m, [id]: r.data || null }));
-      cancelEdit();
-      load();
-      toast('Entry corrected — still a draft, nothing posted');
-    } catch (e) {
-      toast('Could not save: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
-    } finally { setSaving(false); }
-  };
-
-  const pickAndAttach = (id) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf,.png,.jpg,.jpeg,application/pdf,image/*';
-    input.onchange = async () => {
-      const file = input.files && input.files[0];
-      if (!file) return;
-      if (file.size > 15 * 1024 * 1024) { toast('File is too large — keep attachments under 15 MB'); return; }
-      setAttachingId(id);
+  // Load source statement / PDF for the open month folder
+  useEffect(() => {
+    let cancelled = false;
+    async function loadDoc() {
+      revokeDoc();
+      if (!entityId || !activeFeed || !activeMonth) return;
+      setDocBusy(true);
+      setDocLabel('');
       try {
-        const b64 = await new Promise((resolve, reject) => {
-          const r = new FileReader();
-          r.onload = () => resolve(String(r.result).split(',')[1] || '');
-          r.onerror = () => reject(new Error('Could not read the file'));
-          r.readAsDataURL(file);
-        });
-        await journalAPI.attachDocument(entityId, id, {
-          fileName: file.name,
-          fileMime: file.type || 'application/pdf',
-          fileData: b64,
-        });
-        const r2 = await journalAPI.get(entityId, id);
-        setJeById((m) => ({ ...m, [id]: r2.data || null }));
-        toast(`Attached ${file.name}`);
-      } catch (e) {
-        toast('Could not attach: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
-      } finally { setAttachingId(null); }
-    };
-    input.click();
+        // Prefer an attached PDF on any charge in this month
+        const withDoc = (activeMonth.items || []).find((it) => it.documentJournalId);
+        if (withDoc?.documentJournalId) {
+          const url = await journalAPI.getDocumentObjectUrl(entityId, withDoc.documentJournalId);
+          if (cancelled) { URL.revokeObjectURL(url); return; }
+          docUrlRef.current = url;
+          setDocUrl(url);
+          setDocLabel('Statement / source document for this group');
+          return;
+        }
+        // Fall back to bank/card statement file for the cycle
+        if (activeFeed.accountId && activeMonth.statementDate) {
+          const url = await fetchStatementObjectUrl(
+            entityId,
+            activeFeed.accountId,
+            activeMonth.statementDate
+          );
+          if (url) {
+            if (cancelled) { URL.revokeObjectURL(url); return; }
+            docUrlRef.current = url;
+            setDocUrl(url);
+            setDocLabel(`Statement ${activeMonth.statementDate}`);
+            return;
+          }
+        }
+        // Last resort: try statement-file for each unique statementDate on items
+        const dates = [...new Set((activeMonth.items || []).map((it) => it.statementDate).filter(Boolean))];
+        for (const d of dates) {
+          if (!activeFeed.accountId) break;
+          try {
+            const r = await bankReconAPI.statementFile(entityId, activeFeed.accountId, d);
+            const data = r.data || {};
+            if (data.found && data.dataBase64) {
+              const url = base64ToObjectUrl(data.dataBase64, data.mime || 'application/pdf');
+              if (cancelled) { URL.revokeObjectURL(url); return; }
+              docUrlRef.current = url;
+              setDocUrl(url);
+              setDocLabel(`Statement ${data.matchedStatementDate || d}`);
+              return;
+            }
+          } catch { /* try next */ }
+        }
+        if (!cancelled) setDocLabel('No source PDF on file for this month yet');
+      } catch {
+        if (!cancelled) setDocLabel('Could not open the source document');
+      } finally {
+        if (!cancelled) setDocBusy(false);
+      }
+    }
+    loadDoc();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityId, activeFeed?.key, activeMonth?.key, activeMonth?.statementDate]);
+
+  const changeCategory = async (item, accountId) => {
+    if (!accountId || accountId === item.categoryAccountId) return;
+    try {
+      const r = await accountingAPI.setCategorizationCategory(entityId, item.id, accountId);
+      const d = r.data || r;
+      setPayload((prev) => {
+        if (!prev) return prev;
+        const feedsNext = (prev.feeds || []).map((f) => ({
+          ...f,
+          months: (f.months || []).map((m) => ({
+            ...m,
+            items: (m.items || []).map((it) => (
+              it.id === item.id
+                ? {
+                  ...it,
+                  categoryAccountId: d.categoryAccountId,
+                  categoryAccountNumber: d.categoryAccountNumber,
+                  categoryAccountName: d.categoryAccountName,
+                }
+                : it
+            )),
+          })),
+        }));
+        return { ...prev, feeds: feedsNext };
+      });
+      toast(`Saved — future ${item.descLines[0] || 'similar'} charges will use this category`);
+    } catch (e) {
+      toast('Could not save category: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
+    }
   };
 
   const postSelected = async () => {
-    if (!selected.length) { toast('Select at least one entry to post'); return; }
-    const msg = `Post ${selected.length} journal ${selected.length === 1 ? 'entry' : 'entries'} to the ledger?`
-      + (through ? `\n\nOnly entries dated on or before ${through} are shown.` : '');
-    if (!window.confirm(msg)) return;
+    if (!selectedItems.length) { toast('Select at least one charge to approve'); return; }
+    if (!window.confirm(`Approve and post ${selectedItems.length} charge${selectedItems.length === 1 ? '' : 's'}?`)) return;
     setBusy(true);
     let ok = 0;
     const errs = [];
-    for (const j of selected) {
+    for (const it of selectedItems) {
       try {
-        await journalAPI.approve(entityId, j.id);
-        await journalAPI.post(entityId, j.id);
+        await journalAPI.approve(entityId, it.id);
+        await journalAPI.post(entityId, it.id);
         ok += 1;
       } catch (e) {
-        errs.push(`${j.je_number}: ${(e.response && e.response.data && e.response.data.error) || e.message}`);
+        errs.push((e.response && e.response.data && e.response.data.error) || e.message);
       }
     }
     setBusy(false);
     setSel(new Set());
-    toast(errs.length ? `Posted ${ok}; ${errs.length} failed — ${errs[0]}` : `Posted ${ok} ${ok === 1 ? 'entry' : 'entries'} to the ledger`);
+    toast(errs.length ? `Posted ${ok}; ${errs.length} failed — ${errs[0]}` : `Posted ${ok} charge${ok === 1 ? '' : 's'}`);
     load();
   };
 
   return (
-    <div className="qbd-form qbd-wide">
-      <div className="fhd">Review Journal Entry Drafts <span style={{ fontWeight: 'normal', opacity: 0.85 }}>— drag the bottom-right corner to resize</span></div>
-
-      <div className="frow">
-        <label>Show entries through</label>
-        <input type="date" value={through} onChange={(e) => setThrough(e.target.value)} />
-        <button className="qbd-btn" onClick={() => setThrough('')} disabled={!through}>Clear</button>
-        <span className="qbd-muted" style={{ marginLeft: 10 }}>
-          {through ? `Hiding drafts dated after ${through}` : 'No date limit — showing all drafts'}
+    <div style={styles.wrap}>
+      <div style={styles.head}>
+        <h1 style={styles.title}>Review &amp; approve charges</h1>
+        <span style={styles.sub}>
+          Organized by card/bank, then month — pick a category, check the statement on the right, then approve.
         </span>
-        <span className="sp" style={{ flex: 1 }} />
-        {/* width:auto overrides .qbd-form label{width:118px}, which would clip this text. */}
-        <label style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap', textAlign: 'left' }}>
-          <input type="checkbox" checked={includeAuto} onChange={(e) => setIncludeAuto(e.target.checked)} />
-          Include bank-feed drafts
-        </label>
+        <span style={{ flex: 1 }} />
+        <span style={styles.sub}>{payload ? `${payload.total} waiting` : ''}</span>
       </div>
 
-      <div className="qbd-wbody">
-        <table className="qbd-coa">
-          <thead>
-            <tr>
-              <th style={{ width: 28 }}><input type="checkbox" checked={allSel} onChange={toggleAll} /></th>
-              <th style={{ width: 90 }}>DATE</th>
-              <th style={{ width: 175 }}>ENTRY #</th>
-              <th>DESCRIPTION</th>
-              <th className="qbd-bal" style={{ width: 110 }}>AMOUNT</th>
-              <th style={{ width: 100 }} />
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6}><div className="qbd-empty">Loading…</div></td></tr>
-            ) : visible.length === 0 ? (
-              <tr><td colSpan={6}><div className="qbd-empty">No draft journal entries{through ? ` dated on or before ${through}` : ''}.</div></td></tr>
-            ) : visible.map((j) => {
-              const je = jeById[j.id];
-              const lines = je === undefined ? undefined : (je === null ? null : (je.lines || []));
-              const open = openIds.has(j.id);
-              return (
-                <React.Fragment key={j.id}>
-                  <tr>
-                    <td><input type="checkbox" checked={sel.has(j.id)} onChange={() => toggle(j.id)} /></td>
-                    <td className="qbd-num">{dateOf(j)}</td>
-                    <td>{j.je_number}</td>
-                    <td style={{ maxWidth: 460, overflow: 'hidden', textOverflow: 'ellipsis' }} title={j.description}>{j.description}</td>
-                    <td className="qbd-bal">{fmt(+j.total_debit)}</td>
-                    <td><button className="qbd-btn" onClick={() => toggleOpen(j.id)}>{open ? 'Hide' : 'Both sides'}</button></td>
-                  </tr>
-                  {open && (
-                    <tr>
-                      <td colSpan={6} style={{ background: '#f7f9fc', padding: '6px 10px' }}>
-                        {je && je.memo && (
-                          <div style={{ marginBottom: 8, padding: '7px 9px', background: '#fffbe8', border: '1px solid #e3d9a3', borderRadius: 3, fontSize: 12, lineHeight: 1.55, whiteSpace: 'normal' }}>
-                            <b>Why this entry exists:</b> {je.memo}
-                          </div>
-                        )}
-                        {lines === undefined ? (
-                          <span className="qbd-muted">Loading lines…</span>
-                        ) : lines === null ? (
-                          <span style={{ color: '#b3261e' }}>Could not load the journal entry lines.</span>
-                        ) : lines.length === 0 ? (
-                          <span className="qbd-muted">No lines on this entry.</span>
-                        ) : editingId === j.id ? (
-                          <>
-                            <table className="qbd-jt" style={{ width: '100%' }}>
-                              <thead>
-                                <tr>
-                                  <th style={{ width: 300 }}>Account</th>
-                                  <th>Memo</th>
-                                  <th style={{ width: 110, textAlign: 'right' }}>Debit</th>
-                                  <th style={{ width: 110, textAlign: 'right' }}>Credit</th>
-                                  <th style={{ width: 26 }} />
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {editLines.map((l, i) => (
-                                  <tr key={i}>
-                                    <td>
-                                      <select value={l.accountId} onChange={(e) => setEditLine(i, 'accountId', e.target.value)}>
-                                        <option value="">— select account —</option>
-                                        {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-                                      </select>
-                                    </td>
-                                    <td><input value={l.description} onChange={(e) => setEditLine(i, 'description', e.target.value)} /></td>
-                                    <td><input type="number" step="0.01" value={l.debit} onChange={(e) => setEditLine(i, 'debit', e.target.value)} style={{ textAlign: 'right' }} /></td>
-                                    <td><input type="number" step="0.01" value={l.credit} onChange={(e) => setEditLine(i, 'credit', e.target.value)} style={{ textAlign: 'right' }} /></td>
-                                    <td><span style={{ cursor: 'pointer', color: '#b3261e' }} onClick={() => delEditLine(i)}>✕</span></td>
-                                  </tr>
-                                ))}
-                                <tr style={{ fontWeight: 'bold', background: '#eef4fb' }}>
-                                  <td style={{ textAlign: 'right' }} colSpan={2}>Totals</td>
-                                  <td style={{ textAlign: 'right' }}>{fmt(editDebit)}</td>
-                                  <td style={{ textAlign: 'right' }}>{fmt(editCredit)}</td>
-                                  <td />
-                                </tr>
-                              </tbody>
-                            </table>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7 }}>
-                              <button className="qbd-btn" onClick={addEditLine} disabled={saving}>+ Add Line</button>
-                              <span style={{ fontSize: 11, color: editBalanced ? '#2f6b3a' : '#b3261e' }}>
-                                {editBalanced ? 'In balance' : `Out of balance ${fmt(editDebit - editCredit)} — debits must equal credits`}
-                              </span>
-                              <span style={{ flex: 1 }} />
-                              <button className="qbd-btn" onClick={cancelEdit} disabled={saving}>Cancel</button>
-                              <button className="qbd-btn" style={{ fontWeight: 'bold' }} disabled={saving || !editBalanced} onClick={() => saveEdit(j.id)}>
-                                {saving ? 'Saving…' : 'Save corrections'}
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <table className="qbd-jt" style={{ width: '100%' }}>
-                              <thead>
-                                <tr>
-                                  <th style={{ width: 300 }}>Account</th>
-                                  <th>Memo</th>
-                                  <th style={{ width: 110, textAlign: 'right' }}>Debit</th>
-                                  <th style={{ width: 110, textAlign: 'right' }}>Credit</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {lines.map((l) => (
-                                  <tr key={l.id}>
-                                    <td>{l.account_number} · {leafLabel(l.account_name)}</td>
-                                    <td>{l.description || '—'}</td>
-                                    <td style={{ textAlign: 'right' }}>{+l.debit ? fmt(+l.debit) : ''}</td>
-                                    <td style={{ textAlign: 'right' }}>{+l.credit ? fmt(+l.credit) : ''}</td>
-                                  </tr>
-                                ))}
-                                <tr style={{ fontWeight: 'bold', background: '#eef4fb' }}>
-                                  <td style={{ textAlign: 'right' }} colSpan={2}>Totals</td>
-                                  <td style={{ textAlign: 'right' }}>{fmt(sumLines(lines, 'debit'))}</td>
-                                  <td style={{ textAlign: 'right' }}>{fmt(sumLines(lines, 'credit'))}</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                            <div style={{ marginTop: 7, display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <button className="qbd-btn" onClick={() => startEdit(j.id, lines)} disabled={busy || saving}>Edit lines…</button>
-                              <span className="qbd-muted" style={{ fontSize: 11 }}>Corrects this draft before it posts — accounts, amounts and line memos.</span>
-                              <span style={{ flex: 1 }} />
-                              {je && je.sourceDocument && je.sourceDocument.documentId && je.sourceDocument.hasFile && (
-                                <button
-                                  className="qbd-btn"
-                                  title={je.sourceDocument.fileName || 'View the attached document'}
-                                  onClick={() => journalAPI.viewDocument(entityId, j.id).catch(() => toast('Could not open the attachment'))}
-                                >
-                                  📎 {(je.sourceDocument.fileName || 'View attachment').length > 34
-                                    ? `${je.sourceDocument.fileName.slice(0, 31)}…`
-                                    : (je.sourceDocument.fileName || 'View attachment')}
-                                </button>
-                              )}
-                              <button className="qbd-btn" onClick={() => pickAndAttach(j.id)} disabled={attachingId === j.id}>
-                                {attachingId === j.id
-                                  ? 'Attaching…'
-                                  : (je && je.sourceDocument && je.sourceDocument.documentId && je.sourceDocument.hasFile
-                                    ? 'Replace attachment…'
-                                    : 'Attach document…')}
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+      <div style={styles.body}>
+        <aside style={styles.folders}>
+          {loading && <div style={styles.empty}>Loading…</div>}
+          {!loading && !feeds.length && <div style={styles.empty}>Nothing waiting for approval.</div>}
+          {feeds.map((feed) => {
+            const open = openFeeds.has(feed.key);
+            return (
+              <div key={feed.key}>
+                <button
+                  type="button"
+                  style={{
+                    ...styles.feedBtn,
+                    background: feedKey === feed.key ? '#e8eef5' : 'transparent',
+                  }}
+                  onClick={() => setOpenFeeds((s) => {
+                    const n = new Set(s);
+                    if (n.has(feed.key)) n.delete(feed.key); else n.add(feed.key);
+                    return n;
+                  })}
+                >
+                  {open ? '▾' : '▸'} {feed.label}
+                  <span style={{ float: 'right', color: '#666', fontWeight: 500 }}>{feed.count}</span>
+                </button>
+                {open && (feed.months || []).map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    style={{
+                      ...styles.monthBtn,
+                      background: feedKey === feed.key && monthKey === m.key ? '#dce8f5' : 'transparent',
+                      fontWeight: feedKey === feed.key && monthKey === m.key ? 650 : 400,
+                    }}
+                    onClick={() => selectMonth(feed.key, m.key)}
+                  >
+                    {m.label}
+                    <span style={{ float: 'right', color: '#666' }}>{m.count}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </aside>
+
+        <div style={styles.main}>
+          <section style={styles.listPane}>
+            <div style={styles.listHead}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                <input type="checkbox" checked={allSelected} onChange={toggleAll} disabled={!items.length} />
+                Select all
+              </label>
+              <strong style={{ fontSize: 14 }}>
+                {activeFeed ? activeFeed.label : ''}{activeMonth ? ` · ${activeMonth.label}` : ''}
+              </strong>
+              <span style={{ flex: 1 }} />
+              <span style={{ fontSize: 12, color: '#666' }}>{items.length} charges</span>
+            </div>
+            <div style={styles.list}>
+              {loading ? (
+                <div style={styles.empty}>Loading charges…</div>
+              ) : !items.length ? (
+                <div style={styles.empty}>No charges in this folder.</div>
+              ) : items.map((it) => (
+                <div key={it.id} style={styles.row}>
+                  <input
+                    type="checkbox"
+                    checked={sel.has(it.id)}
+                    onChange={() => toggle(it.id)}
+                    style={{ marginTop: 3 }}
+                  />
+                  <div style={styles.date}>{fmtStmtDate(it.postingDate)}</div>
+                  <div style={styles.desc}>
+                    {(it.descLines || []).map((line, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          ...styles.descLine,
+                          fontWeight: i === 0 ? 600 : 400,
+                          color: i === 0 ? '#111' : '#444',
+                          fontSize: i === 0 ? 13 : 12,
+                          marginTop: i ? 2 : 0,
+                        }}
+                      >
+                        {line}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={styles.amount}>{fmtMoney(it.amount)}</div>
+                  <select
+                    style={styles.catSelect}
+                    value={it.categoryAccountId || ''}
+                    onChange={(e) => changeCategory(it, e.target.value)}
+                    title="Category — changing this teaches the app for next time"
+                  >
+                    <option value="">— pick category —</option>
+                    {expenseAccounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {leafLabel(a.name)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section style={styles.docPane}>
+            <div style={styles.docBar}>
+              <span style={{ fontWeight: 650 }}>Source document</span>
+              <span style={{ opacity: 0.85 }}>{docBusy ? 'Loading…' : docLabel}</span>
+            </div>
+            {docUrl ? (
+              <iframe title="Source document" src={docUrl} style={styles.iframe} />
+            ) : (
+              <div style={{ ...styles.empty, color: '#ddd', textAlign: 'center', marginTop: 48 }}>
+                {docBusy
+                  ? 'Loading statement…'
+                  : 'Open a month on the left. When a statement PDF is on file, it appears here next to the charges.'}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
 
-      <div className="qbd-botbar">
-        <span className="qbd-muted">
-          {visible.length} draft{visible.length === 1 ? '' : 's'} shown
-          {hiddenByDate > 0 ? ` · ${hiddenByDate} hidden by the date limit` : ''}
-          {selected.length ? ` · ${selected.length} selected` : ''}
+      <div style={styles.bot}>
+        <span style={{ fontSize: 13, color: '#555' }}>
+          {selectedItems.length ? `${selectedItems.length} selected` : 'Select charges to approve'}
         </span>
-        <span className="sp" />
-        <button className="qbd-btn" onClick={expandAll} disabled={busy || !visible.length}>Expand all</button>
-        <button className="qbd-btn" onClick={collapseAll} disabled={busy || !openIds.size}>Collapse all</button>
-        <button className="qbd-btn" onClick={() => navigate('/')} disabled={busy}>Close</button>
-        <button className="qbd-btn" onClick={load} disabled={busy}>Refresh</button>
-        <button className="qbd-btn" style={{ fontWeight: 'bold' }} disabled={busy || !selected.length} onClick={postSelected}>
-          {busy ? 'Posting…' : `Approve & Post${selected.length ? ` (${selected.length})` : ''}`}
+        <span style={{ flex: 1 }} />
+        <button type="button" style={styles.btn} onClick={() => navigate('/')} disabled={busy}>Close</button>
+        <button type="button" style={styles.btn} onClick={load} disabled={busy || loading}>Refresh</button>
+        <button
+          type="button"
+          style={styles.btnPrimary}
+          disabled={busy || !selectedItems.length}
+          onClick={postSelected}
+        >
+          {busy ? 'Posting…' : `Approve & Post${selectedItems.length ? ` (${selectedItems.length})` : ''}`}
         </button>
       </div>
     </div>

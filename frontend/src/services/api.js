@@ -78,14 +78,19 @@ export const journalAPI = {
   reverse: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/reverse`, data),
   attachDocument: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/document`, data),
   async viewDocument(entityId, id) {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`/api/entities/${entityId}/journals/${id}/document`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-    if (!res.ok) throw new Error('Could not load the attached document');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+    const url = await this.getDocumentObjectUrl(entityId, id);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }
+  },
+  async getDocumentObjectUrl(entityId, id) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/entities/${entityId}/journals/${id}/document`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Could not load the attached document');
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
 };
 
 export const reportAPI = {
@@ -339,6 +344,12 @@ export const accountingAPI = {
     client.get(`/api/entities/${entityId}/accounting/year-end/preview`, { params: { asOfDate } }),
   postYearEnd: (entityId, data) =>
     client.post(`/api/entities/${entityId}/accounting/year-end/close`, data),
+  categorizationReview: (entityId, params = {}) =>
+    client.get(`/api/entities/${entityId}/accounting/categorization-review`, { params }),
+  setCategorizationCategory: (entityId, draftId, accountId) =>
+    client.post(`/api/entities/${entityId}/accounting/categorization-review/${draftId}/category`, {
+      accountId,
+    }),
 };
 
 export const emailIngestAPI = {
