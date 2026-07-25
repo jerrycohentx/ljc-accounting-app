@@ -26,12 +26,13 @@ async function resolveCompanyName(db, entityId) {
  * and per-number drill metadata), optionally with a comparison period.
  * Returns the structured statement used by both the on-screen report and the PDF.
  */
-async function buildStatement(db, entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd }) {
+async function buildStatement(db, entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd, detailLevel }) {
   const companyName = await resolveCompanyName(db, entityId);
   const isBS = reportType === 'balance_sheet';
+  const pnlDetail = detailLevel === 'detail' ? 'detail' : 'summary';
   let primary = isBS
     ? await buildBalanceSheet(db, { entityId, asOfDate, companyName })
-    : await buildProfitLoss(db, { entityId, startDate, endDate, companyName });
+    : await buildProfitLoss(db, { entityId, startDate, endDate, companyName, detailLevel: pnlDetail });
 
   // Prefer QBO YE TB P&L for full tax years (e.g. 2025) when the file exists —
   // app GL often only has openings / small correcting JEs for that year.
@@ -48,7 +49,7 @@ async function buildStatement(db, entityId, { reportType, asOfDate, startDate, e
 
   const comparison = isBS
     ? await buildBalanceSheet(db, { entityId, asOfDate: cmpPeriod.end, companyName })
-    : await buildProfitLoss(db, { entityId, startDate: cmpPeriod.start, endDate: cmpPeriod.end, companyName });
+    : await buildProfitLoss(db, { entityId, startDate: cmpPeriod.start, endDate: cmpPeriod.end, companyName, detailLevel: pnlDetail });
 
   const cmpLabel = isBS ? shortLabel(cmpPeriod.end) : `${shortLabel(cmpPeriod.start)} - ${shortLabel(cmpPeriod.end)}`;
   const merged = mergeStatements(primary, comparison, cmpLabel);
@@ -62,12 +63,12 @@ async function buildStatement(db, entityId, { reportType, asOfDate, startDate, e
 // GET /api/entities/:entityId/reports/financial-statement?reportType=balance_sheet|pnl&asOfDate|startDate&endDate&compareMode
 router.get('/financial-statement', entityAccessMiddleware, async (req, res) => {
   try {
-    const { reportType = 'balance_sheet', asOfDate, startDate, endDate, compareMode = 'none', compareStart, compareEnd } = req.query;
+    const { reportType = 'balance_sheet', asOfDate, startDate, endDate, compareMode = 'none', compareStart, compareEnd, detailLevel = 'summary' } = req.query;
     if (reportType === 'balance_sheet' && !asOfDate) return res.status(400).json({ error: 'asOfDate required' });
     if (reportType === 'pnl' && (!startDate || !endDate)) return res.status(400).json({ error: 'startDate and endDate required' });
     const db = await getDatabase();
-    const statement = await buildStatement(db, req.entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd });
-    res.json({ statement, compareMode });
+    const statement = await buildStatement(db, req.entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd, detailLevel });
+    res.json({ statement, compareMode, detailLevel: reportType === 'pnl' ? (detailLevel === 'detail' ? 'detail' : 'summary') : undefined });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -76,11 +77,11 @@ router.get('/financial-statement', entityAccessMiddleware, async (req, res) => {
 // POST /api/entities/:entityId/reports/financial-statement-pdf  (streams QBO-style PDF inline)
 router.post('/financial-statement-pdf', entityAccessMiddleware, async (req, res) => {
   try {
-    const { reportType = 'balance_sheet', asOfDate, startDate, endDate, compareMode = 'none', compareStart, compareEnd } = req.body || {};
+    const { reportType = 'balance_sheet', asOfDate, startDate, endDate, compareMode = 'none', compareStart, compareEnd, detailLevel = 'summary' } = req.body || {};
     if (reportType === 'balance_sheet' && !asOfDate) return res.status(400).json({ error: 'asOfDate required' });
     if (reportType === 'pnl' && (!startDate || !endDate)) return res.status(400).json({ error: 'startDate and endDate required' });
     const db = await getDatabase();
-    const statement = await buildStatement(db, req.entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd });
+    const statement = await buildStatement(db, req.entityId, { reportType, asOfDate, startDate, endDate, compareMode, compareStart, compareEnd, detailLevel });
     statement.header.generatedAt = new Date();
     const compare = !!(compareMode && compareMode !== 'none' && statement.comparison);
     const pdf = await renderFinancialStatementPdf(statement, { compare });

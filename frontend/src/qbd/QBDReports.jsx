@@ -100,9 +100,18 @@ export default function QBDReports() {
   const [from, setFrom] = useState(today.slice(0, 4) + '-01-01');
   const [to, setTo] = useState(today);
   const [datePreset, setDatePreset] = useState('custom');
+  const [detailLevel, setDetailLevel] = useState(() => {
+    try { return localStorage.getItem('qbd-pl-detail-level') === 'detail' ? 'detail' : 'summary'; } catch { return 'summary'; }
+  });
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [printBusy, setPrintBusy] = useState(false);
+
+  const setPlDetailLevel = (level) => {
+    const next = level === 'detail' ? 'detail' : 'summary';
+    setDetailLevel(next);
+    try { localStorage.setItem('qbd-pl-detail-level', next); } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     if (!entityId) return;
@@ -137,11 +146,12 @@ export default function QBDReports() {
         compareMode,
         compareStart: compareMode === 'custom' ? compareFrom : undefined,
         compareEnd: compareMode === 'custom' ? compareTo : undefined,
+        detailLevel: rtype === 'pl' ? detailLevel : undefined,
       });
     } else if (rtype === 'tb') p = reportAPI.trialBalance(entityId, asOf);
     else p = reportAPI.ledgerAll(entityId, from, to);
     p.then((r) => setData(r.data)).catch(() => setData(null)).finally(() => setLoading(false));
-  }, [entityId, rtype, asOf, from, to, segment, compareMode, compareFrom, compareTo]);
+  }, [entityId, rtype, asOf, from, to, segment, compareMode, compareFrom, compareTo, detailLevel]);
 
   useEffect(() => { fetchReport(); }, [fetchReport]);
 
@@ -173,6 +183,7 @@ export default function QBDReports() {
       compareMode,
       compareStart: compareMode === 'custom' ? compareFrom : undefined,
       compareEnd: compareMode === 'custom' ? compareTo : undefined,
+      detailLevel: rtype === 'pl' ? detailLevel : undefined,
     }).catch((e) => alert('Could not open the statement PDF: ' + (e.message || e)))
       .finally(() => setPrintBusy(false));
   };
@@ -203,6 +214,29 @@ export default function QBDReports() {
             <select value={segment} onChange={(e) => setSegment(e.target.value)}>
               {segments.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
+          </>
+        )}
+        {rtype === 'pl' && (
+          <>
+            <span className="qbd-muted">View</span>
+            <button
+              type="button"
+              className="qbd-btn"
+              style={detailLevel === 'summary' ? { background: '#cfe2fb', fontWeight: 'bold' } : {}}
+              onClick={() => setPlDetailLevel('summary')}
+              title="Show Water / Electric / Gas totals under Rental Property Expenses"
+            >
+              Summary
+            </button>
+            <button
+              type="button"
+              className="qbd-btn"
+              style={detailLevel === 'detail' ? { background: '#cfe2fb', fontWeight: 'bold' } : {}}
+              onClick={() => setPlDetailLevel('detail')}
+              title="Show per-property utility charges"
+            >
+              Detail
+            </button>
           </>
         )}
         {(rtype === 'bs' || rtype === 'pl' || rtype === 'kpi') && (
@@ -245,7 +279,11 @@ export default function QBDReports() {
         {loading ? <div className="qbd-loading">Loading…</div> : !data ? <div className="qbd-empty">No data.</div> : (
           <>
             <div className="qbd-rpt-hint">{(rtype === 'bs' || rtype === 'pl')
-              ? 'Click any number to drill into the transactions behind it. Use “Print (QuickBooks format)” for a printable statement.'
+              ? (rtype === 'pl'
+                ? (detailLevel === 'summary'
+                  ? 'Summary view: utility subtotals (Water / Electric / Gas) under Rental Property Expenses. Switch to Detail for per-property charges. Click any number to drill in.'
+                  : 'Detail view: per-property utility charges under Water / Electric / Gas. Switch to Summary for rolled-up totals. Click any number to drill in.')
+                : 'Click any number to drill into the transactions behind it. Use “Print (QuickBooks format)” for a printable statement.')
               : 'Click account rows to open register. Green/red variances follow line polarity (revenue up = good, expense up = bad).'}</div>
             {(rtype === 'bs' || rtype === 'pl') ? <StatementView data={data} nav={nav} showCompare={showCompare} />
               : rtype === 'kpi' ? <KpiDashboard data={data} showCompare={showCompare} />
@@ -494,6 +532,9 @@ function StatementView({ data, nav, showCompare }) {
   const periodText = h.reportType === 'balance_sheet'
     ? `As of ${shortCol(h.asOfDate)}`
     : `${h.startDate} through ${h.endDate}`;
+  const detailText = h.reportType === 'pnl' && h.detailLevel
+    ? (h.detailLevel === 'detail' ? ' · Detail' : ' · Summary')
+    : '';
 
   const amtCell = (row, cmp) => {
     const val = cmp ? row.cmpAmount : row.amount;
@@ -510,7 +551,7 @@ function StatementView({ data, nav, showCompare }) {
   return (
     <div className="qbd-rpt">
       <h2>{h.title}</h2>
-      <div className="sub">{h.companyName} · {periodText}{h.basis ? ` · ${h.basis}` : ''}</div>
+      <div className="sub">{h.companyName} · {periodText}{detailText}{h.basis ? ` · ${h.basis}` : ''}</div>
       {h.sourceNote && (
         <div
           style={{
