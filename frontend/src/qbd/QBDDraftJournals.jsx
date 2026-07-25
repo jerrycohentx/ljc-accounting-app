@@ -658,7 +658,9 @@ export default function QBDDraftJournals() {
                     onChange={() => toggle(it.id)}
                     style={{ marginTop: 3 }}
                   />
-                  <div style={styles.date}>{fmtStmtDate(it.postingDate)}</div>
+                  <div style={styles.date} title={it.chargeDate && it.chargeDate !== it.postingDate ? `Books posting date ${fmtStmtDate(it.postingDate)}` : undefined}>
+                    {fmtStmtDate(it.chargeDate || it.postingDate)}
+                  </div>
                   <div style={styles.desc}>
                     {(it.descLines || []).map((line, i) => (
                       <div
