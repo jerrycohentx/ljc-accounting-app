@@ -84,9 +84,11 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '6241', name: 'Gas — 6810 Heath', type: 'EXPENSE', parent: '6100' },
   { entity: 'ent-ljc', number: '6242', name: 'Electric — 6810 Heath', type: 'EXPENSE', parent: '6100' },
   { entity: 'ent-ljc', number: '6243', name: 'Water — 6810 Heath', type: 'EXPENSE', parent: '6100' },
-  { entity: 'ent-ljc', number: '6251', name: 'Gas — 3427 Wentworth', type: 'EXPENSE', parent: '6100' },
-  { entity: 'ent-ljc', number: '6252', name: 'Electric — 3427 Wentworth', type: 'EXPENSE', parent: '6100' },
-  { entity: 'ent-ljc', number: '6253', name: 'Water — 3427 Wentworth', type: 'EXPENSE', parent: '6100' },
+  // Wentworth utilities are tenant-reimbursed → AR assets (not P&L expense)
+  { entity: 'ent-ljc', number: '6251', name: 'Due from Tenant — Gas — 3427 Wentworth', type: 'ASSET', parent: '1200' },
+  { entity: 'ent-ljc', number: '6252', name: 'Due from Tenant — Electric — 3427 Wentworth', type: 'ASSET', parent: '1200' },
+  { entity: 'ent-ljc', number: '6253', name: 'Due from Tenant — Water — 3427 Wentworth', type: 'ASSET', parent: '1200' },
+  { entity: 'ent-ljc', number: '6254', name: 'Due from Tenant — Internet — 3427 Wentworth', type: 'ASSET', parent: '1200' },
   { entity: 'ent-ljc', number: '3005', name: "Member's Draws", type: 'EQUITY' },
 
   // ── Justin Financial LLC ─────────────────────────────────────────────────
@@ -103,6 +105,7 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-justin', number: '3900', name: 'Opening Balance Equity', type: 'EQUITY' },
   { entity: 'ent-justin', number: '4000', name: 'Other Income', type: 'REVENUE' },
   { entity: 'ent-justin', number: '5000', name: 'Operating Expenses', type: 'EXPENSE' },
+  { entity: 'ent-justin', number: '5010', name: 'Interest Expense', type: 'EXPENSE' },
 
   // ── OMC Housing LLC ──────────────────────────────────────────────────────
   { entity: 'ent-omc', number: '1000', name: 'Cash & Bank Accounts', type: 'ASSET' },

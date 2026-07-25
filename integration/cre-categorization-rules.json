@@ -36,7 +36,8 @@
       "id": "3427-wentworth",
       "name": "3427 Wentworth",
       "shortName": "3427 Wentworth",
-      "utilityAccounts": { "gas": "6251", "electric": "6252", "water": "6253" }
+      "tenantReimbursedUtilities": true,
+      "utilityAccounts": { "gas": "6251", "electric": "6252", "water": "6253", "internet": "6254" }
     }
   ],
   "vendorPatterns": [
@@ -59,7 +60,14 @@
       "utility": "electric",
       "propertyId": "3427-wentworth",
       "priority": 14,
-      "label": "Electric — 3427 Wentworth"
+      "label": "Electric — 3427 Wentworth (tenant reimbursable)"
+    },
+    {
+      "patterns": ["COMCAST", "XFINITY"],
+      "utility": "internet",
+      "propertyId": "3427-wentworth",
+      "priority": 8,
+      "label": "Internet — 3427 Wentworth (tenant reimbursable)"
     },
     {
       "patterns": ["CITY OF HOUSTON WATER", "HCWCID", "MUD "],

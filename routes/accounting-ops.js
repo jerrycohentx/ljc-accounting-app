@@ -19,6 +19,10 @@ import { clearConversionSuspenseFor2026 } from '../lib/clear-conversion-suspense
 import { reclassPostedUndepositedOffsets } from '../lib/reclass-posted-undeposited.js';
 import { reclassPostedByLearnedRules } from '../lib/reclass-posted-by-rules.js';
 import { learnCategorizationFromHistory } from '../lib/learn-categorization-from-history.js';
+import {
+  applyWentworthTenantUtilityTreatment,
+  WENTWORTH_UTIL_CONFIRM,
+} from '../lib/wentworth-tenant-utilities.js';
 import { reverseDuplicateBankImports } from '../lib/reverse-duplicate-bank-imports.js';
 import {
   reclassOpeningBalanceEquity,
@@ -818,6 +822,40 @@ router.post(
           : `Reclassified ${result.reclassed} of ${result.scanned}`,
         ...result,
       });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/entities/:entityId/accounting/wentworth-tenant-utilities
+ * Mark Wentworth gas/electric/water/internet as tenant-reimbursable assets (not P&L),
+ * and move Comcast/Xfinity off office internet expense onto 6254.
+ * Body: { confirm: "WENTWORTH-UTIL-<entityId>", dryRun?, startDate?, endDate?, reclose? }
+ */
+router.post(
+  '/wentworth-tenant-utilities',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      if (req.entityId !== 'ent-ljc') {
+        return res.status(400).json({ error: 'Only implemented for ent-ljc' });
+      }
+      const expected = WENTWORTH_UTIL_CONFIRM(req.entityId);
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({ error: `confirm must equal "${expected}"`, code: 'CONFIRM_REQUIRED' });
+      }
+      const db = await getDatabase();
+      const result = await applyWentworthTenantUtilityTreatment(db, {
+        entityId: req.entityId,
+        userId: req.user.id,
+        dryRun: !!req.body?.dryRun,
+        startDate: req.body?.startDate || '2026-01-01',
+        endDate: req.body?.endDate || '2026-06-30',
+        reclose: req.body?.reclose !== false,
+      });
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
