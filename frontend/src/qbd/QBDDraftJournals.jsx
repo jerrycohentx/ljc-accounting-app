@@ -97,6 +97,42 @@ const FOLDER_W_KEY = 'qbd-review-folder-w';
 const LIST_SPLIT_KEY = 'qbd-review-list-split';
 const DOC_ZOOM_KEY = 'qbd-review-doc-zoom';
 const DOC_SHOW_KEY = 'qbd-review-doc-show';
+const SORT_BY_KEY = 'qbd-review-sort-by';
+const SORT_DIR_KEY = 'qbd-review-sort-dir';
+
+const SORT_COLUMNS = [
+  { key: 'date', label: 'Date' },
+  { key: 'merchant', label: 'Merchant' },
+  { key: 'amount', label: 'Amount' },
+  { key: 'category', label: 'Category' },
+];
+
+function itemMerchant(it) {
+  return String((it.descLines && it.descLines[0]) || it.sourceDescription || '').trim().toUpperCase();
+}
+
+function itemCategoryLabel(it) {
+  const num = String(it.categoryAccountNumber || '');
+  const name = leafLabel(it.categoryAccountName || '');
+  return `${num} ${name}`.trim().toUpperCase();
+}
+
+function compareReviewItems(a, b, sortBy, sortDir) {
+  let cmp = 0;
+  if (sortBy === 'date') {
+    cmp = String(a.postingDate || '').localeCompare(String(b.postingDate || ''));
+  } else if (sortBy === 'merchant') {
+    cmp = itemMerchant(a).localeCompare(itemMerchant(b));
+  } else if (sortBy === 'amount') {
+    cmp = (Number(a.amount) || 0) - (Number(b.amount) || 0);
+  } else if (sortBy === 'category') {
+    cmp = itemCategoryLabel(a).localeCompare(itemCategoryLabel(b));
+  }
+  if (cmp === 0) {
+    cmp = String(a.id || '').localeCompare(String(b.id || ''));
+  }
+  return sortDir === 'desc' ? -cmp : cmp;
+}
 
 /** Drag gutter: percent of a horizontal split container. */
 function useSplitResize(splitRef, setSplitPct, minPct = 25, maxPct = 80) {
@@ -235,6 +271,33 @@ const styles = {
     background: '#fafafa',
   },
   list: { flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '0 6px 16px', minHeight: 0 },
+  colHead: {
+    display: 'grid',
+    gridTemplateColumns: '24px 64px minmax(120px, 1fr) 88px minmax(180px, 280px)',
+    gap: 8,
+    alignItems: 'center',
+    padding: '4px 6px 6px',
+    borderBottom: '1px solid #d0d0d0',
+    background: '#f3f5f8',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
+  },
+  sortBtn: {
+    border: 'none',
+    background: 'transparent',
+    padding: '2px 0',
+    margin: 0,
+    fontSize: 11,
+    fontWeight: 650,
+    color: '#35557a',
+    cursor: 'pointer',
+    textAlign: 'left',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 3,
+    userSelect: 'none',
+  },
   row: {
     display: 'grid',
     gridTemplateColumns: '24px 64px minmax(120px, 1fr) 88px minmax(180px, 280px)',
@@ -389,6 +452,13 @@ export default function QBDDraftJournals() {
     return Number.isFinite(saved) && saved >= 40 && saved <= 250 ? saved : 100;
   });
   const [showDoc, setShowDoc] = useState(() => localStorage.getItem(DOC_SHOW_KEY) !== 'false');
+  const [sortBy, setSortBy] = useState(() => {
+    const saved = localStorage.getItem(SORT_BY_KEY);
+    return SORT_COLUMNS.some((c) => c.key === saved) ? saved : 'date';
+  });
+  const [sortDir, setSortDir] = useState(() => (
+    localStorage.getItem(SORT_DIR_KEY) === 'desc' ? 'desc' : 'asc'
+  ));
 
   const mainSplitRef = useRef(null);
   const startFolderResize = useFolderWidthResize(setFolderW);
@@ -406,6 +476,12 @@ export default function QBDDraftJournals() {
   useEffect(() => {
     localStorage.setItem(DOC_SHOW_KEY, showDoc ? 'true' : 'false');
   }, [showDoc]);
+  useEffect(() => {
+    localStorage.setItem(SORT_BY_KEY, sortBy);
+  }, [sortBy]);
+  useEffect(() => {
+    localStorage.setItem(SORT_DIR_KEY, sortDir);
+  }, [sortDir]);
 
   const zoomIn = useCallback(() => setDocZoom((z) => Math.min(250, (z > 0 ? z : 100) + 15)), []);
   const zoomOut = useCallback(() => setDocZoom((z) => Math.max(40, (z > 0 ? z : 100) - 15)), []);
@@ -455,19 +531,32 @@ export default function QBDDraftJournals() {
     || (activeFeed?.months || [])[0]
     || null;
   const items = activeMonth?.items || [];
-
-  const allSelected = items.length > 0 && items.every((it) => sel.has(it.id));
-  const selectedItems = useMemo(
-    () => items.filter((it) => sel.has(it.id)),
-    [items, sel]
+  const sortedItems = useMemo(
+    () => items.slice().sort((a, b) => compareReviewItems(a, b, sortBy, sortDir)),
+    [items, sortBy, sortDir]
   );
+
+  const allSelected = sortedItems.length > 0 && sortedItems.every((it) => sel.has(it.id));
+  const selectedItems = useMemo(
+    () => sortedItems.filter((it) => sel.has(it.id)),
+    [sortedItems, sel]
+  );
+
+  const toggleSort = (key) => {
+    if (sortBy === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(key);
+      setSortDir(key === 'amount' ? 'desc' : 'asc');
+    }
+  };
 
   const toggle = (id) => setSel((s) => {
     const n = new Set(s);
     if (n.has(id)) n.delete(id); else n.add(id);
     return n;
   });
-  const toggleAll = () => setSel(allSelected ? new Set() : new Set(items.map((it) => it.id)));
+  const toggleAll = () => setSel(allSelected ? new Set() : new Set(sortedItems.map((it) => it.id)));
 
   const selectMonth = (fk, mk) => {
     setFeedKey(fk);
@@ -783,21 +872,64 @@ export default function QBDDraftJournals() {
           >
             <div style={styles.listHead}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                <input type="checkbox" checked={allSelected} onChange={toggleAll} disabled={!items.length} />
+                <input type="checkbox" checked={allSelected} onChange={toggleAll} disabled={!sortedItems.length} />
                 Select all
               </label>
               <strong style={{ fontSize: 14 }}>
                 {activeFeed ? activeFeed.label : ''}{activeMonth ? ` · ${activeMonth.label}` : ''}
               </strong>
               <span style={{ flex: 1 }} />
-              <span style={{ fontSize: 12, color: '#666' }}>{items.length} charges</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#444' }}>
+                Sort by
+                <select
+                  value={`${sortBy}:${sortDir}`}
+                  onChange={(e) => {
+                    const [by, dir] = String(e.target.value).split(':');
+                    if (SORT_COLUMNS.some((c) => c.key === by)) setSortBy(by);
+                    if (dir === 'asc' || dir === 'desc') setSortDir(dir);
+                  }}
+                  style={{ fontSize: 12, padding: '2px 6px', border: '1px solid #aaa', borderRadius: 2 }}
+                  title="Sort charges in this folder"
+                >
+                  {SORT_COLUMNS.flatMap((c) => ([
+                    <option key={`${c.key}:asc`} value={`${c.key}:asc`}>{c.label} ↑</option>,
+                    <option key={`${c.key}:desc`} value={`${c.key}:desc`}>{c.label} ↓</option>,
+                  ]))}
+                </select>
+              </label>
+              <span style={{ fontSize: 12, color: '#666' }}>{sortedItems.length} charges</span>
             </div>
             <div style={styles.list}>
               {loading ? (
                 <div style={styles.empty}>Loading charges…</div>
-              ) : !items.length ? (
+              ) : !sortedItems.length ? (
                 <div style={styles.empty}>No charges in this folder.</div>
-              ) : items.map((it) => (
+              ) : (
+                <>
+                  <div style={styles.colHead}>
+                    <span />
+                    {SORT_COLUMNS.map((col) => {
+                      const active = sortBy === col.key;
+                      const arrow = active ? (sortDir === 'asc' ? '▲' : '▼') : '';
+                      return (
+                        <button
+                          key={col.key}
+                          type="button"
+                          style={{
+                            ...styles.sortBtn,
+                            justifyContent: col.key === 'amount' ? 'flex-end' : 'flex-start',
+                            width: '100%',
+                            color: active ? '#0d3d6e' : '#35557a',
+                          }}
+                          onClick={() => toggleSort(col.key)}
+                          title={`Sort by ${col.label}`}
+                        >
+                          {col.label}{arrow ? ` ${arrow}` : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {sortedItems.map((it) => (
                 <div key={it.id} style={styles.row}>
                   <input
                     type="checkbox"
@@ -845,7 +977,9 @@ export default function QBDDraftJournals() {
                     </label>
                   </div>
                 </div>
-              ))}
+                  ))}
+                </>
+              )}
             </div>
           </section>
 
