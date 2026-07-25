@@ -168,7 +168,7 @@ router.post('/periods/close', [entityAccessMiddleware, requireRole('ADMIN', 'ACC
 });
 
 // POST /api/entities/:entityId/accounting/periods/reopen
-router.post('/periods/reopen', [entityAccessMiddleware, requireRole('ADMIN')], async (req, res) => {
+router.post('/periods/reopen', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
   try {
     const { periodStart, periodEnd } = req.body;
     if (!periodStart || !periodEnd) {
