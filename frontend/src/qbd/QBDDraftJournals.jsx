@@ -56,27 +56,56 @@ function fmtMoney(n) {
   return `$${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-/** Client-side vendor pattern for the “Always use…” confirm dialog. */
+const US_STATE_CODES = new Set([
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA',
+  'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT',
+  'VA', 'WA', 'WV', 'WI', 'WY', 'DC',
+]);
+
+/** Client-side vendor pattern — strips order #s/zips so Contains matches all variants. */
 function deriveVendorPatternClient(description) {
   let text = String(description || '')
     .replace(/^Amex(?:\s+stmt\s+\d{4}-\d{2}-\d{2})?:\s*/i, '')
+    .replace(/^Categorize\s+\d{4}→\d{4}:\s*/i, '')
     .replace(/\s+-\s+FITID:.*$/i, '')
     .replace(/\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, ' ')
+    .replace(/\b\d{3,}(?:-\d+)*\b/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   if (!text) return '';
   const first = text.split(/\s{2,}/)[0].trim() || text;
-  let cleaned = first
-    .replace(/(?:[\s#]+[\d-]{3,})+\s*$/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toUpperCase();
-  if (cleaned.length > 40) {
-    const cut = cleaned.slice(0, 40);
+  const tokens = first
+    .toUpperCase()
+    .split(/\s+/)
+    .map((t) => t.replace(/^[^A-Z0-9*]+|[^A-Z0-9*.]+$/g, ''))
+    .filter(Boolean)
+    .filter((t) => !US_STATE_CODES.has(t))
+    .filter((t) => !/^\d+$/.test(t));
+  if (!tokens.length) return '';
+  const domain = tokens.find((t) => /\.[A-Z]{2,}/.test(t) || /^WEB\*[A-Z0-9*.]+$/i.test(t));
+  if (domain) {
+    const bare = domain.replace(/^WEB\*/i, '');
+    const pick = bare.length >= 4 ? bare : domain;
+    return pick.length >= 3 ? pick : '';
+  }
+  const words = tokens.filter((t) => /[A-Z]/.test(t) && t.length >= 3).slice(0, 3);
+  let cleaned = (words.length ? words : tokens.slice(0, 3)).join(' ').trim();
+  if (cleaned.length > 36) {
+    const cut = cleaned.slice(0, 36);
     const lastSpace = cut.lastIndexOf(' ');
     cleaned = (lastSpace > 8 ? cut.slice(0, lastSpace) : cut).trim();
   }
   return cleaned.length >= 3 ? cleaned : '';
+}
+
+function vendorPatternMatchesClient(text, pattern, matchType = 'contains') {
+  const hay = String(text || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  const pat = String(pattern || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  if (!hay || pat.length < 3) return false;
+  if (matchType === 'exact') return hay === pat;
+  if (matchType === 'starts_with') return hay.startsWith(pat);
+  return hay.includes(pat);
 }
 
 function fmtStmtDate(iso) {
@@ -436,6 +465,7 @@ export default function QBDDraftJournals() {
   });
   const [ruleForItem, setRuleForItem] = useState(null);
   const [rulePattern, setRulePattern] = useState('');
+  const [ruleMatchType, setRuleMatchType] = useState('contains');
   const [savingRule, setSavingRule] = useState(false);
 
   const [folderW, setFolderW] = useState(() => {
@@ -681,8 +711,28 @@ export default function QBDDraftJournals() {
     const raw = (item.descLines && item.descLines[0]) || item.sourceDescription || '';
     const suggested = deriveVendorPatternClient(raw);
     setRulePattern(suggested);
+    setRuleMatchType('contains');
     setRuleForItem(item);
   };
+
+  const allReviewItems = useMemo(() => {
+    const out = [];
+    for (const f of feeds || []) {
+      for (const m of f.months || []) {
+        for (const it of m.items || []) out.push(it);
+      }
+    }
+    return out;
+  }, [feeds]);
+
+  const ruleMatchPreviewCount = useMemo(() => {
+    const pat = String(rulePattern || '').trim();
+    if (!ruleForItem || pat.length < 3) return 0;
+    return allReviewItems.filter((it) => {
+      const text = [(it.descLines && it.descLines[0]) || '', it.sourceDescription || ''].join(' ');
+      return vendorPatternMatchesClient(text, pat, ruleMatchType);
+    }).length;
+  }, [allReviewItems, ruleForItem, rulePattern, ruleMatchType]);
 
   const saveVendorRule = async () => {
     if (!ruleForItem) return;
@@ -701,14 +751,18 @@ export default function QBDDraftJournals() {
           ? `${acct.number} · ${leafLabel(acct.name)}`
           : `Vendor: ${pattern.slice(0, 28)}`,
         description: (ruleForItem.descLines && ruleForItem.descLines[0]) || '',
+        matchType: ruleMatchType,
         applyToOpenDrafts: true,
       });
       const body = res?.data || res || {};
       const applied = Number(body.draftUpdate?.updated || 0);
+      const matched = Number(body.draftUpdate?.matched || 0);
       toast(
         applied > 0
-          ? `Rule saved — applied to ${applied} matching charge${applied === 1 ? '' : 's'} now`
-          : 'Rule saved — future matching charges will use this category'
+          ? `Rule saved — applied to ${applied} of ${matched} matching charge${matched === 1 ? '' : 's'} now`
+          : matched > 0
+            ? `Rule saved — ${matched} matching charge${matched === 1 ? '' : 's'} already use this category`
+            : 'Rule saved — future matching charges will use this category'
       );
       setRuleForItem(null);
       load();
@@ -1063,16 +1117,21 @@ export default function QBDDraftJournals() {
               {(() => {
                 const a = accounts.find((x) => x.id === ruleForItem.categoryAccountId);
                 const cat = a ? `${a.number} · ${leafLabel(a.name)}` : 'selected category';
+                const how = ruleMatchType === 'exact'
+                  ? 'exactly matching'
+                  : ruleMatchType === 'starts_with'
+                    ? 'starting with'
+                    : 'containing';
                 return (
                   <>
-                    Charges containing <strong>[{rulePattern || '…'}]</strong> → {cat}.
-                    {' '}This updates every matching charge in Review &amp; Approve right away, and future ones automatically.
+                    Charges {how} <strong>[{rulePattern || '…'}]</strong> → {cat}.
+                    {' '}Applies to matching charges in Review &amp; Approve now, and future ones automatically.
                   </>
                 );
               })()}
             </p>
             <div style={styles.field}>
-              <label style={styles.label}>Match text (editable)</label>
+              <label style={styles.label}>Match text (editable — keep it short, e.g. BLUEHOST.COM)</label>
               <input
                 style={styles.input}
                 value={rulePattern}
@@ -1080,12 +1139,29 @@ export default function QBDDraftJournals() {
                 autoFocus
               />
             </div>
+            <div style={styles.field}>
+              <label style={styles.label}>Match type</label>
+              <select
+                style={styles.input}
+                value={ruleMatchType}
+                onChange={(e) => setRuleMatchType(e.target.value)}
+              >
+                <option value="contains">Contains (recommended) — matches any charge with this text</option>
+                <option value="starts_with">Starts with — description begins with this text</option>
+                <option value="exact">Exact — whole description must match</option>
+              </select>
+            </div>
+            <p style={{ margin: '0 0 8px', fontSize: 12, color: ruleMatchPreviewCount ? '#1a5f3a' : '#666' }}>
+              {rulePattern.trim().length < 3
+                ? 'Enter at least 3 characters to preview matches.'
+                : `${ruleMatchPreviewCount} charge${ruleMatchPreviewCount === 1 ? '' : 's'} in Review & Approve match this rule.`}
+            </p>
             <div style={styles.modalActions}>
               <button type="button" style={styles.btn} disabled={savingRule} onClick={() => setRuleForItem(null)}>
                 Cancel
               </button>
               <button type="button" style={styles.btnPrimary} disabled={savingRule} onClick={saveVendorRule}>
-                {savingRule ? 'Saving…' : 'Save rule'}
+                {savingRule ? 'Saving…' : 'Save & apply now'}
               </button>
             </div>
           </div>

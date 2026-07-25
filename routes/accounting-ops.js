@@ -924,7 +924,7 @@ router.post(
   async (req, res) => {
     try {
       const db = await getDatabase();
-      const { pattern, accountId, label, description } = req.body || {};
+      const { pattern, accountId, label, description, matchType } = req.body || {};
       // Always apply to open review drafts unless explicitly opted out.
       const applyToOpenDrafts = req.body?.applyToOpenDrafts !== false;
       if (!accountId) return res.status(400).json({ error: 'accountId required' });
@@ -935,6 +935,7 @@ router.post(
         accountId,
         label,
         description,
+        matchType,
         priority: 4,
       });
 
@@ -944,6 +945,7 @@ router.post(
           entityId: req.entityId,
           pattern: rule.pattern,
           accountId: rule.accountId,
+          matchType: rule.matchType,
         });
       }
 
