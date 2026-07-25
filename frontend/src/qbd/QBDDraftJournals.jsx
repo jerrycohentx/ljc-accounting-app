@@ -22,20 +22,34 @@ function suggestAccountNumber(accounts, type) {
     LIABILITY: [2000, 2999],
     EQUITY: [3000, 3999],
     REVENUE: [4000, 4999],
-    EXPENSE: [5000, 6999],
+    // Keep new expenses in the main OpEx band; 62xx is used by property sub-accounts.
+    EXPENSE: [5000, 5999],
     CONTRA: [7000, 7999],
   };
   const [lo, hi] = ranges[type] || [9000, 9999];
-  const nums = (accounts || [])
+  // Numbers must be unique across the whole COA (asset 6253 blocked expense 6253).
+  const used = new Set(
+    (accounts || [])
+      .map((a) => parseInt(a.number, 10))
+      .filter((n) => Number.isFinite(n))
+  );
+  const sameType = (accounts || [])
     .filter((a) => a.type === type)
     .map((a) => parseInt(a.number, 10))
     .filter((n) => Number.isFinite(n) && n >= lo && n <= hi);
-  const max = nums.length ? Math.max(...nums) : lo - 10;
-  let next = max + 10;
-  if (next > hi) next = max + 1;
+  let next = (sameType.length ? Math.max(...sameType) : lo - 10) + 10;
   if (next < lo) next = lo;
-  return String(next);
+  while (next <= hi && used.has(next)) next += 1;
+  if (next > hi) {
+    next = lo;
+    while (next <= hi && used.has(next)) next += 1;
+  }
+  return next <= hi ? String(next) : '';
 }
+
+function accountUsingNumber(accounts, number) {
+  const n = String(number || '').trim();
+  return (accounts || []).find((a) => String(a.number) === n) || null;
 
 function groupAccountsByType(accounts) {
   const map = new Map();
@@ -429,6 +443,15 @@ export default function QBDDraftJournals() {
     const accountType = newAcct.accountType || 'EXPENSE';
     if (!number || !name) {
       toast('Enter an account number and name');
+      return;
+    }
+    const clash = accountUsingNumber(accounts, number);
+    if (clash) {
+      toast(
+        `${number} is already “${leafLabel(clash.name)}” (${ACCOUNT_TYPE_LABELS[clash.type] || clash.type}). `
+        + 'Pick a free number, or choose that account from the dropdown if it’s the right one.'
+      );
+      setNewAcct((f) => ({ ...f, accountNumber: suggestAccountNumber(accounts, accountType) }));
       return;
     }
     setCreating(true);

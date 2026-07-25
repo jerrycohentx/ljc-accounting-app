@@ -63,6 +63,7 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '5750', name: 'Repairs & Maintenance', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5760', name: 'Telephone Expense', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5770', name: 'Unapplied Cash Bill Payment Expense', type: 'EXPENSE' },
+  { entity: 'ent-ljc', number: '5780', name: 'Advertising & Marketing', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5800', name: 'Lending Expenses (DLOC & Warehouse)', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5801', name: 'Chargebacks & Reversals', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5910', name: 'Automobile Expense', type: 'EXPENSE' },
