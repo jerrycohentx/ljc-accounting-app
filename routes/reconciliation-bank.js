@@ -780,6 +780,9 @@ router.get('/statement-file', async (req, res) => {
       fileName: row.file_name || 'statement.pdf',
       mime: row.file_mime || 'application/pdf',
       dataBase64: row.file_data,
+      statementDate: row.matchedStatementDate || String(statementDate).slice(0, 10),
+      fuzzy: !!row.fuzzy,
+      requestedStatementDate: row.requestedStatementDate || String(statementDate).slice(0, 10),
     });
   } catch (error) {
     console.error('Statement file fetch error:', error);

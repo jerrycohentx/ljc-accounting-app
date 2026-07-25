@@ -103,6 +103,44 @@ async function testClosesWhenBalanced(db) {
   console.log('✓ closes balanced session and chains beginning balance');
 }
 
+async function testClosedWorksheetKeepsSessionLinesAndBegin(db) {
+  const acctId = `acc-${uuidv4()}`;
+  await createAccount(db, { id: acctId, number: '9005' });
+  await db.run(
+    `INSERT INTO bank_reconciliation_sessions
+       (id, entity_id, account_id, statement_date, beginning_balance, ending_balance, cleared_net, difference, status, notes, created_by, closed_at)
+     VALUES (?, ?, ?, '2025-12-31', 0, 1000, 1000, 0, 'CLOSED', 'prior', ?, CURRENT_TIMESTAMP)`,
+    [`brs-prior-${uuidv4()}`, ENTITY, acctId, USER]
+  );
+  await postJe(db, { accountId: acctId, date: '2026-01-05', debit: 800, glId: 'gl-keep-1' });
+  await postJe(db, { accountId: acctId, date: '2026-01-10', credit: 300, glId: 'gl-keep-2' });
+  await postJe(db, { accountId: acctId, date: '2026-01-15', debit: 500, glId: 'gl-drift' });
+
+  // Begin 1000 + 800 - 300 + 500 = 2000 ending
+  await closeBankReconciliation(db, {
+    entityId: ENTITY,
+    accountId: acctId,
+    glIds: ['gl-keep-1', 'gl-keep-2', 'gl-drift'],
+    statementDate: '2026-01-31',
+    statementEndingBalance: 2000,
+    userId: USER,
+  });
+  // Simulate production drift that dropped lines from the old worksheet query.
+  await db.run(`UPDATE general_ledger SET reconciliation_status = NULL, reconciliation_session_id = NULL WHERE id = 'gl-drift'`);
+
+  const ws = await buildWorksheet(db, {
+    entityId: ENTITY,
+    accountId: acctId,
+    statementDate: '2026-01-31',
+  });
+  assert(Math.abs(ws.displayBeginning - 1000) < 0.01, `begin must be session 1000, got ${ws.displayBeginning}`);
+  assert(ws.reconciledGlIds?.length === 3, `must reload all 3 session lines, got ${ws.reconciledGlIds?.length}`);
+  assert(ws.suggestedCheckedGlIds?.includes('gl-drift'), 'drifted line must be pre-checked from session_lines');
+  const healed = await db.get(`SELECT reconciliation_status, reconciliation_session_id FROM general_ledger WHERE id = 'gl-drift'`);
+  assert(healed.reconciliation_status === 'RECONCILED', 'heal must restore RECONCILED marker');
+  console.log('✓ closed worksheet uses session begin and all session_lines (heals drift)');
+}
+
 async function testReopenClearsLegacy(db) {
   const acctId = `acc-${uuidv4()}`;
   await createAccount(db, { id: acctId, number: '9003' });
@@ -207,6 +245,7 @@ async function main() {
   for (const [name, fn] of [
     ['refuses out-of-balance close', testRefusesOutOfBalanceClose],
     ['closes balanced session', testClosesWhenBalanced],
+    ['closed worksheet survives drift', testClosedWorksheetKeepsSessionLinesAndBegin],
     ['reopen clears legacy', testReopenClearsLegacy],
     ['posts service charge + interest', testPostsServiceChargeAndInterest],
   ]) {

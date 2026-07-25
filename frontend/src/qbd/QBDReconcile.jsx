@@ -417,7 +417,8 @@ export default function QBDReconcile() {
 
   // Automatically show the statement being reconciled: once a session is open,
   // fetch the stored PDF for this period (if one was uploaded before) and load
-  // it into the side-by-side pane — no re-upload needed.
+  // it into the side-by-side pane — no re-upload needed. Server also fuzzy-matches
+  // nearby statement dates (e.g. Simmons cycle ending on the 1st).
   useEffect(() => {
     if (!started || !entityId || !accountId || statementPdfUrl) return undefined;
     const date = (data && data.statementDate) || stmtDate;
@@ -426,14 +427,27 @@ export default function QBDReconcile() {
     if (stmtAutoLoadKeyRef.current === key) return undefined; // try once per period
     stmtAutoLoadKeyRef.current = key;
     let cancelled = false;
-    bankReconAPI.statementFile(entityId, accountId, date)
-      .then((r) => {
-        const d = r.data || {};
-        if (cancelled || !d.found || !d.dataBase64) return;
-        const url = base64ToObjectUrl(d.dataBase64, d.mime || 'application/pdf');
-        setStatementPdfUrl((prev) => { if (prev) { URL.revokeObjectURL(url); return prev; } return url; });
-      })
-      .catch(() => { /* no stored statement for this period — fine */ });
+    const tryDates = [
+      date,
+      data?.statementPeriod?.periodEnd,
+      data?.periodSession?.statementDate && String(data.periodSession.statementDate).slice(0, 10),
+    ].filter((d, i, arr) => d && /^\d{4}-\d{2}-\d{2}$/.test(String(d).slice(0, 10)) && arr.indexOf(d) === i);
+
+    (async () => {
+      for (const d0 of tryDates) {
+        try {
+          const r = await bankReconAPI.statementFile(entityId, accountId, String(d0).slice(0, 10));
+          const d = r.data || {};
+          if (cancelled || !d.found || !d.dataBase64) continue;
+          const url = base64ToObjectUrl(d.dataBase64, d.mime || 'application/pdf');
+          setStatementPdfUrl((prev) => { if (prev) { URL.revokeObjectURL(url); return prev; } return url; });
+          setShowStmt(true);
+          return;
+        } catch {
+          /* try next date */
+        }
+      }
+    })();
     return () => { cancelled = true; };
   }, [started, entityId, accountId, stmtDate, data, statementPdfUrl]);
 
@@ -1156,10 +1170,13 @@ export default function QBDReconcile() {
     );
   }
 
+  // Hard rule: never show green CLOSED if the live worksheet difference is not $0.00.
+  const sessionBannerBalanced = !!(periodSession?.balanced && balanced);
+  const sessionBannerCompromised = !!(periodSession?.balanced && !balanced);
   const sessionBanner = periodSession ? (
     <div className="qbd-recon-banner" style={{
-      background: periodSession.balanced ? '#eaf6ec' : '#fdecea',
-      color: periodSession.balanced ? '#2f6b3a' : '#b3261e',
+      background: sessionBannerBalanced ? '#eaf6ec' : '#fdecea',
+      color: sessionBannerBalanced ? '#2f6b3a' : '#b3261e',
       display: 'flex',
       alignItems: 'center',
       gap: 12,
@@ -1167,14 +1184,21 @@ export default function QBDReconcile() {
       borderBottom: '1px solid #c9d3df',
     }}>
       <span>
-        {periodSession.balanced ? '✓' : '⚠'} Reconcile {periodLabel(periodSession.statementDate)} ({periodSession.status})
+        {sessionBannerBalanced ? '✓' : '⚠'} Reconcile {periodLabel(periodSession.statementDate)} (
+          {sessionBannerCompromised ? 'CLOSED — worksheet out of balance' : periodSession.status}
+        )
         {periodSession.clearedCount != null ? ` — ${periodSession.clearedCount} cleared lines` : ''}
-        {!periodSession.balanced && periodSession.difference != null ? ` — difference ${fmt(periodSession.difference)}` : ''}
+        {!sessionBannerBalanced && difference != null ? ` — difference ${fmt(difference)}` : ''}
       </span>
+      {sessionBannerCompromised && (
+        <span className="qbd-muted" style={{ color: '#b3261e' }}>
+          Hard rule: Cleared must equal statement. Do not treat this as reconciled until Difference is $0.00.
+        </span>
+      )}
       {periodSession.message && <span className="qbd-muted">{periodSession.message}</span>}
       {canReopen && (
         <button className="qbd-btn" disabled={busy} onClick={reopenPeriod} style={{ marginLeft: 'auto' }} title="Undo this reconciliation and reopen the period so you can re-do it">
-          {needsReopen ? 'Reopen period' : 'Undo / Reopen'}
+          {needsReopen || sessionBannerCompromised ? 'Reopen period' : 'Undo / Reopen'}
         </button>
       )}
     </div>
