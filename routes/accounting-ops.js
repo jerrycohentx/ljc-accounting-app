@@ -26,6 +26,7 @@ import {
   upsertVendorCategoryRule,
   listVendorCategoryRules,
   applyVendorRuleToOpenDrafts,
+  postMatchingVendorDrafts,
   deriveVendorPattern,
 } from '../lib/vendor-category-rule.js';
 import { findDuplicateCatApprDrafts } from '../lib/cat-appr-dedupe.js';
@@ -915,8 +916,8 @@ router.get(
 
 /**
  * POST /api/entities/:entityId/accounting/vendor-category-rule
- * Create/update a durable contains-rule for a vendor pattern.
- * Body: { pattern?, accountId, label?, description?, applyToOpenDrafts? }
+ * Create/update a durable vendor rule, apply to open drafts, and (by default) post them.
+ * Body: { pattern?, accountId, label?, description?, matchType?, applyToOpenDrafts?, postMatchingDrafts? }
  */
 router.post(
   '/vendor-category-rule',
@@ -927,6 +928,8 @@ router.post(
       const { pattern, accountId, label, description, matchType } = req.body || {};
       // Always apply to open review drafts unless explicitly opted out.
       const applyToOpenDrafts = req.body?.applyToOpenDrafts !== false;
+      // Default: post every matching open draft so they leave Review & Approve.
+      const postMatching = req.body?.postMatchingDrafts !== false;
       if (!accountId) return res.status(400).json({ error: 'accountId required' });
 
       const rule = await upsertVendorCategoryRule(db, {
@@ -940,12 +943,23 @@ router.post(
       });
 
       let draftUpdate = null;
-      if (applyToOpenDrafts) {
+      let postResult = null;
+      if (applyToOpenDrafts || postMatching) {
         draftUpdate = await applyVendorRuleToOpenDrafts(db, {
           entityId: req.entityId,
           pattern: rule.pattern,
           accountId: rule.accountId,
           matchType: rule.matchType,
+        });
+      }
+      if (postMatching && draftUpdate?.matchedIds?.length) {
+        postResult = await postMatchingVendorDrafts(db, {
+          entityId: req.entityId,
+          pattern: rule.pattern,
+          accountId: rule.accountId,
+          matchType: rule.matchType,
+          userId: req.user?.id,
+          draftIds: draftUpdate.matchedIds,
         });
       }
 
@@ -954,7 +968,9 @@ router.post(
         rule,
         suggestedPattern: description ? deriveVendorPattern(description) : null,
         draftUpdate,
+        postResult,
         appliedToOpenDrafts: applyToOpenDrafts,
+        postedMatchingDrafts: postMatching,
       });
     } catch (error) {
       const status = /required|not found|min 3/i.test(error.message) ? 400 : 500;

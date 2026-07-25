@@ -742,6 +742,15 @@ export default function QBDDraftJournals() {
       return;
     }
     const acct = accounts.find((a) => a.id === ruleForItem.categoryAccountId);
+    const matchCount = ruleMatchPreviewCount;
+    if (
+      matchCount > 1
+      && !window.confirm(
+        `Save rule and post all ${matchCount} matching charges now? They will leave Review & Approve.`
+      )
+    ) {
+      return;
+    }
     setSavingRule(true);
     try {
       const res = await accountingAPI.createVendorRule(entityId, {
@@ -753,18 +762,23 @@ export default function QBDDraftJournals() {
         description: (ruleForItem.descLines && ruleForItem.descLines[0]) || '',
         matchType: ruleMatchType,
         applyToOpenDrafts: true,
+        postMatchingDrafts: true,
       });
       const body = res?.data || res || {};
-      const applied = Number(body.draftUpdate?.updated || 0);
       const matched = Number(body.draftUpdate?.matched || 0);
+      const posted = Number(body.postResult?.posted || 0);
+      const failed = Number(body.postResult?.failed || 0);
       toast(
-        applied > 0
-          ? `Rule saved — applied to ${applied} of ${matched} matching charge${matched === 1 ? '' : 's'} now`
-          : matched > 0
-            ? `Rule saved — ${matched} matching charge${matched === 1 ? '' : 's'} already use this category`
-            : 'Rule saved — future matching charges will use this category'
+        failed
+          ? `Posted ${posted} of ${matched}; ${failed} failed — ${(body.postResult?.errors?.[0]?.error) || 'see logs'}`
+          : posted > 0
+            ? `Done — posted ${posted} matching charge${posted === 1 ? '' : 's'} and removed them from the list`
+            : matched > 0
+              ? 'Rule saved — matching charges were already posted'
+              : 'Rule saved — future matching charges will use this category'
       );
       setRuleForItem(null);
+      setSel(new Set());
       load();
     } catch (e) {
       toast('Could not save rule: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
@@ -833,11 +847,31 @@ export default function QBDDraftJournals() {
 
   const postSelected = async () => {
     if (!selectedItems.length) { toast('Select at least one charge to approve'); return; }
-    if (!window.confirm(`Approve and post ${selectedItems.length} charge${selectedItems.length === 1 ? '' : 's'}?`)) return;
+
+    // Expand: same vendor pattern + same category as any selected charge.
+    const expandIds = new Set(selectedItems.map((it) => it.id));
+    for (const sel of selectedItems) {
+      const pat = deriveVendorPatternClient(
+        (sel.descLines && sel.descLines[0]) || sel.sourceDescription || ''
+      );
+      if (!pat || !sel.categoryAccountId) continue;
+      for (const it of allReviewItems) {
+        if (it.categoryAccountId !== sel.categoryAccountId) continue;
+        const text = [(it.descLines && it.descLines[0]) || '', it.sourceDescription || ''].join(' ');
+        if (vendorPatternMatchesClient(text, pat, 'contains')) expandIds.add(it.id);
+      }
+    }
+    const toPost = allReviewItems.filter((it) => expandIds.has(it.id));
+    const extra = toPost.length - selectedItems.length;
+    const msg = extra > 0
+      ? `Approve and post ${toPost.length} charges (${selectedItems.length} selected + ${extra} same vendor)?`
+      : `Approve and post ${toPost.length} charge${toPost.length === 1 ? '' : 's'}?`;
+    if (!window.confirm(msg)) return;
+
     setBusy(true);
     let ok = 0;
     const errs = [];
-    for (const it of selectedItems) {
+    for (const it of toPost) {
       try {
         await journalAPI.approve(entityId, it.id);
         await journalAPI.post(entityId, it.id);
@@ -1125,7 +1159,7 @@ export default function QBDDraftJournals() {
                 return (
                   <>
                     Charges {how} <strong>[{rulePattern || '…'}]</strong> → {cat}.
-                    {' '}Applies to matching charges in Review &amp; Approve now, and future ones automatically.
+                    {' '}Saves the rule, posts every matching charge now, and removes them from this list.
                   </>
                 );
               })()}
@@ -1161,7 +1195,9 @@ export default function QBDDraftJournals() {
                 Cancel
               </button>
               <button type="button" style={styles.btnPrimary} disabled={savingRule} onClick={saveVendorRule}>
-                {savingRule ? 'Saving…' : 'Save & apply now'}
+                {savingRule
+                  ? 'Posting…'
+                  : `Save, post all${ruleMatchPreviewCount ? ` (${ruleMatchPreviewCount})` : ''}`}
               </button>
             </div>
           </div>
