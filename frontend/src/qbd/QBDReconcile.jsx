@@ -1611,8 +1611,8 @@ export default function QBDReconcile() {
         <div className="sum-block">
           <div className="sum-row"><span className="sum-lbl">Beginning Balance</span><span className="sum-val">{fmt(beginning)}</span></div>
           <div className="sum-sub">Items you have marked cleared</div>
-          <div className="sum-row"><span className="sum-lbl">{depositCount} Deposits and Other Credits</span><span className="sum-val">{fmt(markedDeposits)}</span></div>
-          <div className="sum-row"><span className="sum-lbl">{paymentCount} Checks and Payments</span><span className="sum-val">{fmt(markedPayments)}</span></div>
+          <div className="sum-row"><span className="sum-lbl">{depositCount} {isCard ? 'Charges and Cash Advances' : 'Deposits and Other Credits'}</span><span className="sum-val">{fmt(markedDeposits)}</span></div>
+          <div className="sum-row"><span className="sum-lbl">{paymentCount} {isCard ? 'Payments and Credits' : 'Checks and Payments'}</span><span className="sum-val">{fmt(markedPayments)}</span></div>
         </div>
         <div className="sum-mid">
           <button type="button" className="qbd-btn" disabled={busy} onClick={() => setShowModify((v) => !v)}>Modify</button>

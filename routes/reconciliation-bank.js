@@ -648,6 +648,7 @@ router.post('/reconcile', async (req, res) => {
       paymentDate = null,
       payFromAccountId = null,
       paymentDueAmount = null,
+      beginningBalance = null,
     } = req.body;
     if (!entityId || !accountId || !Array.isArray(glIds)) {
       return res.status(400).json({ error: 'entityId, accountId and glIds[] required' });
@@ -671,6 +672,9 @@ router.post('/reconcile', async (req, res) => {
         interestAccountId: interestAccountId || null,
         serviceChargeDate: serviceChargeDate || null,
         interestDate: interestDate || null,
+        beginningBalanceOverride: beginningBalance != null && beginningBalance !== ''
+          ? Number(beginningBalance)
+          : null,
       });
     } catch (err) {
       if (err.code === 'RECON_OUT_OF_BALANCE') {

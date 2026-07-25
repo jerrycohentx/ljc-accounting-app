@@ -484,19 +484,21 @@ router.post(
       );
       if (!amex) return res.status(404).json({ error: 'Account 2010 not found' });
 
-      // Drop cutover stub that forces beginning balance to $0.
+      // Drop cutover stubs ($0 ending) that poison period start / beginning.
       await db.run(
         `DELETE FROM bank_reconciliation_session_lines
          WHERE session_id IN (
            SELECT id FROM bank_reconciliation_sessions
-           WHERE entity_id = ? AND account_id = ? AND statement_date = '2025-12-31'
+           WHERE entity_id = ? AND account_id = ?
+             AND statement_date < '2026-01-01'
              AND ABS(COALESCE(ending_balance, 0)) < 0.01
          )`,
         [req.entityId, amex.id]
       );
       await db.run(
         `DELETE FROM bank_reconciliation_sessions
-         WHERE entity_id = ? AND account_id = ? AND statement_date = '2025-12-31'
+         WHERE entity_id = ? AND account_id = ?
+           AND statement_date < '2026-01-01'
            AND ABS(COALESCE(ending_balance, 0)) < 0.01`,
         [req.entityId, amex.id]
       );
