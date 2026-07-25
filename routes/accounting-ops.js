@@ -857,8 +857,8 @@ router.post(
         'SELECT jel.*, a.account_number FROM journal_entry_lines jel JOIN accounts a ON a.id = jel.account_id WHERE jel.journal_entry_id = ? ORDER BY jel.line_number',
         [draftId]
       );
-      const dumpNums = new Set(['5700', '4091']);
-      const categoryLine = lines.find((l) => !dumpNums.has(String(l.account_number)));
+      // CAT-APPR: debit line is the category; credit clears the dump/source.
+      const categoryLine = lines.find((l) => Number(l.debit) > 0) || lines[0];
       if (!categoryLine) {
         return res.status(400).json({ error: 'Could not find the category line on this draft' });
       }
@@ -924,7 +924,9 @@ router.post(
   async (req, res) => {
     try {
       const db = await getDatabase();
-      const { pattern, accountId, label, description, applyToOpenDrafts } = req.body || {};
+      const { pattern, accountId, label, description } = req.body || {};
+      // Always apply to open review drafts unless explicitly opted out.
+      const applyToOpenDrafts = req.body?.applyToOpenDrafts !== false;
       if (!accountId) return res.status(400).json({ error: 'accountId required' });
 
       const rule = await upsertVendorCategoryRule(db, {
@@ -950,6 +952,7 @@ router.post(
         rule,
         suggestedPattern: description ? deriveVendorPattern(description) : null,
         draftUpdate,
+        appliedToOpenDrafts: applyToOpenDrafts,
       });
     } catch (error) {
       const status = /required|not found|min 3/i.test(error.message) ? 400 : 500;

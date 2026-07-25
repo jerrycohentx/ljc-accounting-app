@@ -694,7 +694,7 @@ export default function QBDDraftJournals() {
     const acct = accounts.find((a) => a.id === ruleForItem.categoryAccountId);
     setSavingRule(true);
     try {
-      await accountingAPI.createVendorRule(entityId, {
+      const res = await accountingAPI.createVendorRule(entityId, {
         pattern,
         accountId: ruleForItem.categoryAccountId,
         label: acct
@@ -703,8 +703,15 @@ export default function QBDDraftJournals() {
         description: (ruleForItem.descLines && ruleForItem.descLines[0]) || '',
         applyToOpenDrafts: true,
       });
-      toast('Rule saved — future matching charges will categorize automatically');
+      const body = res?.data || res || {};
+      const applied = Number(body.draftUpdate?.updated || 0);
+      toast(
+        applied > 0
+          ? `Rule saved — applied to ${applied} matching charge${applied === 1 ? '' : 's'} now`
+          : 'Rule saved — future matching charges will use this category'
+      );
       setRuleForItem(null);
+      load();
     } catch (e) {
       toast('Could not save rule: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
     } finally {
@@ -1058,9 +1065,8 @@ export default function QBDDraftJournals() {
                 const cat = a ? `${a.number} · ${leafLabel(a.name)}` : 'selected category';
                 return (
                   <>
-                    Future charges containing:{' '}
-                    <strong>[{rulePattern || '…'}]</strong>
-                    {' '}→ {cat}
+                    Charges containing <strong>[{rulePattern || '…'}]</strong> → {cat}.
+                    {' '}This updates every matching charge in Review &amp; Approve right away, and future ones automatically.
                   </>
                 );
               })()}
