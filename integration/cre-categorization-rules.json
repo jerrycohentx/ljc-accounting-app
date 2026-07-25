@@ -1,6 +1,6 @@
 {
   "entityId": "ent-ljc",
-  "version": "2026-07-06",
+  "version": "2026-07-25",
   "properties": [
     {
       "id": "leanne-ct",
@@ -37,6 +37,8 @@
       "name": "3427 Wentworth",
       "shortName": "3427 Wentworth",
       "tenantReimbursedUtilities": true,
+      "policySource": "Wentworth lease",
+      "policyNote": "Lease requires tenant to reimburse landlord for utilities paid on their behalf (gas, electric, water, internet). Book payments to Due-from-Tenant assets 6251–6254, not P&L expense.",
       "utilityAccounts": { "gas": "6251", "electric": "6252", "water": "6253", "internet": "6254" }
     }
   ],
@@ -46,28 +48,28 @@
       "utility": "gas",
       "propertyId": "3427-wentworth",
       "priority": 12,
-      "label": "Gas — 3427 Wentworth (CenterPoint ENTEX)"
+      "label": "Gas — 3427 Wentworth (lease — tenant reimbursable)"
     },
     {
       "patterns": ["CENTERPOINT ENERGY", "CNP "],
       "utility": "gas",
       "propertyId": "3427-wentworth",
       "priority": 13,
-      "label": "Gas — 3427 Wentworth (CenterPoint)"
+      "label": "Gas — 3427 Wentworth (lease — tenant reimbursable)"
     },
     {
       "patterns": ["RELIANT ENERGY", "JUST ENERGY", "PENNYWISE POWER"],
       "utility": "electric",
       "propertyId": "3427-wentworth",
       "priority": 14,
-      "label": "Electric — 3427 Wentworth (tenant reimbursable)"
+      "label": "Electric — 3427 Wentworth (lease — tenant reimbursable)"
     },
     {
       "patterns": ["COMCAST", "XFINITY"],
       "utility": "internet",
       "propertyId": "3427-wentworth",
       "priority": 8,
-      "label": "Internet — 3427 Wentworth (tenant reimbursable)"
+      "label": "Internet — 3427 Wentworth (lease — tenant reimbursable)"
     },
     {
       "patterns": ["CITY OF HOUSTON WATER", "HCWCID", "MUD "],

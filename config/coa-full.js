@@ -84,7 +84,7 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '6241', name: 'Gas — 6810 Heath', type: 'EXPENSE', parent: '6100' },
   { entity: 'ent-ljc', number: '6242', name: 'Electric — 6810 Heath', type: 'EXPENSE', parent: '6100' },
   { entity: 'ent-ljc', number: '6243', name: 'Water — 6810 Heath', type: 'EXPENSE', parent: '6100' },
-  // Wentworth utilities are tenant-reimbursed → AR assets (not P&L expense)
+  // Wentworth utilities — tenant reimburses per Wentworth lease → AR assets (not P&L)
   { entity: 'ent-ljc', number: '6251', name: 'Due from Tenant — Gas — 3427 Wentworth', type: 'ASSET', parent: '1200' },
   { entity: 'ent-ljc', number: '6252', name: 'Due from Tenant — Electric — 3427 Wentworth', type: 'ASSET', parent: '1200' },
   { entity: 'ent-ljc', number: '6253', name: 'Due from Tenant — Water — 3427 Wentworth', type: 'ASSET', parent: '1200' },
