@@ -286,12 +286,18 @@ export default function QBDReconcile() {
   const [accounts, setAccounts] = useState([]);
   const [expenseAccounts, setExpenseAccounts] = useState([]);
   const [incomeAccounts, setIncomeAccounts] = useState([]);
+  const [cashAccounts, setCashAccounts] = useState([]);
   const [accountId, setAccountId] = useState('');
   // QuickBooks Begin-Reconciliation service-charge / interest date + posting account.
   const [scDate, setScDate] = useState('');
   const [scAccountId, setScAccountId] = useState('');
   const [intDate, setIntDate] = useState('');
   const [intAccountId, setIntAccountId] = useState('');
+  // Credit-card payment due → scheduled draft on the selected cash register.
+  const [paymentDueDate, setPaymentDueDate] = useState('');
+  const [payFromAccountId, setPayFromAccountId] = useState(() => {
+    try { return localStorage.getItem('qbd-cc-pay-from') || ''; } catch { return ''; }
+  });
   const [stmtDate, setStmtDate] = useState(() => {
     const d = searchParams.get('date') || searchParams.get('asOf');
     return d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : todayISO();
@@ -504,9 +510,17 @@ export default function QBDReconcile() {
     accountAPI.list(entityId).then((r) => {
       const all = flat(Array.isArray(r.data) ? r.data : (r.data?.data || []), []);
       const bankAccounts = all.filter(isReconcilableAccount);
+      const cashOnly = all.filter((a) => a.account_type === 'ASSET' && /^cash\b/i.test(String(a.account_name || '')) && !INTERNAL_ACCOUNT.test(String(a.account_name || '')));
       setAccounts(bankAccounts);
+      setCashAccounts(cashOnly);
       setExpenseAccounts(all.filter((a) => a.account_type === 'EXPENSE'));
       setIncomeAccounts(all.filter((a) => a.account_type === 'REVENUE'));
+      setPayFromAccountId((prev) => {
+        if (prev && cashOnly.some((a) => a.id === prev)) return prev;
+        const simmons = cashOnly.find((a) => a.account_number === '1000');
+        const loneStar = cashOnly.find((a) => a.account_number === '1001');
+        return (simmons || loneStar || cashOnly[0])?.id || prev || '';
+      });
       setAccountId((prev) => {
         // The URL param outranks a previously-defaulted selection: the resume
         // effect writes ?account=… BEFORE this list resolves, and a first
@@ -527,6 +541,23 @@ export default function QBDReconcile() {
       });
     }).catch(() => {});
   }, [entityId, searchParams]);
+
+  // Suggest a typical card payment due date (~25 days after statement) once per card/statement.
+  const suggestedDueKeyRef = useRef('');
+  useEffect(() => {
+    const selected = accounts.find((a) => a.id === accountId);
+    if (!isCreditCardAccount(selected) || !stmtDate) return;
+    const key = `${accountId}|${stmtDate}`;
+    if (suggestedDueKeyRef.current === key) return;
+    suggestedDueKeyRef.current = key;
+    const base = Date.parse(`${stmtDate}T00:00:00`);
+    if (!Number.isFinite(base)) return;
+    const due = new Date(base + 25 * 86400000);
+    const yyyy = due.getFullYear();
+    const mm = String(due.getMonth() + 1).padStart(2, '0');
+    const dd = String(due.getDate()).padStart(2, '0');
+    setPaymentDueDate(`${yyyy}-${mm}-${dd}`);
+  }, [accountId, accounts, stmtDate]);
 
   useEffect(() => {
     if (!entityId || !accountId) {
@@ -672,9 +703,34 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   }, [entityId, accountId, stmtDate, showToast, applyAutoChecked, accounts, setSearchParams]);
 
+  const schedulePaymentDueIfNeeded = () => {
+    const selected = accounts.find((a) => a.id === accountId);
+    if (!isCreditCardAccount(selected)) return Promise.resolve(null);
+    if (!paymentDueDate || !payFromAccountId) return Promise.resolve(null);
+    const amt = parseFloat(endBal || '0') || 0;
+    if (!(amt > 0.005)) return Promise.resolve(null);
+    try { localStorage.setItem('qbd-cc-pay-from', payFromAccountId); } catch { /* ignore */ }
+    return bankReconAPI.paymentDue({
+      entityId,
+      accountId,
+      payFromAccountId,
+      statementDate: stmtDate,
+      paymentDueDate,
+      amount: amt,
+    }).then((r) => {
+      const cashName = cashAccounts.find((a) => a.id === payFromAccountId);
+      const label = cashName ? `${cashName.account_number} · ${leafLabel(cashName.account_name)}` : 'cash register';
+      showToast && showToast(`Payment due ${paymentDueDate} scheduled on ${label} (${fmt(amt)})`);
+      return r.data;
+    }).catch((e) => {
+      showToast && showToast('Could not schedule payment due: ' + (e.response?.data?.error || e.message));
+      return null;
+    });
+  };
+
   const start = () => {
     if (!accountId) { showToast && showToast('Pick an account'); return; }
-    loadWorksheet();
+    schedulePaymentDueIfNeeded().finally(() => loadWorksheet());
   };
 
   // Auto-resume a reconciliation carried in the URL — this is what makes browser
@@ -893,6 +949,8 @@ export default function QBDReconcile() {
       interestAccountId: intAccountId || null,
       serviceChargeDate: (svc > 0 ? (scDate || stmtDate) : null),
       interestDate: (int > 0 ? (intDate || stmtDate) : null),
+      paymentDueDate: isCard && paymentDueDate ? paymentDueDate : null,
+      payFromAccountId: isCard && payFromAccountId ? payFromAccountId : null,
     })
       .then((r) => {
         const toRow = (e) => ({
@@ -1110,6 +1168,34 @@ export default function QBDReconcile() {
             <div className="frow"><label>Ending balance</label>
               <input type="number" step="0.01" value={endBal} onChange={(e) => setEndBal(e.target.value)} placeholder="From bank statement" style={{ textAlign: 'right', width: 150 }} />
             </div>
+            {isCreditCardAccount(accounts.find((a) => a.id === accountId)) && (
+              <>
+                <div className="fsec">Credit card payment due</div>
+                <div className="fsec-sub">
+                  Enter the payment due date and which cash account will pay it. A scheduled payment is added to that register on the due date so you can see the cash impact (removed automatically when the real payment posts).
+                </div>
+                <div className="frow"><label>Payment due date</label>
+                  <input
+                    type="date"
+                    value={paymentDueDate}
+                    onChange={(e) => setPaymentDueDate(e.target.value)}
+                  />
+                </div>
+                <div className="frow"><label>Pay from register</label>
+                  <div style={{ minWidth: 280, flex: 1, maxWidth: 420 }}>
+                    <AccountCombobox
+                      accounts={cashAccounts}
+                      value={payFromAccountId}
+                      onChange={(id) => {
+                        setPayFromAccountId(id);
+                        try { localStorage.setItem('qbd-cc-pay-from', id || ''); } catch { /* ignore */ }
+                      }}
+                      placeholder="— select cash account —"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
             <div className="fsec">Enter any service charge or interest earned.</div>
             <div className="fsec-sub">Only enter amounts that are not already in your register — the reconcile screen also reads these off the statement.</div>
             <div className="frow"><label>Service charge</label>

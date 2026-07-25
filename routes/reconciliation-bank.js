@@ -28,6 +28,7 @@ import { importStatementForReconcile } from '../lib/reconcile-statement-import.j
 import { ensureStatementFileSchema, saveStatementFile, getStatementFile } from '../lib/statement-file-schema.js';
 import { prepareReconciliation } from '../lib/reconcile-prepare.js';
 import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/statement-auto-load.js';
+import { ensureCreditCardPaymentDue } from '../lib/cc-payment-due.js';
 
 const router = express.Router();
 
@@ -582,6 +583,37 @@ router.get('/worksheet', async (req, res) => {
   }
 });
 
+// POST /api/reconciliation/bank/payment-due — schedule CC payment on cash register (DRAFT)
+router.post('/payment-due', async (req, res) => {
+  try {
+    const {
+      entityId,
+      accountId,
+      payFromAccountId,
+      statementDate,
+      paymentDueDate,
+      amount,
+    } = req.body || {};
+    if (!entityId || !accountId || !statementDate) {
+      return res.status(400).json({ error: 'entityId, accountId and statementDate required' });
+    }
+    const db = await getDatabase();
+    const result = await ensureCreditCardPaymentDue(db, {
+      entityId,
+      cardAccountId: accountId,
+      payFromAccountId: payFromAccountId || null,
+      statementDate,
+      paymentDueDate: paymentDueDate || null,
+      amount: amount != null ? Number(amount) : 0,
+      userId: req.user?.id || 'usr-admin',
+    });
+    return res.json(result);
+  } catch (error) {
+    console.error('CC payment-due error:', error);
+    return res.status(400).json({ error: error.message || 'Failed to schedule payment due' });
+  }
+});
+
 // POST /api/reconciliation/bank/reconcile — close only when difference is zero
 router.post('/reconcile', async (req, res) => {
   try {
@@ -590,6 +622,8 @@ router.post('/reconcile', async (req, res) => {
       serviceCharge = 0, interestEarned = 0,
       serviceChargeAccountId = null, interestAccountId = null,
       serviceChargeDate = null, interestDate = null,
+      paymentDueDate = null,
+      payFromAccountId = null,
     } = req.body;
     if (!entityId || !accountId || !Array.isArray(glIds)) {
       return res.status(400).json({ error: 'entityId, accountId and glIds[] required' });
@@ -645,6 +679,24 @@ router.post('/reconcile', async (req, res) => {
       }
     }
 
+    // Credit-card: refresh scheduled payment on the selected cash register (DRAFT).
+    let paymentDue = null;
+    if (paymentDueDate && payFromAccountId) {
+      try {
+        paymentDue = await ensureCreditCardPaymentDue(db, {
+          entityId,
+          cardAccountId: accountId,
+          payFromAccountId,
+          statementDate: recDate,
+          paymentDueDate,
+          amount: Number(statementEndingBalance) || 0,
+          userId: req.user?.id || 'usr-admin',
+        });
+      } catch (payErr) {
+        console.error('CC payment-due on reconcile close (non-fatal):', payErr.message);
+      }
+    }
+
     // Archive a QuickBooks-style Summary + Detail snapshot of this closed
     // reconciliation so it can be pulled up later for reference even after
     // the ledger changes further. Non-fatal: the reconciliation itself is
@@ -666,6 +718,7 @@ router.post('/reconcile', async (req, res) => {
       statementDate: recDate,
       holdbackVerified: verifiedDraws,
       reportId,
+      paymentDue,
       message: verifiedDraws.length
         ? `${result.reconciledCount} transactions reconciled; ${verifiedDraws.length} holdback draw(s) verified`
         : `${result.reconciledCount} transactions reconciled — session closed`,

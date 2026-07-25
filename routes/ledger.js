@@ -1,6 +1,7 @@
 import express from 'express';
 import { getDatabase } from '../config/database.js';
 import { entityAccessMiddleware } from '../middleware/auth.js';
+import { listScheduledPaymentDueLines } from '../lib/cc-payment-due.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -85,9 +86,24 @@ router.get('/account/:accountId', entityAccessMiddleware, async (req, res) => {
 
     query += ' ORDER BY gl.posting_date ASC, gl.created_at ASC';
 
-    const entries = await db.all(query, params);
+    const posted = await db.all(query, params);
+    const scheduled = await listScheduledPaymentDueLines(db, req.entityId, req.params.accountId, {
+      startDate,
+      endDate,
+    });
 
-    // Calculate running balance
+    // Merge posted GL + scheduled CC payment-due drafts so cash planning shows upcoming outflows.
+    const entries = [...(posted || []), ...(scheduled || [])].sort((a, b) => {
+      const da = String(a.posting_date || '').slice(0, 10);
+      const db_ = String(b.posting_date || '').slice(0, 10);
+      if (da !== db_) return da < db_ ? -1 : 1;
+      const ja = String(a.je_number || '');
+      const jb = String(b.je_number || '');
+      if (ja !== jb) return ja < jb ? -1 : 1;
+      return String(a.id || '').localeCompare(String(b.id || ''));
+    });
+
+    // Calculate running balance (includes scheduled drafts for cash planning)
     let runningBalance = 0;
     const withBalance = entries.map(entry => {
       const debit = parseFloat(entry.debit) || 0;
@@ -108,7 +124,8 @@ router.get('/account/:accountId', entityAccessMiddleware, async (req, res) => {
     res.json({
       account,
       entries: withBalance,
-      finalBalance: runningBalance
+      finalBalance: runningBalance,
+      scheduledCount: scheduled.length,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

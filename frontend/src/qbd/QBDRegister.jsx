@@ -121,10 +121,20 @@ export default function QBDRegister() {
                 const tag = parseTag(e.description);
                 const inc = incOf(e), dec = decOf(e);
                 return (
-                  <tr key={e.id} onClick={() => openEntry(e.journal_entry_id)} title="Open transaction detail">
+                  <tr
+                    key={e.id}
+                    onClick={() => openEntry(e.journal_entry_id)}
+                    title={e.scheduled ? 'Scheduled payment (not posted yet) — open for detail' : 'Open transaction detail'}
+                    style={e.scheduled ? { background: '#fff8e8', fontStyle: 'italic' } : undefined}
+                  >
                     <td className="qbd-d">{fmtShortDate(e.posting_date)}</td>
-                    <td className="qbd-je">{e.je_number}</td>
-                    <td>{memoOf(e)}</td>
+                    <td className="qbd-je">{e.je_number}{e.scheduled ? ' · sched' : ''}</td>
+                    <td>
+                      {memoOf(e)}
+                      {e.scheduled && (
+                        <span className="qbd-pill" style={{ marginLeft: 6, background: '#f0c36d', color: '#3a2a00' }}>Scheduled</span>
+                      )}
+                    </td>
                     <td className="qbd-tag">{tag && <span className={'qbd-pill ' + tagClass(tag)}>{tag}</span>}</td>
                     <td className="qbd-amt">{inc ? fmt(inc) : ''}</td>
                     <td className="qbd-amt">{dec ? fmt(dec) : ''}</td>
@@ -136,7 +146,11 @@ export default function QBDRegister() {
           </table>
         )}
       </div>
-      <div className="qbd-foot"><span>Ending balance</span><span className="sp" /><span className={endingBalance < 0 ? 'qbd-neg' : ''}>{fmt(endingBalance) || '0.00'}</span></div>
+      <div className="qbd-foot">
+        <span>Ending balance{entries.some((e) => e.scheduled) ? ' (incl. scheduled)' : ''}</span>
+        <span className="sp" />
+        <span className={endingBalance < 0 ? 'qbd-neg' : ''}>{fmt(endingBalance) || '0.00'}</span>
+      </div>
 
       {entry && (
         <TxnDetail
