@@ -143,7 +143,7 @@ router.post('/', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], a
 // PUT /api/entities/:entityId/accounts/:id - Update account
 router.put('/:id', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
   try {
-    const { accountName, description, isActive, parentAccountId } = req.body;
+    const { accountName, description, isActive, parentAccountId, accountNumber } = req.body;
     const db = await getDatabase();
 
     const account = await db.get(
@@ -173,17 +173,35 @@ router.put('/:id', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
       }
     }
 
+    let nextNumber = account.account_number;
+    if (accountNumber !== undefined && String(accountNumber).trim()
+        && String(accountNumber).trim() !== String(account.account_number)) {
+      nextNumber = String(accountNumber).trim();
+      const clash = await db.get(
+        'SELECT id FROM accounts WHERE entity_id = ? AND account_number = ? AND id <> ?',
+        [req.entityId, nextNumber, req.params.id]
+      );
+      if (clash) {
+        return res.status(409).json({ error: `Account number ${nextNumber} already exists` });
+      }
+    }
+
     await db.run(
       `UPDATE accounts 
-       SET account_name = ?, description = ?, is_active = ?, parent_account_id = ?, updated_at = CURRENT_TIMESTAMP
+       SET account_number = ?, account_name = ?, description = ?, is_active = ?, parent_account_id = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND entity_id = ?`,
-      [accountName || account.account_name, description || account.description, 
-       nextActive, 
-       parentAccountId !== undefined ? parentAccountId : account.parent_account_id,
-       req.params.id, req.entityId]
+      [
+        nextNumber,
+        accountName || account.account_name,
+        description !== undefined ? description : account.description,
+        nextActive,
+        parentAccountId !== undefined ? parentAccountId : account.parent_account_id,
+        req.params.id,
+        req.entityId,
+      ]
     );
 
-    res.json({ message: 'Account updated' });
+    res.json({ message: 'Account updated', accountNumber: nextNumber });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
