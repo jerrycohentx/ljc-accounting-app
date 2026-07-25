@@ -28,7 +28,7 @@ import { importStatementForReconcile } from '../lib/reconcile-statement-import.j
 import { ensureStatementFileSchema, saveStatementFile, getStatementFile } from '../lib/statement-file-schema.js';
 import { prepareReconciliation } from '../lib/reconcile-prepare.js';
 import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/statement-auto-load.js';
-import { ensureCreditCardPaymentDue } from '../lib/cc-payment-due.js';
+import { ensureCreditCardPaymentDue, getCreditCardPaymentDue } from '../lib/cc-payment-due.js';
 
 const router = express.Router();
 
@@ -583,7 +583,27 @@ router.get('/worksheet', async (req, res) => {
   }
 });
 
-// POST /api/reconciliation/bank/payment-due — schedule CC payment on cash register (DRAFT)
+// GET /api/reconciliation/bank/payment-due — load existing scheduled CC payment for a statement
+router.get('/payment-due', async (req, res) => {
+  try {
+    const { entityId, accountId, statementDate } = req.query || {};
+    if (!entityId || !accountId || !statementDate) {
+      return res.status(400).json({ error: 'entityId, accountId and statementDate required' });
+    }
+    const db = await getDatabase();
+    const row = await getCreditCardPaymentDue(db, {
+      entityId,
+      cardAccountId: accountId,
+      statementDate,
+    });
+    return res.json({ paymentDue: row });
+  } catch (error) {
+    console.error('CC payment-due get error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to load payment due' });
+  }
+});
+
+// POST /api/reconciliation/bank/payment-due — schedule/update CC payment on cash register (DRAFT)
 router.post('/payment-due', async (req, res) => {
   try {
     const {
@@ -624,6 +644,7 @@ router.post('/reconcile', async (req, res) => {
       serviceChargeDate = null, interestDate = null,
       paymentDueDate = null,
       payFromAccountId = null,
+      paymentDueAmount = null,
     } = req.body;
     if (!entityId || !accountId || !Array.isArray(glIds)) {
       return res.status(400).json({ error: 'entityId, accountId and glIds[] required' });
@@ -683,13 +704,16 @@ router.post('/reconcile', async (req, res) => {
     let paymentDue = null;
     if (paymentDueDate && payFromAccountId) {
       try {
+        const dueAmt = paymentDueAmount != null && paymentDueAmount !== ''
+          ? Number(paymentDueAmount)
+          : Number(statementEndingBalance) || 0;
         paymentDue = await ensureCreditCardPaymentDue(db, {
           entityId,
           cardAccountId: accountId,
           payFromAccountId,
           statementDate: recDate,
           paymentDueDate,
-          amount: Number(statementEndingBalance) || 0,
+          amount: dueAmt,
           userId: req.user?.id || 'usr-admin',
         });
       } catch (payErr) {

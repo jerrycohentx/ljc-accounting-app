@@ -295,9 +295,14 @@ export default function QBDReconcile() {
   const [intAccountId, setIntAccountId] = useState('');
   // Credit-card payment due → scheduled draft on the selected cash register.
   const [paymentDueDate, setPaymentDueDate] = useState('');
+  const [paymentDueAmount, setPaymentDueAmount] = useState('');
   const [payFromAccountId, setPayFromAccountId] = useState(() => {
     try { return localStorage.getItem('qbd-cc-pay-from') || ''; } catch { return ''; }
   });
+  const [paymentDueSyncMsg, setPaymentDueSyncMsg] = useState('');
+  const paymentDueAmountTouchedRef = useRef(false);
+  const paymentDueSyncTimerRef = useRef(null);
+  const paymentDueHydrateKeyRef = useRef('');
   const [stmtDate, setStmtDate] = useState(() => {
     const d = searchParams.get('date') || searchParams.get('asOf');
     return d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : todayISO();
@@ -542,22 +547,84 @@ export default function QBDReconcile() {
     }).catch(() => {});
   }, [entityId, searchParams]);
 
-  // Suggest a typical card payment due date (~25 days after statement) once per card/statement.
+  // Suggest due date (~25 days) once per card/statement; hydrate amount/date from existing draft.
   const suggestedDueKeyRef = useRef('');
   useEffect(() => {
     const selected = accounts.find((a) => a.id === accountId);
-    if (!isCreditCardAccount(selected) || !stmtDate) return;
+    if (!isCreditCardAccount(selected) || !stmtDate || !entityId) return undefined;
     const key = `${accountId}|${stmtDate}`;
-    if (suggestedDueKeyRef.current === key) return;
-    suggestedDueKeyRef.current = key;
-    const base = Date.parse(`${stmtDate}T00:00:00`);
-    if (!Number.isFinite(base)) return;
-    const due = new Date(base + 25 * 86400000);
-    const yyyy = due.getFullYear();
-    const mm = String(due.getMonth() + 1).padStart(2, '0');
-    const dd = String(due.getDate()).padStart(2, '0');
-    setPaymentDueDate(`${yyyy}-${mm}-${dd}`);
-  }, [accountId, accounts, stmtDate]);
+    if (suggestedDueKeyRef.current !== key) {
+      suggestedDueKeyRef.current = key;
+      paymentDueHydrateKeyRef.current = '';
+      paymentDueAmountTouchedRef.current = false;
+      const base = Date.parse(`${stmtDate}T00:00:00`);
+      if (Number.isFinite(base)) {
+        const due = new Date(base + 25 * 86400000);
+        const yyyy = due.getFullYear();
+        const mm = String(due.getMonth() + 1).padStart(2, '0');
+        const dd = String(due.getDate()).padStart(2, '0');
+        setPaymentDueDate(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+
+    if (paymentDueHydrateKeyRef.current === key) return undefined;
+    paymentDueHydrateKeyRef.current = key;
+    let alive = true;
+    bankReconAPI.getPaymentDue(entityId, accountId, stmtDate)
+      .then((r) => {
+        const pd = r.data?.paymentDue;
+        if (!alive || !pd) return;
+        if (pd.paymentDueDate) setPaymentDueDate(pd.paymentDueDate);
+        if (pd.amount != null) {
+          setPaymentDueAmount(String(pd.amount));
+          paymentDueAmountTouchedRef.current = true;
+        }
+        if (pd.payFromAccountId) setPayFromAccountId(pd.payFromAccountId);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [accountId, accounts, stmtDate, entityId]);
+
+  // Keep payment amount in sync with statement ending balance until Jerry edits it.
+  useEffect(() => {
+    const selected = accounts.find((a) => a.id === accountId);
+    if (!isCreditCardAccount(selected)) return;
+    if (paymentDueAmountTouchedRef.current) return;
+    if (endBal === '' || endBal == null) return;
+    setPaymentDueAmount(String(endBal));
+  }, [endBal, accountId, accounts]);
+
+  // Live-sync editable due date / amount / pay-from into the cash register draft.
+  useEffect(() => {
+    const selected = accounts.find((a) => a.id === accountId);
+    if (!isCreditCardAccount(selected) || !entityId || !accountId || !stmtDate) return undefined;
+    if (!paymentDueDate || !payFromAccountId) return undefined;
+    const amt = parseFloat(paymentDueAmount || '0') || 0;
+    if (!(amt > 0.005)) return undefined;
+
+    if (paymentDueSyncTimerRef.current) clearTimeout(paymentDueSyncTimerRef.current);
+    paymentDueSyncTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem('qbd-cc-pay-from', payFromAccountId); } catch { /* ignore */ }
+      bankReconAPI.paymentDue({
+        entityId,
+        accountId,
+        payFromAccountId,
+        statementDate: stmtDate,
+        paymentDueDate,
+        amount: amt,
+      }).then((r) => {
+        if (r.data?.skipped || r.data?.removed) return;
+        const cashName = cashAccounts.find((a) => a.id === payFromAccountId);
+        const label = cashName ? `${cashName.account_number}` : 'cash';
+        setPaymentDueSyncMsg(`Synced to ${label} register: ${fmt(amt)} due ${paymentDueDate}`);
+      }).catch((e) => {
+        setPaymentDueSyncMsg(e.response?.data?.error || e.message || 'Sync failed');
+      });
+    }, 600);
+    return () => {
+      if (paymentDueSyncTimerRef.current) clearTimeout(paymentDueSyncTimerRef.current);
+    };
+  }, [entityId, accountId, accounts, stmtDate, paymentDueDate, paymentDueAmount, payFromAccountId, cashAccounts]);
 
   useEffect(() => {
     if (!entityId || !accountId) {
@@ -703,34 +770,9 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   }, [entityId, accountId, stmtDate, showToast, applyAutoChecked, accounts, setSearchParams]);
 
-  const schedulePaymentDueIfNeeded = () => {
-    const selected = accounts.find((a) => a.id === accountId);
-    if (!isCreditCardAccount(selected)) return Promise.resolve(null);
-    if (!paymentDueDate || !payFromAccountId) return Promise.resolve(null);
-    const amt = parseFloat(endBal || '0') || 0;
-    if (!(amt > 0.005)) return Promise.resolve(null);
-    try { localStorage.setItem('qbd-cc-pay-from', payFromAccountId); } catch { /* ignore */ }
-    return bankReconAPI.paymentDue({
-      entityId,
-      accountId,
-      payFromAccountId,
-      statementDate: stmtDate,
-      paymentDueDate,
-      amount: amt,
-    }).then((r) => {
-      const cashName = cashAccounts.find((a) => a.id === payFromAccountId);
-      const label = cashName ? `${cashName.account_number} · ${leafLabel(cashName.account_name)}` : 'cash register';
-      showToast && showToast(`Payment due ${paymentDueDate} scheduled on ${label} (${fmt(amt)})`);
-      return r.data;
-    }).catch((e) => {
-      showToast && showToast('Could not schedule payment due: ' + (e.response?.data?.error || e.message));
-      return null;
-    });
-  };
-
   const start = () => {
     if (!accountId) { showToast && showToast('Pick an account'); return; }
-    schedulePaymentDueIfNeeded().finally(() => loadWorksheet());
+    loadWorksheet();
   };
 
   // Auto-resume a reconciliation carried in the URL — this is what makes browser
@@ -951,6 +993,7 @@ export default function QBDReconcile() {
       interestDate: (int > 0 ? (intDate || stmtDate) : null),
       paymentDueDate: isCard && paymentDueDate ? paymentDueDate : null,
       payFromAccountId: isCard && payFromAccountId ? payFromAccountId : null,
+      paymentDueAmount: isCard && paymentDueAmount !== '' ? (parseFloat(paymentDueAmount) || 0) : null,
     })
       .then((r) => {
         const toRow = (e) => ({
@@ -1172,13 +1215,26 @@ export default function QBDReconcile() {
               <>
                 <div className="fsec">Credit card payment due</div>
                 <div className="fsec-sub">
-                  Enter the payment due date and which cash account will pay it. A scheduled payment is added to that register on the due date so you can see the cash impact (removed automatically when the real payment posts).
+                  Date and amount are editable — both sync to the cash register you pick (scheduled line; removed when the real payment posts).
                 </div>
                 <div className="frow"><label>Payment due date</label>
                   <input
                     type="date"
                     value={paymentDueDate}
                     onChange={(e) => setPaymentDueDate(e.target.value)}
+                  />
+                  <span className="fsub">Amount</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={paymentDueAmount}
+                    onChange={(e) => {
+                      paymentDueAmountTouchedRef.current = true;
+                      setPaymentDueAmount(e.target.value);
+                    }}
+                    placeholder="Payment amount"
+                    style={{ textAlign: 'right', width: 120 }}
                   />
                 </div>
                 <div className="frow"><label>Pay from register</label>
@@ -1194,6 +1250,11 @@ export default function QBDReconcile() {
                     />
                   </div>
                 </div>
+                {paymentDueSyncMsg && (
+                  <div className="qbd-muted" style={{ padding: '0 12px 8px', fontSize: 11 }}>
+                    {paymentDueSyncMsg}
+                  </div>
+                )}
               </>
             )}
             <div className="fsec">Enter any service charge or interest earned.</div>
@@ -1464,7 +1525,42 @@ export default function QBDReconcile() {
           <label style={{ marginLeft: 12 }}>Interest
             <input type="number" step="0.01" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} style={{ width: 80, marginLeft: 6, textAlign: 'right' }} />
           </label>
-          <span className="qbd-muted" style={{ marginLeft: 12 }}>Verify these match your statement if Difference ≠ $0.00</span>
+          {isCard && (
+            <>
+              <label style={{ marginLeft: 12 }}>Payment due
+                <input type="date" value={paymentDueDate} onChange={(e) => setPaymentDueDate(e.target.value)} style={{ marginLeft: 6 }} />
+              </label>
+              <label style={{ marginLeft: 12 }}>Pay amount
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={paymentDueAmount}
+                  onChange={(e) => {
+                    paymentDueAmountTouchedRef.current = true;
+                    setPaymentDueAmount(e.target.value);
+                  }}
+                  style={{ width: 100, marginLeft: 6, textAlign: 'right' }}
+                />
+              </label>
+              <label style={{ marginLeft: 12, minWidth: 220 }}>Pay from
+                <div style={{ display: 'inline-block', minWidth: 200, marginLeft: 6, verticalAlign: 'middle' }}>
+                  <AccountCombobox
+                    accounts={cashAccounts}
+                    value={payFromAccountId}
+                    onChange={(id) => {
+                      setPayFromAccountId(id);
+                      try { localStorage.setItem('qbd-cc-pay-from', id || ''); } catch { /* ignore */ }
+                    }}
+                    placeholder="Cash account"
+                  />
+                </div>
+              </label>
+            </>
+          )}
+          <span className="qbd-muted" style={{ marginLeft: 12 }}>
+            {isCard && paymentDueSyncMsg ? paymentDueSyncMsg : 'Verify these match your statement if Difference ≠ $0.00'}
+          </span>
         </div>
       )}
       <div className="qbd-recon-summary-bar">
