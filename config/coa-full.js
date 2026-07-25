@@ -55,7 +55,15 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '5410', name: 'Member Medical / Dental', type: 'EXPENSE' },
   // Catch-all utilities under Rental; prefer 6140/6150/6160 (or per-property 62xx) when known
   { entity: 'ent-ljc', number: '5500', name: 'Utilities', type: 'EXPENSE', parent: '6100' },
-  { entity: 'ent-ljc', number: '5600', name: 'Professional Fees', type: 'EXPENSE' },
+  { entity: 'ent-ljc', number: '5600', name: 'Legal & Professional Fees', type: 'EXPENSE' },
+  // Legal & Professional — Summary groups; Detail = law firm / title company
+  { entity: 'ent-ljc', number: '5601', name: 'Notary', type: 'EXPENSE', parent: '5600' },
+  { entity: 'ent-ljc', number: '5610', name: 'Legal Fees', type: 'EXPENSE', parent: '5600' },
+  { entity: 'ent-ljc', number: '5611', name: 'Keever & Wiesenthal', type: 'EXPENSE', parent: '5610' },
+  { entity: 'ent-ljc', number: '5612', name: 'Huffstetler & Company', type: 'EXPENSE', parent: '5610' },
+  { entity: 'ent-ljc', number: '5613', name: 'Alicia M.', type: 'EXPENSE', parent: '5610' },
+  { entity: 'ent-ljc', number: '5620', name: 'Title & Closing', type: 'EXPENSE', parent: '5600' },
+  { entity: 'ent-ljc', number: '5621', name: 'Capital Title of Texas', type: 'EXPENSE', parent: '5620' },
   { entity: 'ent-ljc', number: '5700', name: 'Office & Software', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5710', name: 'Computer & Internet Expenses', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5720', name: 'Donations', type: 'EXPENSE' },

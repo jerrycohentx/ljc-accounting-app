@@ -224,7 +224,7 @@ export default function QBDReports() {
               className="qbd-btn"
               style={detailLevel === 'summary' ? { background: '#cfe2fb', fontWeight: 'bold' } : {}}
               onClick={() => setPlDetailLevel('summary')}
-              title="Show Water / Electric / Gas totals under Rental Property Expenses"
+              title="Roll up nested categories (utilities, legal firms, etc.) to their sub-account totals"
             >
               Summary
             </button>
@@ -233,7 +233,7 @@ export default function QBDReports() {
               className="qbd-btn"
               style={detailLevel === 'detail' ? { background: '#cfe2fb', fontWeight: 'bold' } : {}}
               onClick={() => setPlDetailLevel('detail')}
-              title="Show per-property utility charges"
+              title="Expand nested categories (per-property utilities, each law firm, etc.)"
             >
               Detail
             </button>
@@ -281,8 +281,8 @@ export default function QBDReports() {
             <div className="qbd-rpt-hint">{(rtype === 'bs' || rtype === 'pl')
               ? (rtype === 'pl'
                 ? (detailLevel === 'summary'
-                  ? 'Summary view: utility subtotals (Water / Electric / Gas) under Rental Property Expenses. Switch to Detail for per-property charges. Click any number to drill in.'
-                  : 'Detail view: per-property utility charges under Water / Electric / Gas. Switch to Summary for rolled-up totals. Click any number to drill in.')
+                  ? 'Summary view: nested categories show sub-account totals (e.g. Water/Electric/Gas, Legal Fees, Title & Closing). Switch to Detail for firms/properties. Click any number to drill in.'
+                  : 'Detail view: expands nested categories (each law firm, per-property utility, etc.). Switch to Summary for rolled-up totals. Click any number to drill in.')
                 : 'Click any number to drill into the transactions behind it. Use “Print (QuickBooks format)” for a printable statement.')
               : 'Click account rows to open register. Green/red variances follow line polarity (revenue up = good, expense up = bad).'}</div>
             {(rtype === 'bs' || rtype === 'pl') ? <StatementView data={data} nav={nav} showCompare={showCompare} />

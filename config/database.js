@@ -14,6 +14,7 @@ import { ensureReceiptsSchema } from './receipts-schema.js';
 import { ensureMgmtReportsSchema } from './mgmt-reports-schema.js';
 import { seedDefaultRules } from '../lib/categorization-rules.js';
 import { seedCreCategorizationRules } from '../lib/cre-categorization.js';
+import { ensurePnlDetailCategories } from '../lib/pnl-detail-categories.js';
 import { reapplyRulesToPending } from '../lib/import-commit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -85,6 +86,7 @@ export async function getDatabase() {
         await ensureMgmtReportsSchema(db);
         await seedDefaultRules(db, 'ent-ljc');
         await seedCreCategorizationRules(db, 'ent-ljc');
+        await ensurePnlDetailCategories(db, 'ent-ljc');
         try {
           await reapplyRulesToPending(db, 'ent-ljc');
         } catch (err) {
@@ -121,6 +123,7 @@ export async function getDatabase() {
     await ensureMgmtReportsSchema(db);
     await seedDefaultRules(db, 'ent-ljc');
     await seedCreCategorizationRules(db, 'ent-ljc');
+    await ensurePnlDetailCategories(db, 'ent-ljc');
     try {
       await reapplyRulesToPending(db, 'ent-ljc');
     } catch (err) {
