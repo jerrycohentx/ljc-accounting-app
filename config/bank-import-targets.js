@@ -6,6 +6,7 @@ export const BANK_ACCOUNTS = {
   'ent-ljc': [
     { accountNumber: '1000', name: 'Simmons Bank ckg-0260', ofxAccountId: '0260' },
     { accountNumber: '1001', name: 'Lone Star Bank ckg-7367', ofxAccountId: '7367' },
+    { accountNumber: '2010', name: 'American Express 88007', ofxAccountId: '88007' },
   ],
   'ent-justin': [{ accountNumber: '1000', name: 'Primary checking' }],
   'ent-omc': [{ accountNumber: '1000', name: 'Primary checking' }],
