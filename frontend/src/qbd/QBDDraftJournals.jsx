@@ -46,6 +46,21 @@ function suggestAccountNumber(accounts, type) {
   return next <= hi ? String(next) : '';
 }
 
+/** Next free number near a parent (5410 → 5411, 5412, …). */
+function suggestSubAccountNumber(accounts, parentNumber) {
+  const parent = parseInt(parentNumber, 10);
+  if (!Number.isFinite(parent)) return '';
+  const used = new Set(
+    (accounts || [])
+      .map((a) => parseInt(a.number, 10))
+      .filter((n) => Number.isFinite(n))
+  );
+  let next = parent + 1;
+  const hi = parent + 99;
+  while (next <= hi && used.has(next)) next += 1;
+  return next <= hi ? String(next) : '';
+}
+
 function accountUsingNumber(accounts, number) {
   const n = String(number || '').trim();
   return (accounts || []).find((a) => String(a.number) === n) || null;
@@ -462,6 +477,8 @@ export default function QBDDraftJournals() {
     accountName: '',
     accountType: 'EXPENSE',
     description: '',
+    isSubAccount: false,
+    parentAccountId: '',
   });
   const [ruleForItem, setRuleForItem] = useState(null);
   const [rulePattern, setRulePattern] = useState('');
@@ -684,11 +701,20 @@ export default function QBDDraftJournals() {
     if (!accountId) return;
     if (accountId === CREATE_NEW_VALUE) {
       setCreateForItem(item);
+      // If the charge already points at a health/parent-style account, default sub-account under it.
+      const current = accounts.find((a) => a.id === item.categoryAccountId);
+      const preferParent = current && /health|member/i.test(`${current.number} ${current.name || ''}`)
+        ? current
+        : null;
       setNewAcct({
-        accountNumber: suggestAccountNumber(accounts, 'EXPENSE'),
+        accountNumber: preferParent
+          ? (suggestSubAccountNumber(accounts, preferParent.number) || suggestAccountNumber(accounts, 'EXPENSE'))
+          : suggestAccountNumber(accounts, 'EXPENSE'),
         accountName: '',
         accountType: 'EXPENSE',
         description: (item.descLines && item.descLines[0]) || '',
+        isSubAccount: !!preferParent,
+        parentAccountId: preferParent?.id || '',
       });
       return;
     }
@@ -791,8 +817,13 @@ export default function QBDDraftJournals() {
     const number = String(newAcct.accountNumber || '').trim();
     const name = String(newAcct.accountName || '').trim();
     const accountType = newAcct.accountType || 'EXPENSE';
+    const parentAccountId = newAcct.isSubAccount ? (newAcct.parentAccountId || '') : '';
     if (!number || !name) {
       toast('Enter an account number and name');
+      return;
+    }
+    if (newAcct.isSubAccount && !parentAccountId) {
+      toast('Pick the parent account for this sub-account');
       return;
     }
     const clash = accountUsingNumber(accounts, number);
@@ -801,7 +832,13 @@ export default function QBDDraftJournals() {
         `${number} is already “${leafLabel(clash.name)}” (${ACCOUNT_TYPE_LABELS[clash.type] || clash.type}). `
         + 'Pick a free number, or choose that account from the dropdown if it’s the right one.'
       );
-      setNewAcct((f) => ({ ...f, accountNumber: suggestAccountNumber(accounts, accountType) }));
+      const parent = accounts.find((a) => a.id === parentAccountId);
+      setNewAcct((f) => ({
+        ...f,
+        accountNumber: parent
+          ? (suggestSubAccountNumber(accounts, parent.number) || suggestAccountNumber(accounts, accountType))
+          : suggestAccountNumber(accounts, accountType),
+      }));
       return;
     }
     setCreating(true);
@@ -811,6 +848,7 @@ export default function QBDDraftJournals() {
         accountName: name,
         accountType,
         description: newAcct.description || '',
+        parentAccountId: parentAccountId || null,
       });
       const body = created.data || created;
       const newId = body.id;
@@ -819,6 +857,7 @@ export default function QBDDraftJournals() {
         number: body.accountNumber || number,
         name: body.accountName || name,
         type: body.accountType || accountType,
+        parentAccountId: body.parentAccountId || parentAccountId || null,
       };
       setPayload((prev) => {
         if (!prev) return prev;
@@ -1215,11 +1254,18 @@ export default function QBDDraftJournals() {
                 value={newAcct.accountType}
                 onChange={(e) => {
                   const accountType = e.target.value;
-                  setNewAcct((f) => ({
-                    ...f,
-                    accountType,
-                    accountNumber: suggestAccountNumber(accounts, accountType),
-                  }));
+                  setNewAcct((f) => {
+                    const parent = accounts.find((a) => a.id === f.parentAccountId && a.type === accountType);
+                    return {
+                      ...f,
+                      accountType,
+                      parentAccountId: parent ? parent.id : '',
+                      isSubAccount: parent ? f.isSubAccount : false,
+                      accountNumber: parent
+                        ? (suggestSubAccountNumber(accounts, parent.number) || suggestAccountNumber(accounts, accountType))
+                        : suggestAccountNumber(accounts, accountType),
+                    };
+                  });
                 }}
               >
                 <option value="EXPENSE">Expense</option>
@@ -1229,6 +1275,66 @@ export default function QBDDraftJournals() {
                 <option value="EQUITY">Equity</option>
               </select>
             </div>
+            <label style={{ ...styles.alwaysLabel, marginBottom: 10 }}>
+              <input
+                type="checkbox"
+                checked={!!newAcct.isSubAccount}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setNewAcct((f) => {
+                    if (!on) {
+                      return {
+                        ...f,
+                        isSubAccount: false,
+                        parentAccountId: '',
+                        accountNumber: suggestAccountNumber(accounts, f.accountType || 'EXPENSE'),
+                      };
+                    }
+                    const parent = accounts.find((a) => a.id === f.parentAccountId && a.type === f.accountType)
+                      || accounts.find((a) => a.type === f.accountType && /5410|member health/i.test(`${a.number} ${a.name || ''}`))
+                      || accounts.find((a) => a.type === f.accountType);
+                    return {
+                      ...f,
+                      isSubAccount: true,
+                      parentAccountId: parent?.id || '',
+                      accountNumber: parent
+                        ? (suggestSubAccountNumber(accounts, parent.number) || suggestAccountNumber(accounts, f.accountType))
+                        : f.accountNumber,
+                    };
+                  });
+                }}
+              />
+              <span>This is a sub-account</span>
+            </label>
+            {newAcct.isSubAccount && (
+              <div style={styles.field}>
+                <label style={styles.label}>Sub-account of</label>
+                <select
+                  style={styles.input}
+                  value={newAcct.parentAccountId || ''}
+                  onChange={(e) => {
+                    const parentId = e.target.value;
+                    const parent = accounts.find((a) => a.id === parentId);
+                    setNewAcct((f) => ({
+                      ...f,
+                      parentAccountId: parentId,
+                      accountNumber: parent
+                        ? (suggestSubAccountNumber(accounts, parent.number) || f.accountNumber)
+                        : f.accountNumber,
+                    }));
+                  }}
+                >
+                  <option value="">— pick parent account —</option>
+                  {accounts
+                    .filter((a) => a.type === (newAcct.accountType || 'EXPENSE'))
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.number} · {leafLabel(a.name)}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
             <div style={styles.field}>
               <label style={styles.label}>Account number</label>
               <input
@@ -1238,14 +1344,23 @@ export default function QBDDraftJournals() {
               />
             </div>
             <div style={styles.field}>
-              <label style={styles.label}>Account name</label>
+              <label style={styles.label}>
+                {newAcct.isSubAccount ? 'Sub-account name' : 'Account name'}
+              </label>
               <input
                 style={styles.input}
                 value={newAcct.accountName}
                 onChange={(e) => setNewAcct((f) => ({ ...f, accountName: e.target.value }))}
-                placeholder="e.g. Meals & Entertainment"
+                placeholder={newAcct.isSubAccount ? 'e.g. Doctor Charges' : 'e.g. Meals & Entertainment'}
                 autoFocus
               />
+              {newAcct.isSubAccount && newAcct.parentAccountId ? (
+                <span style={{ fontSize: 11, color: '#555', marginTop: 4 }}>
+                  Will show as{' '}
+                  {leafLabel(accounts.find((a) => a.id === newAcct.parentAccountId)?.name || 'Parent')}
+                  :{newAcct.accountName || '…'}
+                </span>
+              ) : null}
             </div>
             <div style={styles.field}>
               <label style={styles.label}>Description (optional)</label>

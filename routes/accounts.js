@@ -95,6 +95,25 @@ router.post('/', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], a
       return res.status(409).json({ error: 'Account number already exists' });
     }
 
+    let resolvedName = String(accountName).trim();
+    let resolvedParentId = parentAccountId || null;
+    if (resolvedParentId) {
+      const parent = await db.get(
+        'SELECT id, account_name, account_type FROM accounts WHERE id = ? AND entity_id = ?',
+        [resolvedParentId, req.entityId]
+      );
+      if (!parent) return res.status(400).json({ error: 'Parent account not found' });
+      if (parent.account_type !== accountType) {
+        return res.status(400).json({ error: 'Sub-account type must match the parent account type' });
+      }
+      // QBO-style "Parent:Child" when the leaf name is entered alone.
+      const parentLeaf = String(parent.account_name || '').split(':').pop().trim();
+      if (resolvedName && !resolvedName.includes(':') && parentLeaf
+          && !resolvedName.toLowerCase().startsWith(`${parentLeaf.toLowerCase()}:`)) {
+        resolvedName = `${parentLeaf}:${resolvedName}`;
+      }
+    }
+
     const normalBalance = ['ASSET', 'EXPENSE'].includes(accountType) ? 'DEBIT' : 'CREDIT';
     const accountId = `acc-${uuidv4()}`;
 
@@ -103,16 +122,16 @@ router.post('/', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], a
        (id, entity_id, account_number, account_name, account_type, parent_account_id, 
         description, normal_balance) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [accountId, req.entityId, accountNumber, accountName, accountType, 
-       parentAccountId || null, description, normalBalance]
+      [accountId, req.entityId, accountNumber, resolvedName, accountType, 
+       resolvedParentId, description, normalBalance]
     );
 
     res.status(201).json({
       id: accountId,
       accountNumber,
-      accountName,
+      accountName: resolvedName,
       accountType,
-      parentAccountId,
+      parentAccountId: resolvedParentId,
       description,
       normalBalance
     });

@@ -19,11 +19,13 @@ export function normalizeAccount(a) {
   const number = a.number ?? a.account_number ?? a.accountNumber ?? '';
   const name = a.name ?? a.account_name ?? a.accountName ?? '';
   const type = a.type ?? a.account_type ?? a.accountType ?? '';
+  const parentAccountId = a.parentAccountId ?? a.parent_account_id ?? null;
   return {
     id: a.id,
     number: String(number || ''),
     name: String(name || ''),
     type: String(type || ''),
+    parentAccountId: parentAccountId || null,
   };
 }
 
@@ -42,12 +44,13 @@ export function flattenAccounts(nodes, { activeOnly = true } = {}) {
   return out.filter(Boolean);
 }
 
-function accountLabel(a) {
+function accountLabel(a, { indent = false } = {}) {
   if (!a) return '';
   const num = a.number || '';
   const name = leafLabel(a.name);
-  if (num && name) return `${num} · ${name}`;
-  return num || name || '';
+  const core = num && name ? `${num} · ${name}` : (num || name || '');
+  if (indent && a.parentAccountId) return ` ${core}`;
+  return core;
 }
 
 function matchesQuery(account, q) {
@@ -126,7 +129,7 @@ export default function AccountCombobox({
       rows.push({
         kind: 'account',
         id: a.id,
-        label: accountLabel(a),
+        label: accountLabel(a, { indent: true }),
         typeLabel: TYPE_LABELS[a.type] || a.type || '',
         account: a,
       });
