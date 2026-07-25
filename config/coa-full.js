@@ -52,6 +52,7 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '5200', name: 'Bank Service Charges', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5300', name: 'Insurance Expense', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5400', name: 'Health Insurance', type: 'EXPENSE' },
+  { entity: 'ent-ljc', number: '5410', name: 'Member Medical / Dental', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5500', name: 'Utilities', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5600', name: 'Professional Fees', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5700', name: 'Office & Software', type: 'EXPENSE' },
@@ -68,6 +69,7 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '5920', name: 'Commissions Paid', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '6100', name: 'Rental Property Expenses', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '6110', name: 'Fees Paid on Sale of REO', type: 'EXPENSE' },
+  { entity: 'ent-ljc', number: '6120', name: 'Property Tax Expense', type: 'EXPENSE' },
   // Per-property utility breakout (gas / electric / water) — parent 6100
   { entity: 'ent-ljc', number: '6201', name: 'Gas — Leanne Ct', type: 'EXPENSE', parent: '6100' },
   { entity: 'ent-ljc', number: '6202', name: 'Electric — Leanne Ct', type: 'EXPENSE', parent: '6100' },

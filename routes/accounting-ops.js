@@ -19,6 +19,7 @@ import { clearConversionSuspenseFor2026 } from '../lib/clear-conversion-suspense
 import { reclassPostedUndepositedOffsets } from '../lib/reclass-posted-undeposited.js';
 import { reclassPostedByLearnedRules } from '../lib/reclass-posted-by-rules.js';
 import { learnCategorizationFromHistory } from '../lib/learn-categorization-from-history.js';
+import { categorizeDumpForApproval } from '../lib/categorize-dump-for-approval.js';
 import {
   applyWentworthTenantUtilityTreatment,
   WENTWORTH_UTIL_CONFIRM,
@@ -790,6 +791,52 @@ router.post(
  * Reopens closed months as needed and recloses when canClose.
  * Body: { confirm: "RECLASS-RULES-<entityId>", dryRun?, startDate?, endDate?, sourceAccounts?, reclose? }
  */
+
+/**
+ * POST /api/entities/:entityId/accounting/categorize-dump-for-approval
+ * Find uncategorized dump-account lines (default 5700/4091), attach statement PDFs,
+ * and create DRAFT reclass journals (CAT-APPR-*) for Jerry to approve.
+ * Body: { confirm: "CAT-APPROVE-<entityId>", dryRun?, startDate?, endDate?, sourceAccounts? }
+ */
+router.post(
+  '/categorize-dump-for-approval',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      if (req.entityId !== 'ent-ljc') {
+        return res.status(400).json({ error: 'Only implemented for ent-ljc' });
+      }
+      const expected = `CAT-APPROVE-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({ error: `confirm must equal "${expected}"`, code: 'CONFIRM_REQUIRED' });
+      }
+      const db = await getDatabase();
+      const sourceAccounts = Array.isArray(req.body?.sourceAccounts)
+        ? req.body.sourceAccounts.map(String)
+        : undefined;
+      const result = await categorizeDumpForApproval(db, {
+        entityId: req.entityId,
+        userId: req.user.id,
+        dryRun: !!req.body?.dryRun,
+        startDate: req.body?.startDate || '2026-01-01',
+        endDate: req.body?.endDate || '2026-12-31',
+        sourceAccountNumbers: sourceAccounts,
+        learnFirst: req.body?.learnFirst !== false,
+        attachDocuments: req.body?.attachDocuments !== false,
+        createDrafts: req.body?.createDrafts !== false,
+      });
+      res.json({
+        message: result.dryRun
+          ? `Dry run: ${result.proposedCount} categorizable, ${result.needsReviewCount} still need a rule`
+          : `Created ${result.draftsCreated} draft categorization(s); ${result.needsReviewCount} still need review; attached ${result.documentsAttached} source PDF(s)`,
+        ...result,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
 router.post(
   '/reclass-by-learned-rules',
   [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
