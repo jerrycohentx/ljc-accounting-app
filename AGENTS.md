@@ -38,6 +38,7 @@ Do **not** treat the OneDrive “Cohen Entities Accounting” shortcut folder as
 4. Before claiming a month is closed: call the integrity endpoint; only `isClosed: true` counts
 5. Before claiming a bank/card recon is done: worksheet must show `periodSession.balanced === true` and `liveTotals.difference === 0` (never trust a CLOSED banner alone)
 6. Never create plug / reconcile-adjustment / force-balance journal entries
+7. **Anticipate Jerry’s next click.** If he is in Review & Approve on a closed month, make posting work *before* he hits the error — do not wait for a screenshot (see `.cursor/rules/anticipate-workflow-blockers.mdc`)
 
 ## Learning loop (product direction)
 

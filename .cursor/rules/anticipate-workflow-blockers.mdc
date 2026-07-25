@@ -1,0 +1,36 @@
+---
+description: Anticipate Jerry's next action and clear blockers before he hits them — especially closed periods during Review & Approve.
+alwaysApply: true
+---
+
+# Anticipate workflow blockers (do not wait for Jerry's error)
+
+Jerry is not QA. If you can see where he is working and what he will click next, **clear the path before he gets an error**.
+
+## Hard lesson (2026-07-25)
+
+Jerry was on **Review & Approve → American Express → January 2026**. Integrity already showed January **closed**. The agent kept editing categories/rules and waited until Jerry hit:
+
+> Cannot post to closed period …
+
+That wasted his time. **Wrong.**
+
+## Required anticipation
+
+When Jerry (or the conversation) is in **Review & Approve / draft-journals / CAT-APPR**:
+
+1. Immediately check which months in the queue are `CLOSED` via period integrity.
+2. If any waiting charges fall in closed months, **fix posting before he tries**:
+   - Prefer product path: CAT-APPR post may briefly reopen → post → re-close (`lib/post-journal.js`).
+   - Verify with a live post (or dry integrity + code path) — do not assume.
+3. Do not stop at “period is closed” as an explanation while he is actively approving that month — **make approve/post work**.
+
+## General pattern
+
+Before finishing any accounting UI/workflow change:
+
+- Ask: “What will Jerry click next?”
+- Ask: “What will fail if I do nothing?”
+- Clear that failure now (code, reopen/reclose, seed rule, deploy, verify).
+
+Never require Jerry to screenshot an error you could have predicted from API state + the screen he is on.
