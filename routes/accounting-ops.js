@@ -17,6 +17,8 @@ import { runCutoverYearClose } from '../lib/cutover-year-close.js';
 import { closeH1_2026 } from '../lib/close-h1-2026.js';
 import { clearConversionSuspenseFor2026 } from '../lib/clear-conversion-suspense.js';
 import { reclassPostedUndepositedOffsets } from '../lib/reclass-posted-undeposited.js';
+import { reclassPostedByLearnedRules } from '../lib/reclass-posted-by-rules.js';
+import { learnCategorizationFromHistory } from '../lib/learn-categorization-from-history.js';
 import { reverseDuplicateBankImports } from '../lib/reverse-duplicate-bank-imports.js';
 import {
   reclassOpeningBalanceEquity,
@@ -747,6 +749,80 @@ router.post('/reclass-undeposited', [entityAccessMiddleware, requireRole('ADMIN'
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * POST /api/entities/:entityId/accounting/learn-categorization-from-history
+ * Seed merchant rules + learn from correctly coded posted AMEX/IMP lines.
+ * Body: { confirm: "LEARN-CAT-<entityId>", startDate?, endDate? }
+ */
+router.post(
+  '/learn-categorization-from-history',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      if (req.entityId !== 'ent-ljc') {
+        return res.status(400).json({ error: 'Only implemented for ent-ljc' });
+      }
+      const expected = `LEARN-CAT-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({ error: `confirm must equal "${expected}"`, code: 'CONFIRM_REQUIRED' });
+      }
+      const db = await getDatabase();
+      const result = await learnCategorizationFromHistory(db, {
+        entityId: req.entityId,
+        startDate: req.body?.startDate || '2026-01-01',
+        endDate: req.body?.endDate || '2026-06-30',
+      });
+      res.json({ message: 'Learned categorization rules from history', ...result });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/entities/:entityId/accounting/reclass-by-learned-rules
+ * Append-only reclass dump expense (5700) onto accounts assigned by learned rules.
+ * Reopens closed months as needed and recloses when canClose.
+ * Body: { confirm: "RECLASS-RULES-<entityId>", dryRun?, startDate?, endDate?, sourceAccounts?, reclose? }
+ */
+router.post(
+  '/reclass-by-learned-rules',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      if (req.entityId !== 'ent-ljc') {
+        return res.status(400).json({ error: 'Only implemented for ent-ljc' });
+      }
+      const expected = `RECLASS-RULES-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({ error: `confirm must equal "${expected}"`, code: 'CONFIRM_REQUIRED' });
+      }
+      const db = await getDatabase();
+      const sourceAccounts = Array.isArray(req.body?.sourceAccounts)
+        ? req.body.sourceAccounts.map(String)
+        : undefined;
+      const result = await reclassPostedByLearnedRules(db, {
+        entityId: req.entityId,
+        userId: req.user.id,
+        dryRun: !!req.body?.dryRun,
+        startDate: req.body?.startDate || '2026-01-01',
+        endDate: req.body?.endDate || '2026-03-31',
+        sourceAccountNumbers: sourceAccounts,
+        reclose: req.body?.reclose !== false,
+        learnFirst: req.body?.learnFirst !== false,
+      });
+      res.json({
+        message: result.dryRun
+          ? `Dry run: would reclass ${result.reclassed} of ${result.scanned}`
+          : `Reclassified ${result.reclassed} of ${result.scanned}`,
+        ...result,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 /**
  * POST /api/entities/:entityId/accounting/reverse-duplicate-bank-imports
