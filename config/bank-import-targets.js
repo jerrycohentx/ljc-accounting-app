@@ -6,6 +6,7 @@ export const BANK_ACCOUNTS = {
   'ent-ljc': [
     { accountNumber: '1000', name: 'Simmons Bank ckg-0260', ofxAccountId: '0260' },
     { accountNumber: '1001', name: 'Lone Star Bank ckg-7367', ofxAccountId: '7367' },
+    { accountNumber: '1002', name: 'Citizens State Bank ckg-1385', ofxAccountId: '1385' },
     { accountNumber: '2010', name: 'American Express 88007', ofxAccountId: '88007' },
   ],
   'ent-justin': [{ accountNumber: '1000', name: 'Primary checking' }],
@@ -32,6 +33,9 @@ export const RECONCILIATION_TARGETS = {
       { statementDate: '2026-03-31', endingBalance: 180566.92, label: 'March 2026' },
       { statementDate: '2026-04-30', endingBalance: 108556.88, label: 'April 2026' },
       { statementDate: '2026-05-31', endingBalance: 3528.66, label: 'May 2026' },
+    ],
+    '1002': [
+      { statementDate: '2026-01-13', endingBalance: 0, label: 'January 2026 — CSB 1385 closed' },
     ],
     '2010': [
       { statementDate: '2026-01-09', endingBalance: 80091.93, label: 'January 2026 (88007)' },

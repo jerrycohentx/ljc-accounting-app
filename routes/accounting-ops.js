@@ -54,6 +54,7 @@ import { rebuildLonestarRecons } from '../lib/rebuild-lonestar-recons.js';
 import { rebuildSimmonsRecons } from '../lib/rebuild-simmons-recons.js';
 import { RECONCILIATION_TARGETS } from '../config/bank-import-targets.js';
 import { removePersonalSimmons4177 } from '../lib/remove-personal-simmons-4177.js';
+import { seedCsbJan2026 } from '../lib/seed-csb-jan-2026.js';
 import { normalizeIsoDate } from '../lib/bank-statement-view.js';
 
 const router = express.Router({ mergeParams: true });
@@ -1247,6 +1248,35 @@ router.post('/lonestar/fix-opening-balance', [entityAccessMiddleware, requireRol
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * POST /api/entities/:entityId/accounting/seed-csb-jan-2026
+ * Load CSB DDA 1385 (1002) Jan 2026 from account history: begin $118.17, checks, end $0.
+ * Body: { confirm: "SEED-CSB-JAN-2026-<entityId>" }
+ */
+router.post(
+  '/seed-csb-jan-2026',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const expected = `SEED-CSB-JAN-2026-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const db = await getDatabase();
+      const result = await seedCsbJan2026(db, {
+        entityId: req.entityId,
+        userId: req.user?.id || 'usr-admin',
+      });
+      res.json({ message: 'CSB January 2026 seeded for reconcile', ...result });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 /**
  * POST /api/entities/:entityId/accounting/remove-personal-simmons-4177

@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-07-25T21:45:00.000Z",
+  "source": "Citizens State Bank Account Snapshot — LJC - 1385 History.pdf (DDA 3003001385)",
+  "statements": [
+    {
+      "file": "LJC - 1385 History.pdf",
+      "meta": {
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-01-13",
+        "closingDate": "2026-01-13",
+        "previousBalance": 118.17,
+        "currentBalance": 0,
+        "newBalance": 0,
+        "accountLast4": "1385",
+        "bankName": "Citizens State Bank",
+        "cardName": null,
+        "label": "January 2026 — account closed 1/13/26"
+      },
+      "transactionCount": 2,
+      "netChange": -118.17,
+      "note": "Account closed 2026-01-13 at $0.00 (Closing Withdrawal/Redemption — no cash movement after checks).",
+      "transactions": [
+        {
+          "date": "2026-01-02",
+          "amount": -24.37,
+          "description": "Check 1107251",
+          "fitid": "csb-1385-20260102-1107251",
+          "checkNumber": "1107251"
+        },
+        {
+          "date": "2026-01-09",
+          "amount": -93.8,
+          "description": "Check 1107252",
+          "fitid": "csb-1385-20260109-1107252",
+          "checkNumber": "1107252"
+        }
+      ]
+    }
+  ]
+}
