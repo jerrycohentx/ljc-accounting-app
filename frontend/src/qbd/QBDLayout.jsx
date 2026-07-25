@@ -67,17 +67,20 @@ export default function QBDLayout() {
     if (exiting) return;
     setExiting(true);
     showToast('Saving backup…');
+    let signedOutDelay = 1100;
     try {
-      const r = await backupAPI.run();
+      const r = await backupAPI.run('save-exit');
       showToast(r.data?.message || 'Backup saved ✓ — signing out…');
     } catch (e) {
-      showToast('Backup failed — signing out anyway: ' + (e.response?.data?.error || e.message));
+      // Never leave Jerry on a dead page: categories already save as you pick them.
+      showToast('Could not finish backup — signing out. Your category picks were already saved.');
+      signedOutDelay = 1600;
     }
     setTimeout(() => {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
-    }, 1100);
+    }, signedOutDelay);
   };
 
   const showAbout = () => {

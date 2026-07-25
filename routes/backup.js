@@ -49,15 +49,22 @@ router.get('/download/:id', authMiddleware, async (req, res) => {
   }
 });
 
-/** POST /api/backup/run — manual "Back Up Company" (auth required) */
+/** POST /api/backup/run — manual "Back Up Company" / Save & Exit (auth required) */
 router.post('/run', authMiddleware, async (req, res) => {
   try {
-    const result = await runBackup({ reason: 'manual', userId: req.user?.id });
+    const reason = String(req.body?.reason || 'manual').slice(0, 40) || 'manual';
+    const result = await runBackup({ reason, userId: req.user?.id });
     if (result.skipped) {
       return res.status(409).json(result);
     }
-    res.json({ ok: true, message: `Backup saved: ${result.backup.filename}`, backup: result.backup });
+    const mb = ((result.backup.sizeBytes || 0) / (1024 * 1024)).toFixed(1);
+    res.json({
+      ok: true,
+      message: `Backup saved: ${result.backup.filename} (${mb} MB)`,
+      backup: result.backup,
+    });
   } catch (err) {
+    console.error('Backup /run failed:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
