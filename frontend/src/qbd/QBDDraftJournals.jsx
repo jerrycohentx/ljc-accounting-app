@@ -93,34 +93,107 @@ function base64ToObjectUrl(b64, mime = 'application/pdf') {
   return URL.createObjectURL(new Blob([bytes], { type: mime }));
 }
 
+const FOLDER_W_KEY = 'qbd-review-folder-w';
+const LIST_SPLIT_KEY = 'qbd-review-list-split';
+const DOC_ZOOM_KEY = 'qbd-review-doc-zoom';
+const DOC_SHOW_KEY = 'qbd-review-doc-show';
+
+/** Drag gutter: percent of a horizontal split container. */
+function useSplitResize(splitRef, setSplitPct, minPct = 25, maxPct = 80) {
+  const dragging = useRef(false);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!dragging.current || !splitRef.current) return;
+      const rect = splitRef.current.getBoundingClientRect();
+      if (rect.width < 40) return;
+      const pct = ((e.clientX - rect.left) / rect.width) * 100;
+      setSplitPct(Math.min(maxPct, Math.max(minPct, pct)));
+    };
+    const onUp = () => {
+      dragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [maxPct, minPct, splitRef, setSplitPct]);
+
+  return useCallback(() => {
+    dragging.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
+}
+
+/** Drag gutter: pixel width for the folder sidebar. */
+function useFolderWidthResize(setWidthPx, { min = 140, max = 420 } = {}) {
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const startW = useRef(220);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!dragging.current) return;
+      const next = startW.current + (e.clientX - startX.current);
+      setWidthPx(Math.min(max, Math.max(min, Math.round(next))));
+    };
+    const onUp = () => {
+      dragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [max, min, setWidthPx]);
+
+  return useCallback((e, currentWidth) => {
+    e.preventDefault();
+    dragging.current = true;
+    startX.current = e.clientX;
+    startW.current = currentWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
+}
+
 const styles = {
   wrap: {
     display: 'flex',
     flexDirection: 'column',
-    height: 'calc(100vh - 48px)',
-    minHeight: 560,
+    flex: 1,
+    minHeight: 0,
+    height: '100%',
     background: '#fff',
     fontFamily: '"Segoe UI", system-ui, sans-serif',
     color: '#1a1a1a',
+    overflow: 'hidden',
   },
   head: {
-    padding: '12px 16px 8px',
+    padding: '8px 14px 6px',
     borderBottom: '1px solid #ddd',
     display: 'flex',
     alignItems: 'baseline',
     gap: 12,
     flexShrink: 0,
   },
-  title: { fontSize: 18, fontWeight: 650, margin: 0 },
-  sub: { fontSize: 13, color: '#555' },
-  body: { display: 'flex', flex: 1, minHeight: 0 },
+  title: { fontSize: 16, fontWeight: 650, margin: 0 },
+  sub: { fontSize: 12, color: '#555' },
+  body: { display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' },
   folders: {
-    width: 220,
     flexShrink: 0,
-    borderRight: '1px solid #ddd',
     overflowY: 'auto',
     background: '#f7f7f5',
     padding: '8px 0',
+    minHeight: 0,
   },
   feedBtn: {
     display: 'block',
@@ -143,17 +216,17 @@ const styles = {
     cursor: 'pointer',
     fontSize: 13,
   },
-  main: { flex: 1, display: 'flex', minWidth: 0, minHeight: 0 },
+  main: { flex: 1, display: 'flex', minWidth: 0, minHeight: 0, overflow: 'hidden' },
   listPane: {
-    flex: '1 1 52%',
-    minWidth: 320,
+    flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
-    borderRight: '1px solid #ddd',
     minHeight: 0,
+    minWidth: 280,
+    overflow: 'hidden',
   },
   listHead: {
-    padding: '10px 16px',
+    padding: '8px 12px',
     borderBottom: '1px solid #e5e5e5',
     display: 'flex',
     alignItems: 'center',
@@ -161,24 +234,24 @@ const styles = {
     flexShrink: 0,
     background: '#fafafa',
   },
-  list: { flex: 1, overflowY: 'auto', padding: '0 8px 24px' },
+  list: { flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '0 6px 16px', minHeight: 0 },
   row: {
     display: 'grid',
-    gridTemplateColumns: '28px 72px 1fr 96px minmax(220px, 300px)',
-    gap: 10,
+    gridTemplateColumns: '24px 64px minmax(120px, 1fr) 88px minmax(180px, 280px)',
+    gap: 8,
     alignItems: 'start',
-    padding: '12px 8px',
+    padding: '8px 6px',
     borderBottom: '1px solid #e0e0e0',
   },
   alwaysLabel: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginTop: 6,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 4,
     fontSize: 11,
-    color: '#444',
+    color: '#1a6fb5',
     cursor: 'pointer',
-    lineHeight: 1.3,
+    lineHeight: 1.25,
     userSelect: 'none',
   },
   modalBackdrop: {
@@ -204,21 +277,22 @@ const styles = {
   label: { fontSize: 12, color: '#444' },
   input: { fontSize: 13, padding: '6px 8px', border: '1px solid #aaa', borderRadius: 2 },
   modalActions: { display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 },
-  date: { fontSize: 13, paddingTop: 2, color: '#222' },
-  desc: { fontSize: 13, lineHeight: 1.35, minWidth: 0 },
+  date: { fontSize: 12, paddingTop: 2, color: '#222' },
+  desc: { fontSize: 12, lineHeight: 1.3, minWidth: 0 },
   descLine: { whiteSpace: 'normal', wordBreak: 'break-word' },
-  amount: { fontSize: 13, textAlign: 'right', paddingTop: 2, fontVariantNumeric: 'tabular-nums' },
+  amount: { fontSize: 12, textAlign: 'right', paddingTop: 2, fontVariantNumeric: 'tabular-nums' },
   catSelect: { width: '100%', minWidth: 0 },
   docPane: {
-    flex: '1 1 48%',
-    minWidth: 280,
+    flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
     background: '#525659',
     minHeight: 0,
+    minWidth: 200,
+    overflow: 'hidden',
   },
   docBar: {
-    padding: '8px 12px',
+    padding: '6px 10px',
     background: '#3d4043',
     color: '#eee',
     fontSize: 12,
@@ -226,11 +300,25 @@ const styles = {
     alignItems: 'center',
     gap: 8,
     flexShrink: 0,
+    flexWrap: 'wrap',
   },
-  iframe: { flex: 1, width: '100%', border: 'none', background: '#525659' },
+  zoomBtn: {
+    border: '1px solid #777',
+    background: '#4a4e52',
+    color: '#fff',
+    padding: '0 7px',
+    minWidth: 24,
+    height: 22,
+    fontSize: 14,
+    fontWeight: 700,
+    lineHeight: 1,
+    cursor: 'pointer',
+    borderRadius: 2,
+  },
+  iframe: { flex: 1, width: '100%', border: 'none', background: '#525659', minHeight: 0 },
   bot: {
     borderTop: '1px solid #ddd',
-    padding: '8px 16px',
+    padding: '6px 14px',
     display: 'flex',
     alignItems: 'center',
     gap: 8,
@@ -286,6 +374,42 @@ export default function QBDDraftJournals() {
   const [ruleForItem, setRuleForItem] = useState(null);
   const [rulePattern, setRulePattern] = useState('');
   const [savingRule, setSavingRule] = useState(false);
+
+  const [folderW, setFolderW] = useState(() => {
+    const saved = parseInt(localStorage.getItem(FOLDER_W_KEY) || '', 10);
+    return Number.isFinite(saved) && saved >= 140 && saved <= 420 ? saved : 200;
+  });
+  const [listSplitPct, setListSplitPct] = useState(() => {
+    const saved = parseFloat(localStorage.getItem(LIST_SPLIT_KEY) || '');
+    return Number.isFinite(saved) && saved >= 25 && saved <= 80 ? saved : 55;
+  });
+  const [docZoom, setDocZoom] = useState(() => {
+    const saved = parseInt(localStorage.getItem(DOC_ZOOM_KEY) || '', 10);
+    if (saved === 0) return 0;
+    return Number.isFinite(saved) && saved >= 40 && saved <= 250 ? saved : 100;
+  });
+  const [showDoc, setShowDoc] = useState(() => localStorage.getItem(DOC_SHOW_KEY) !== 'false');
+
+  const mainSplitRef = useRef(null);
+  const startFolderResize = useFolderWidthResize(setFolderW);
+  const startListResize = useSplitResize(mainSplitRef, setListSplitPct, 28, 78);
+
+  useEffect(() => {
+    localStorage.setItem(FOLDER_W_KEY, String(folderW));
+  }, [folderW]);
+  useEffect(() => {
+    localStorage.setItem(LIST_SPLIT_KEY, String(Math.round(listSplitPct)));
+  }, [listSplitPct]);
+  useEffect(() => {
+    localStorage.setItem(DOC_ZOOM_KEY, String(docZoom));
+  }, [docZoom]);
+  useEffect(() => {
+    localStorage.setItem(DOC_SHOW_KEY, showDoc ? 'true' : 'false');
+  }, [showDoc]);
+
+  const zoomIn = useCallback(() => setDocZoom((z) => Math.min(250, (z > 0 ? z : 100) + 15)), []);
+  const zoomOut = useCallback(() => setDocZoom((z) => Math.max(40, (z > 0 ? z : 100) - 15)), []);
+  const zoomFit = useCallback(() => setDocZoom(0), []);
 
   const revokeDoc = () => {
     if (docUrlRef.current) {
@@ -578,19 +702,28 @@ export default function QBDDraftJournals() {
     load();
   };
 
+  const docSrc = docUrl
+    ? `${docUrl}#toolbar=1&navpanes=0&${docZoom > 0 ? `zoom=${docZoom}` : 'view=FitH'}`
+    : null;
+
   return (
-    <div style={styles.wrap}>
+    <div className="qbd-review-window" style={styles.wrap}>
       <div style={styles.head}>
         <h1 style={styles.title}>Review &amp; approve charges</h1>
         <span style={styles.sub}>
-          Organized by card/bank, then month — pick a category, check the statement on the right, then approve.
+          Drag the blue bars to resize panes. Zoom the statement with − / + / Fit.
         </span>
         <span style={{ flex: 1 }} />
+        {!showDoc && (
+          <button type="button" style={styles.btn} onClick={() => setShowDoc(true)}>
+            Show statement
+          </button>
+        )}
         <span style={styles.sub}>{payload ? `${payload.total} waiting` : ''}</span>
       </div>
 
       <div style={styles.body}>
-        <aside style={styles.folders}>
+        <aside style={{ ...styles.folders, width: folderW }}>
           {loading && <div style={styles.empty}>Loading…</div>}
           {!loading && !feeds.length && <div style={styles.empty}>Nothing waiting for approval.</div>}
           {feeds.map((feed) => {
@@ -632,8 +765,22 @@ export default function QBDDraftJournals() {
           })}
         </aside>
 
-        <div style={styles.main}>
-          <section style={styles.listPane}>
+        <div
+          className="qbd-review-gutter"
+          role="separator"
+          aria-orientation="vertical"
+          aria-valuenow={folderW}
+          title="Drag to resize folders"
+          onMouseDown={(e) => startFolderResize(e, folderW)}
+        />
+
+        <div style={styles.main} ref={mainSplitRef}>
+          <section
+            style={{
+              ...styles.listPane,
+              width: showDoc ? `calc(${listSplitPct}% - 4px)` : '100%',
+            }}
+          >
             <div style={styles.listHead}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
                 <input type="checkbox" checked={allSelected} onChange={toggleAll} disabled={!items.length} />
@@ -667,7 +814,7 @@ export default function QBDDraftJournals() {
                           ...styles.descLine,
                           fontWeight: i === 0 ? 600 : 400,
                           color: i === 0 ? '#111' : '#444',
-                          fontSize: i === 0 ? 13 : 12,
+                          fontSize: i === 0 ? 12 : 11,
                           marginTop: i ? 2 : 0,
                         }}
                       >
@@ -693,9 +840,8 @@ export default function QBDDraftJournals() {
                         onChange={(e) => {
                           if (e.target.checked) openAlwaysRule(it);
                         }}
-                        style={{ marginTop: 1 }}
                       />
-                      <span>Always use this category for this vendor</span>
+                      <span>Always for this vendor</span>
                     </label>
                   </div>
                 </div>
@@ -703,21 +849,51 @@ export default function QBDDraftJournals() {
             </div>
           </section>
 
-          <section style={styles.docPane}>
-            <div style={styles.docBar}>
-              <span style={{ fontWeight: 650 }}>Source document</span>
-              <span style={{ opacity: 0.85 }}>{docBusy ? 'Loading…' : docLabel}</span>
-            </div>
-            {docUrl ? (
-              <iframe title="Source document" src={docUrl} style={styles.iframe} />
-            ) : (
-              <div style={{ ...styles.empty, color: '#ddd', textAlign: 'center', marginTop: 48 }}>
-                {docBusy
-                  ? 'Loading statement…'
-                  : 'Open a month on the left. When a statement PDF is on file, it appears here next to the charges.'}
-              </div>
-            )}
-          </section>
+          {showDoc && (
+            <>
+              <div
+                className="qbd-review-gutter"
+                role="separator"
+                aria-orientation="vertical"
+                aria-valuenow={Math.round(listSplitPct)}
+                title="Drag to resize charges vs statement"
+                onMouseDown={startListResize}
+              />
+              <section
+                style={{
+                  ...styles.docPane,
+                  width: `calc(${100 - listSplitPct}% - 4px)`,
+                }}
+              >
+                <div style={styles.docBar}>
+                  <span style={{ fontWeight: 650 }}>Source document</span>
+                  <span style={{ opacity: 0.85 }}>{docBusy ? 'Loading…' : docLabel}</span>
+                  <span style={{ flex: 1 }} />
+                  <button type="button" style={styles.zoomBtn} title="Zoom out" onClick={zoomOut}>−</button>
+                  <span style={{ minWidth: 36, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>
+                    {docZoom > 0 ? `${docZoom}%` : 'Fit'}
+                  </span>
+                  <button type="button" style={styles.zoomBtn} title="Zoom in" onClick={zoomIn}>+</button>
+                  <button type="button" style={styles.zoomBtn} title="Fit width" onClick={zoomFit}>⤢</button>
+                  <button type="button" style={styles.zoomBtn} title="Hide statement" onClick={() => setShowDoc(false)}>✕</button>
+                </div>
+                {docSrc ? (
+                  <iframe
+                    key={docZoom}
+                    title="Source document"
+                    src={docSrc}
+                    style={styles.iframe}
+                  />
+                ) : (
+                  <div style={{ ...styles.empty, color: '#ddd', textAlign: 'center', marginTop: 48 }}>
+                    {docBusy
+                      ? 'Loading statement…'
+                      : 'Open a month on the left. When a statement PDF is on file, it appears here next to the charges.'}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
         </div>
       </div>
 

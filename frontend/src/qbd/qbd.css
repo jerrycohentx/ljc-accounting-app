@@ -60,6 +60,13 @@
 .qbd-tools select,.qbd-tools input{font-size:11px;padding:3px 6px;border:1px solid #9fb0c2;border-radius:3px}
 .qbd-foot{background:linear-gradient(#eef2f7,#dbe2ec);border-top:1px solid #b9c4d2;padding:6px 12px;display:flex;font-size:12px;font-weight:bold;color:#1f3550}
 .qbd-foot .sp{flex:1}.qbd-muted{color:#7a8696;font-weight:normal}.qbd-empty{padding:30px;text-align:center;color:#8a96a6}
+/* Review & Approve — fill work area, no outer page scroll */
+.qbd-work:has(.qbd-review-window){padding:0;overflow:hidden;display:flex;flex-direction:column}
+.qbd-review-window{flex:1;min-height:0;height:calc(100vh - 108px);display:flex;flex-direction:column;overflow:hidden;background:#fff}
+.qbd-review-gutter{width:7px;flex-shrink:0;cursor:col-resize;background:linear-gradient(90deg,#dbe3ee,#c9d3df,#dbe3ee);border-left:1px solid #9fb4c8;border-right:1px solid #9fb4c8;position:relative;z-index:2}
+.qbd-review-gutter:hover,.qbd-review-gutter.dragging{background:linear-gradient(90deg,#8fb0e0,#5a85c4,#8fb0e0)}
+.qbd-review-gutter::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:28px;border-radius:2px;background:rgba(255,255,255,.55)}
+
 /* QBD reconcile — statement + register side-by-side */
 .qbd-work:has(.qbd-recon-window){padding:0;overflow:hidden;display:flex;flex-direction:column}
 .qbd-recon-window{flex:1;min-height:0;margin:4px!important;max-height:none!important;height:calc(100vh - 108px);display:flex;flex-direction:column}
