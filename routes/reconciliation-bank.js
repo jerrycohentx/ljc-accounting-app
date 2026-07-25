@@ -612,6 +612,7 @@ router.post('/payment-due', async (req, res) => {
       payFromAccountId,
       statementDate,
       paymentDueDate,
+      paymentDate = null,
       amount,
     } = req.body || {};
     if (!entityId || !accountId || !statementDate) {
@@ -624,6 +625,7 @@ router.post('/payment-due', async (req, res) => {
       payFromAccountId: payFromAccountId || null,
       statementDate,
       paymentDueDate: paymentDueDate || null,
+      paymentDate: paymentDate || paymentDueDate || null,
       amount: amount != null ? Number(amount) : 0,
       userId: req.user?.id || 'usr-admin',
     });
@@ -643,6 +645,7 @@ router.post('/reconcile', async (req, res) => {
       serviceChargeAccountId = null, interestAccountId = null,
       serviceChargeDate = null, interestDate = null,
       paymentDueDate = null,
+      paymentDate = null,
       payFromAccountId = null,
       paymentDueAmount = null,
     } = req.body;
@@ -702,7 +705,7 @@ router.post('/reconcile', async (req, res) => {
 
     // Credit-card: refresh scheduled payment on the selected cash register (DRAFT).
     let paymentDue = null;
-    if (paymentDueDate && payFromAccountId) {
+    if ((paymentDate || paymentDueDate) && payFromAccountId) {
       try {
         const dueAmt = paymentDueAmount != null && paymentDueAmount !== ''
           ? Number(paymentDueAmount)
@@ -712,7 +715,8 @@ router.post('/reconcile', async (req, res) => {
           cardAccountId: accountId,
           payFromAccountId,
           statementDate: recDate,
-          paymentDueDate,
+          paymentDueDate: paymentDueDate || paymentDate,
+          paymentDate: paymentDate || paymentDueDate,
           amount: dueAmt,
           userId: req.user?.id || 'usr-admin',
         });
