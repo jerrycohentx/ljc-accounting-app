@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete, Check, SendRounded, Visibility } from '@mui/icons-material';
 import { journalAPI, accountAPI } from '../services/api';
+import AccountCombobox, { flattenAccounts } from '../qbd/AccountCombobox';
 
 export default function JournalEntry() {
   const [journals, setJournals] = useState([]);
@@ -146,14 +147,7 @@ export default function JournalEntry() {
     return colors[status] || 'default';
   };
 
-  const flatAccounts = [];
-  const flatten = (accs) => {
-    accs.forEach(acc => {
-      flatAccounts.push(acc);
-      if (acc.children) flatten(acc.children);
-    });
-  };
-  flatten(accounts);
+  const flatAccounts = flattenAccounts(accounts, { activeOnly: false });
 
   return (
     <Box>
@@ -265,25 +259,20 @@ export default function JournalEntry() {
           {formData.lines.map((line, index) => (
             <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
               <Grid item xs={4}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Account"
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  Account
+                </Typography>
+                <AccountCombobox
+                  accounts={flatAccounts}
                   value={line.accountId}
-                  onChange={(e) => {
+                  onChange={(id) => {
                     const newLines = [...formData.lines];
-                    newLines[index].accountId = e.target.value;
+                    newLines[index].accountId = id;
                     setFormData({ ...formData, lines: newLines });
                   }}
-                  SelectProps={{ native: true }}
-                >
-                  <option value="">Select Account</option>
-                  {flatAccounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.account_number} - {acc.account_name}
-                    </option>
-                  ))}
-                </TextField>
+                  placeholder="Select Account"
+                  inputStyle={{ fontSize: 14, padding: '10px 12px' }}
+                />
               </Grid>
               <Grid item xs={3}>
                 <TextField

@@ -3,11 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, plaidAPI, importAPI } from '../services/api';
 import { fmt, leafLabel, todayISO } from './helpers';
-
-function flat(nodes, out) {
-  (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flat(n.children, out); });
-  return out;
-}
+import AccountCombobox, { flattenAccounts } from './AccountCombobox';
 
 // QuickBooks Desktop "Bank Feeds Center": download (date range) + review-before-post.
 export default function QBDBankFeeds() {
@@ -31,7 +27,7 @@ export default function QBDBankFeeds() {
   const loadAccounts = useCallback(() => {
     if (!entityId) return;
     accountAPI.list(entityId)
-      .then((r) => setAccounts(flat(Array.isArray(r.data) ? r.data : (r.data?.data || []), [])))
+      .then((r) => setAccounts(flattenAccounts(Array.isArray(r.data) ? r.data : (r.data?.data || []))))
       .catch(() => {});
   }, [entityId]);
 
@@ -211,10 +207,12 @@ export default function QBDBankFeeds() {
                       <td className="qbd-bal">{r.payment ? fmt(+r.payment) : ''}</td>
                       <td className="qbd-bal">{r.deposit ? fmt(+r.deposit) : ''}</td>
                       <td>
-                        <select value={r.offsetAccountId || ''} onChange={(e) => changeAccount(r, e.target.value)} style={{ width: '100%' }}>
-                          <option value="">— uncategorized —</option>
-                          {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-                        </select>
+                        <AccountCombobox
+                          accounts={accounts}
+                          value={r.offsetAccountId || ''}
+                          onChange={(id) => changeAccount(r, id)}
+                          placeholder="— uncategorized —"
+                        />
                       </td>
                     </tr>
                   ))}

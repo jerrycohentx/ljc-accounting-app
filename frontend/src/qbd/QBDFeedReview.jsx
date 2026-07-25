@@ -3,11 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, importAPI, journalAPI } from '../services/api';
 import { leafLabel, todayISO, fmtShortDate } from './helpers';
-
-function flat(nodes, out) {
-  (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flat(n.children, out); });
-  return out;
-}
+import AccountCombobox, { flattenAccounts } from './AccountCombobox';
 
 const SOURCE_LABELS = {
   plaid: 'Plaid',
@@ -137,7 +133,7 @@ export default function QBDFeedReview() {
         accountAPI.list(e.id)
           .then((r) => ({
             entityId: e.id,
-            accounts: flat(Array.isArray(r.data) ? r.data : (r.data?.data || []), []),
+            accounts: flattenAccounts(Array.isArray(r.data) ? r.data : (r.data?.data || [])),
           }))
           .catch(() => ({ entityId: e.id, accounts: [] }))
       )
@@ -304,7 +300,7 @@ export default function QBDFeedReview() {
         <label>Account</label>
         <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ minWidth: 160 }}>
           <option value="">All accounts</option>
-          {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} — {leafLabel(a.account_name)}</option>)}
+          {accounts.map((a) => <option key={a.id} value={a.id}>{(a.number || a.account_number)} — {leafLabel(a.name || a.account_name)}</option>)}
         </select>
         <label>From</label>
         <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -358,17 +354,16 @@ export default function QBDFeedReview() {
                       <td><span className="qbd-pill">{SOURCE_LABELS[row.source] || row.source}</span></td>
                       <td>
                         <div className="qbd-review-cat-cell">
-                          <select
+                          <AccountCombobox
+                            accounts={accountsByEntity[row.entityId] || []}
                             value={catId}
-                            onChange={(e) => changeAccount(row, e.target.value)}
-                            className={isSuggested ? 'qbd-review-cat-suggested' : ''}
-                            style={{ width: '100%', fontSize: 11 }}
-                          >
-                            <option value="">— categorize —</option>
-                            {(accountsByEntity[row.entityId] || []).map((a) => (
-                              <option key={a.id} value={a.id}>{leafLabel(a.account_name)}</option>
-                            ))}
-                          </select>
+                            onChange={(id) => changeAccount(row, id)}
+                            placeholder="— categorize —"
+                            inputStyle={{
+                              fontSize: 11,
+                              ...(isSuggested ? { background: '#fff8e6' } : null),
+                            }}
+                          />
                           {isSuggested && conf >= 0.75 && (
                             <span
                               className={`qbd-cat-conf qbd-cat-conf-${conf >= 0.9 ? 'high' : 'med'}`}

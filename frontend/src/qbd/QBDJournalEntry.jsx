@@ -2,12 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, journalAPI } from '../services/api';
-import { fmt, leafLabel, todayISO, fmtShortDate } from './helpers';
+import { fmt, todayISO, fmtShortDate } from './helpers';
+import AccountCombobox, { flattenAccounts } from './AccountCombobox';
 
-function flat(nodes, out) {
-  (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flat(n.children, out); });
-  return out;
-}
 const blankLine = () => ({ accountId: '', debit: '', credit: '', description: '' });
 
 export default function QBDJournalEntry() {
@@ -27,7 +24,7 @@ export default function QBDJournalEntry() {
 
   useEffect(() => {
     if (!entityId) return;
-    accountAPI.list(entityId).then((r) => setAccounts(flat(Array.isArray(r.data) ? r.data : (r.data?.data || []), []))).catch(() => {});
+    accountAPI.list(entityId).then((r) => setAccounts(flattenAccounts(Array.isArray(r.data) ? r.data : (r.data?.data || [])))).catch(() => {});
     loadRecent();
   }, [entityId, loadRecent]);
 
@@ -88,10 +85,12 @@ export default function QBDJournalEntry() {
               {lines.map((l, i) => (
                 <tr key={i}>
                   <td>
-                    <select value={l.accountId} onChange={(e) => setLine(i, 'accountId', e.target.value)}>
-                      <option value="">— select account —</option>
-                      {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-                    </select>
+                    <AccountCombobox
+                      accounts={accounts}
+                      value={l.accountId}
+                      onChange={(id) => setLine(i, 'accountId', id)}
+                      placeholder="— select account —"
+                    />
                   </td>
                   <td><input type="number" step="0.01" value={l.debit} onChange={(e) => setLine(i, 'debit', e.target.value)} style={{ textAlign: 'right' }} /></td>
                   <td><input type="number" step="0.01" value={l.credit} onChange={(e) => setLine(i, 'credit', e.target.value)} style={{ textAlign: 'right' }} /></td>

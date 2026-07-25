@@ -4,7 +4,7 @@ import { useEntity } from './EntityContext';
 import { accountingAPI, accountAPI, bankReconAPI, journalAPI } from '../services/api';
 import { leafLabel } from './helpers';
 import { fetchStatementObjectUrl } from './reconSourceDrill';
-import CategoryCombobox, { CREATE_NEW_VALUE } from './CategoryCombobox';
+import AccountCombobox, { CREATE_NEW_VALUE } from './AccountCombobox';
 
 const ACCOUNT_TYPE_LABELS = {
   EXPENSE: 'Expenses',
@@ -601,10 +601,12 @@ export default function QBDDraftJournals() {
                   </div>
                   <div style={styles.amount}>{fmtMoney(it.amount)}</div>
                   <div style={styles.catSelect}>
-                    <CategoryCombobox
+                    <AccountCombobox
                       accounts={accounts}
                       value={it.categoryAccountId || ''}
                       onChange={(accountId) => changeCategory(it, accountId)}
+                      allowCreate
+                      onCreateRequest={() => changeCategory(it, CREATE_NEW_VALUE)}
                       title="Type to search the chart of accounts — change teaches the app for next time"
                     />
                   </div>

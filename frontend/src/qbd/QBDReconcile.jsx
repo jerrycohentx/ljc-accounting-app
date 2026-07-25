@@ -17,6 +17,7 @@ import {
 } from './helpers';
 import { drillReconLineSource } from './reconSourceDrill';
 import { ReconHtmlPreviewModal } from './QBDReconReports';
+import AccountCombobox from './AccountCombobox';
 
 const REGISTER_SPLIT_STORAGE_KEY = 'qbd-recon-register-split-pct';
 const HIDE_AFTER_END_KEY = 'qbd-recon-hide-after-end';
@@ -1072,10 +1073,14 @@ export default function QBDReconcile() {
           Lines that match your statement are pre-checked; check off the rest as you find them.
         </div>
         <div className="frow"><label>Account</label>
-          <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-            <option value="">— select bank / card account —</option>
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-          </select>
+          <div style={{ minWidth: 320, flex: 1, maxWidth: 480 }}>
+            <AccountCombobox
+              accounts={accounts}
+              value={accountId}
+              onChange={setAccountId}
+              placeholder="— select bank / card account —"
+            />
+          </div>
         </div>
         {accountId && (
           <>
@@ -1112,20 +1117,28 @@ export default function QBDReconcile() {
               <span className="fsub">Date</span>
               <input type="date" value={scDate || stmtDate} onChange={(e) => setScDate(e.target.value)} />
               <span className="fsub">Account</span>
-              <select value={scAccountId} onChange={(e) => setScAccountId(e.target.value)}>
-                <option value="">Auto — Bank Service Charges</option>
-                {expenseAccounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-              </select>
+              <div style={{ minWidth: 220, flex: 1, maxWidth: 360 }}>
+                <AccountCombobox
+                  accounts={expenseAccounts}
+                  value={scAccountId}
+                  onChange={setScAccountId}
+                  placeholder="Auto — Bank Service Charges"
+                />
+              </div>
             </div>
             <div className="frow"><label>Interest earned</label>
               <input type="number" step="0.01" min="0" value={interestEarned} onChange={(e) => setInterestEarned(e.target.value)} placeholder="0.00" style={{ textAlign: 'right', width: 90 }} />
               <span className="fsub">Date</span>
               <input type="date" value={intDate || stmtDate} onChange={(e) => setIntDate(e.target.value)} />
               <span className="fsub">Account</span>
-              <select value={intAccountId} onChange={(e) => setIntAccountId(e.target.value)}>
-                <option value="">Auto — Interest Income</option>
-                {incomeAccounts.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-              </select>
+              <div style={{ minWidth: 220, flex: 1, maxWidth: 360 }}>
+                <AccountCombobox
+                  accounts={incomeAccounts}
+                  value={intAccountId}
+                  onChange={setIntAccountId}
+                  placeholder="Auto — Interest Income"
+                />
+              </div>
             </div>
             <div className="frow"><label>Bank statement</label>
               <div>

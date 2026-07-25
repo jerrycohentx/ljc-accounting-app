@@ -2,12 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, journalAPI } from '../services/api';
-import { fmt, leafLabel, todayISO, fmtShortDate } from './helpers';
-
-function flat(nodes, out) {
-  (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flat(n.children, out); });
-  return out;
-}
+import { fmt, todayISO, fmtShortDate } from './helpers';
+import AccountCombobox, { flattenAccounts } from './AccountCombobox';
 
 // mode: 'check' = money out of a bank account; 'deposit' = money into a bank account
 export default function QBDCashEntry({ mode = 'check' }) {
@@ -31,11 +27,11 @@ export default function QBDCashEntry({ mode = 'check' }) {
 
   useEffect(() => {
     if (!entityId) return;
-    accountAPI.list(entityId).then((r) => setAccounts(flat(Array.isArray(r.data) ? r.data : (r.data?.data || []), []))).catch(() => {});
+    accountAPI.list(entityId).then((r) => setAccounts(flattenAccounts(Array.isArray(r.data) ? r.data : (r.data?.data || [])))).catch(() => {});
     loadRecent();
   }, [entityId, loadRecent]);
 
-  const banks = accounts.filter((a) => a.account_type === 'ASSET' && /^Cash/.test(a.account_name));
+  const banks = accounts.filter((a) => a.type === 'ASSET' && /^Cash/.test(a.name));
   const others = accounts.filter((a) => a.id !== bankId);
 
   const reset = () => { setAmount(''); setParty(''); setMemo(''); setOtherId(''); };
@@ -68,10 +64,14 @@ export default function QBDCashEntry({ mode = 'check' }) {
         <div className="fhd">{isCheck ? 'Write Checks' : 'Make Deposits'}</div>
         <div className="frow">
           <label>{isCheck ? 'Bank Account' : 'Deposit To'}</label>
-          <select value={bankId} onChange={(e) => setBankId(e.target.value)}>
-            <option value="">— bank account —</option>
-            {banks.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-          </select>
+          <div style={{ minWidth: 280, flex: 1 }}>
+            <AccountCombobox
+              accounts={banks}
+              value={bankId}
+              onChange={setBankId}
+              placeholder="— bank account —"
+            />
+          </div>
           <label style={{ width: 70 }}>Date</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
@@ -83,10 +83,14 @@ export default function QBDCashEntry({ mode = 'check' }) {
         </div>
         <div className="frow">
           <label>{isCheck ? 'Expense / Account' : 'From Account'}</label>
-          <select value={otherId} onChange={(e) => setOtherId(e.target.value)}>
-            <option value="">— account —</option>
-            {others.map((a) => <option key={a.id} value={a.id}>{a.account_number} · {leafLabel(a.account_name)}</option>)}
-          </select>
+          <div style={{ minWidth: 280, flex: 1 }}>
+            <AccountCombobox
+              accounts={others}
+              value={otherId}
+              onChange={setOtherId}
+              placeholder="— account —"
+            />
+          </div>
         </div>
         <div className="frow">
           <label>Memo</label>
