@@ -30,6 +30,8 @@ These rules override convenience. They exist because assistants previously claim
 - A CLOSED recon is valid only when **live Cleared Balance** (beginning + session-locked lines) equals **statement ending**, not merely when the stored `difference` column is 0.
 - Cleared for a CLOSED session = `bank_reconciliation_session_lines` only. Orphan `RECONCILED` rows with `reconciliation_session_id IS NULL` must not inflate Cleared or keep a fake close.
 - Integrity code `CLEARED_NE_STATEMENT` means Cleared ≠ bank — treat as **not closed**; fix the session lines (never plug).
+- Worksheet API: never tell Jerry a recon is done unless `periodSession.balanced === true` and `liveTotals.difference === 0`. A green CLOSED banner with a red Difference is a bug — treat as **not reconciled**.
+- Server must not leave `status=CLOSED` when live Cleared ≠ statement; repair reopens those sessions.
 
 ## Period close
 

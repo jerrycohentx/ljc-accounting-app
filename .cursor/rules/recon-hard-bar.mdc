@@ -1,0 +1,40 @@
+---
+description: Hard bar — never claim reconciled/CLOSED unless live Cleared = statement $0.00
+alwaysApply: true
+---
+
+# Reconciliation Hard Bar
+
+These rules exist because agents repeatedly told Jerry a bank/card recon was done while the Reconcile screen still showed a non-zero Difference (or a green CLOSED banner with a red difference). That is forbidden.
+
+## One definition of “reconciled”
+
+A bank/card period is reconciled **only** when **all** of these are true:
+
+1. `periodSession.balanced === true` on the worksheet API (or account `ok: true` on period integrity)
+2. Live **Cleared Balance === statement ending** → **Difference $0.00**
+3. You did **not** invent status from chat memory, a prior message, or `status: 'CLOSED'` alone
+
+Stored `bank_reconciliation_sessions.difference = 0` is **not** enough by itself.
+
+## Before telling Jerry a recon is done / CLOSED / balanced
+
+Call live API — pick one:
+
+- Worksheet: `GET /api/reconciliation/bank/worksheet?entityId=…&accountId=…&statementDate=YYYY-MM-DD`  
+  Require: `periodSession.balanced === true` **and** `liveTotals.difference === 0` (or `liveTotals.balanced === true`)
+- Period: `GET /api/entities/:entityId/accounting/periods/integrity?year=…&month=…`  
+  Require: `isClosed: true` for a month; for one account require that account’s `ok: true` and `session.difference === 0`
+
+If the UI shows Difference ≠ $0.00, you may **not** say it is reconciled — even if a banner once said CLOSED.
+
+## Forbidden
+
+- Saying “it’s reconciled” / “CLOSED” / “tied out” from memory or after a rebuild script without re-checking live Difference
+- Treating green banner text as truth without reading `liveTotals` / integrity
+- Creating plug / reconcile-adjustment / force-balance JEs to clear a difference
+- Asking Jerry to “accept” a variance
+
+## When Difference ≠ $0.00
+
+Fix the real variance (missing line, wrong checks, wrong beginning balance, dropped session lines). Do not close. Do not soften language.

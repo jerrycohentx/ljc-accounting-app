@@ -109,7 +109,7 @@ async function testClosedWorksheetKeepsSessionLinesAndBegin(db) {
   await db.run(
     `INSERT INTO bank_reconciliation_sessions
        (id, entity_id, account_id, statement_date, beginning_balance, ending_balance, cleared_net, difference, status, notes, created_by, closed_at)
-     VALUES (?, ?, ?, '2025-12-31', 0, 1000, 1000, 0, 'CLOSED', 'prior', ?, CURRENT_TIMESTAMP)`,
+     VALUES (?, ?, ?, '2025-12-31', 1000, 1000, 0, 0, 'CLOSED', 'prior', ?, CURRENT_TIMESTAMP)`,
     [`brs-prior-${uuidv4()}`, ENTITY, acctId, USER]
   );
   await postJe(db, { accountId: acctId, date: '2026-01-05', debit: 800, glId: 'gl-keep-1' });
