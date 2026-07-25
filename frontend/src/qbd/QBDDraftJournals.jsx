@@ -4,8 +4,8 @@ import { useEntity } from './EntityContext';
 import { accountingAPI, accountAPI, bankReconAPI, journalAPI } from '../services/api';
 import { leafLabel } from './helpers';
 import { fetchStatementObjectUrl } from './reconSourceDrill';
+import CategoryCombobox, { CREATE_NEW_VALUE } from './CategoryCombobox';
 
-const ACCOUNT_TYPE_ORDER = ['EXPENSE', 'REVENUE', 'ASSET', 'LIABILITY', 'EQUITY', 'CONTRA'];
 const ACCOUNT_TYPE_LABELS = {
   EXPENSE: 'Expenses',
   REVENUE: 'Income',
@@ -14,7 +14,6 @@ const ACCOUNT_TYPE_LABELS = {
   EQUITY: 'Equity',
   CONTRA: 'Contra',
 };
-const CREATE_NEW_VALUE = '__create_new__';
 
 function suggestAccountNumber(accounts, type) {
   const ranges = {
@@ -50,18 +49,6 @@ function suggestAccountNumber(accounts, type) {
 function accountUsingNumber(accounts, number) {
   const n = String(number || '').trim();
   return (accounts || []).find((a) => String(a.number) === n) || null;
-
-function groupAccountsByType(accounts) {
-  const map = new Map();
-  for (const a of accounts || []) {
-    const t = a.type || 'EXPENSE';
-    if (!map.has(t)) map.set(t, []);
-    map.get(t).push(a);
-  }
-  return ACCOUNT_TYPE_ORDER
-    .filter((t) => map.has(t))
-    .concat([...map.keys()].filter((t) => !ACCOUNT_TYPE_ORDER.includes(t)))
-    .map((t) => ({ type: t, label: ACCOUNT_TYPE_LABELS[t] || t, accounts: map.get(t) }));
 }
 
 function fmtMoney(n) {
@@ -154,7 +141,7 @@ const styles = {
   list: { flex: 1, overflowY: 'auto', padding: '0 8px 24px' },
   row: {
     display: 'grid',
-    gridTemplateColumns: '28px 72px 1fr 96px minmax(200px, 240px)',
+    gridTemplateColumns: '28px 72px 1fr 96px minmax(220px, 280px)',
     gap: 10,
     alignItems: 'start',
     padding: '12px 8px',
@@ -187,7 +174,7 @@ const styles = {
   desc: { fontSize: 13, lineHeight: 1.35, minWidth: 0 },
   descLine: { whiteSpace: 'normal', wordBreak: 'break-word' },
   amount: { fontSize: 13, textAlign: 'right', paddingTop: 2, fontVariantNumeric: 'tabular-nums' },
-  catSelect: { width: '100%', fontSize: 12, padding: '3px 4px' },
+  catSelect: { width: '100%', minWidth: 0 },
   docPane: {
     flex: '1 1 48%',
     minWidth: 280,
@@ -302,7 +289,6 @@ export default function QBDDraftJournals() {
 
   const feeds = payload?.feeds || [];
   const accounts = payload?.accounts || payload?.expenseAccounts || [];
-  const accountGroups = useMemo(() => groupAccountsByType(accounts), [accounts]);
   const activeFeed = feeds.find((f) => f.key === feedKey) || feeds[0] || null;
   const activeMonth = (activeFeed?.months || []).find((m) => m.key === monthKey)
     || (activeFeed?.months || [])[0]
@@ -614,24 +600,14 @@ export default function QBDDraftJournals() {
                     ))}
                   </div>
                   <div style={styles.amount}>{fmtMoney(it.amount)}</div>
-                  <select
-                    style={styles.catSelect}
-                    value={it.categoryAccountId || ''}
-                    onChange={(e) => changeCategory(it, e.target.value)}
-                    title="Full chart of accounts — change teaches the app for next time"
-                  >
-                    <option value="">— pick account —</option>
-                    <option value={CREATE_NEW_VALUE}>＋ Create new account…</option>
-                    {accountGroups.map((g) => (
-                      <optgroup key={g.type} label={g.label}>
-                        {g.accounts.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.number} · {leafLabel(a.name)}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
+                  <div style={styles.catSelect}>
+                    <CategoryCombobox
+                      accounts={accounts}
+                      value={it.categoryAccountId || ''}
+                      onChange={(accountId) => changeCategory(it, accountId)}
+                      title="Type to search the chart of accounts — change teaches the app for next time"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
