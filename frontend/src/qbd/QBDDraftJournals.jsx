@@ -1,9 +1,54 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { accountingAPI, bankReconAPI, journalAPI } from '../services/api';
+import { accountingAPI, accountAPI, bankReconAPI, journalAPI } from '../services/api';
 import { leafLabel } from './helpers';
 import { fetchStatementObjectUrl } from './reconSourceDrill';
+
+const ACCOUNT_TYPE_ORDER = ['EXPENSE', 'REVENUE', 'ASSET', 'LIABILITY', 'EQUITY', 'CONTRA'];
+const ACCOUNT_TYPE_LABELS = {
+  EXPENSE: 'Expenses',
+  REVENUE: 'Income',
+  ASSET: 'Assets',
+  LIABILITY: 'Liabilities',
+  EQUITY: 'Equity',
+  CONTRA: 'Contra',
+};
+const CREATE_NEW_VALUE = '__create_new__';
+
+function suggestAccountNumber(accounts, type) {
+  const ranges = {
+    ASSET: [1000, 1999],
+    LIABILITY: [2000, 2999],
+    EQUITY: [3000, 3999],
+    REVENUE: [4000, 4999],
+    EXPENSE: [5000, 6999],
+    CONTRA: [7000, 7999],
+  };
+  const [lo, hi] = ranges[type] || [9000, 9999];
+  const nums = (accounts || [])
+    .filter((a) => a.type === type)
+    .map((a) => parseInt(a.number, 10))
+    .filter((n) => Number.isFinite(n) && n >= lo && n <= hi);
+  const max = nums.length ? Math.max(...nums) : lo - 10;
+  let next = max + 10;
+  if (next > hi) next = max + 1;
+  if (next < lo) next = lo;
+  return String(next);
+}
+
+function groupAccountsByType(accounts) {
+  const map = new Map();
+  for (const a of accounts || []) {
+    const t = a.type || 'EXPENSE';
+    if (!map.has(t)) map.set(t, []);
+    map.get(t).push(a);
+  }
+  return ACCOUNT_TYPE_ORDER
+    .filter((t) => map.has(t))
+    .concat([...map.keys()].filter((t) => !ACCOUNT_TYPE_ORDER.includes(t)))
+    .map((t) => ({ type: t, label: ACCOUNT_TYPE_LABELS[t] || t, accounts: map.get(t) }));
+}
 
 function fmtMoney(n) {
   const v = Number(n) || 0;
@@ -95,12 +140,35 @@ const styles = {
   list: { flex: 1, overflowY: 'auto', padding: '0 8px 24px' },
   row: {
     display: 'grid',
-    gridTemplateColumns: '28px 72px 1fr 96px minmax(160px, 200px)',
+    gridTemplateColumns: '28px 72px 1fr 96px minmax(200px, 240px)',
     gap: 10,
     alignItems: 'start',
     padding: '12px 8px',
     borderBottom: '1px solid #e0e0e0',
   },
+  modalBackdrop: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.35)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    background: '#fff',
+    border: '1px solid #999',
+    borderRadius: 4,
+    width: 420,
+    maxWidth: '92vw',
+    padding: 16,
+    boxShadow: '0 8px 28px rgba(0,0,0,0.25)',
+  },
+  modalTitle: { margin: '0 0 12px', fontSize: 16, fontWeight: 650 },
+  field: { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 },
+  label: { fontSize: 12, color: '#444' },
+  input: { fontSize: 13, padding: '6px 8px', border: '1px solid #aaa', borderRadius: 2 },
+  modalActions: { display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 },
   date: { fontSize: 13, paddingTop: 2, color: '#222' },
   desc: { fontSize: 13, lineHeight: 1.35, minWidth: 0 },
   descLine: { whiteSpace: 'normal', wordBreak: 'break-word' },
@@ -172,6 +240,14 @@ export default function QBDDraftJournals() {
   const [docLabel, setDocLabel] = useState('');
   const [docBusy, setDocBusy] = useState(false);
   const docUrlRef = useRef(null);
+  const [createForItem, setCreateForItem] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [newAcct, setNewAcct] = useState({
+    accountNumber: '',
+    accountName: '',
+    accountType: 'EXPENSE',
+    description: '',
+  });
 
   const revokeDoc = () => {
     if (docUrlRef.current) {
@@ -211,7 +287,8 @@ export default function QBDDraftJournals() {
   useEffect(() => () => revokeDoc(), []);
 
   const feeds = payload?.feeds || [];
-  const expenseAccounts = payload?.expenseAccounts || [];
+  const accounts = payload?.accounts || payload?.expenseAccounts || [];
+  const accountGroups = useMemo(() => groupAccountsByType(accounts), [accounts]);
   const activeFeed = feeds.find((f) => f.key === feedKey) || feeds[0] || null;
   const activeMonth = (activeFeed?.months || []).find((m) => m.key === monthKey)
     || (activeFeed?.months || [])[0]
@@ -300,34 +377,98 @@ export default function QBDDraftJournals() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId, activeFeed?.key, activeMonth?.key, activeMonth?.statementDate]);
 
+  const applyCategoryToItem = (itemId, d) => {
+    setPayload((prev) => {
+      if (!prev) return prev;
+      const feedsNext = (prev.feeds || []).map((f) => ({
+        ...f,
+        months: (f.months || []).map((m) => ({
+          ...m,
+          items: (m.items || []).map((it) => (
+            it.id === itemId
+              ? {
+                ...it,
+                categoryAccountId: d.categoryAccountId,
+                categoryAccountNumber: d.categoryAccountNumber,
+                categoryAccountName: d.categoryAccountName,
+              }
+              : it
+          )),
+        })),
+      }));
+      return { ...prev, feeds: feedsNext };
+    });
+  };
+
   const changeCategory = async (item, accountId) => {
-    if (!accountId || accountId === item.categoryAccountId) return;
+    if (!accountId) return;
+    if (accountId === CREATE_NEW_VALUE) {
+      setCreateForItem(item);
+      setNewAcct({
+        accountNumber: suggestAccountNumber(accounts, 'EXPENSE'),
+        accountName: '',
+        accountType: 'EXPENSE',
+        description: (item.descLines && item.descLines[0]) || '',
+      });
+      return;
+    }
+    if (accountId === item.categoryAccountId) return;
     try {
       const r = await accountingAPI.setCategorizationCategory(entityId, item.id, accountId);
       const d = r.data || r;
-      setPayload((prev) => {
-        if (!prev) return prev;
-        const feedsNext = (prev.feeds || []).map((f) => ({
-          ...f,
-          months: (f.months || []).map((m) => ({
-            ...m,
-            items: (m.items || []).map((it) => (
-              it.id === item.id
-                ? {
-                  ...it,
-                  categoryAccountId: d.categoryAccountId,
-                  categoryAccountNumber: d.categoryAccountNumber,
-                  categoryAccountName: d.categoryAccountName,
-                }
-                : it
-            )),
-          })),
-        }));
-        return { ...prev, feeds: feedsNext };
-      });
+      applyCategoryToItem(item.id, d);
       toast(`Saved — future ${item.descLines[0] || 'similar'} charges will use this category`);
     } catch (e) {
       toast('Could not save category: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
+    }
+  };
+
+  const saveNewAccount = async () => {
+    const number = String(newAcct.accountNumber || '').trim();
+    const name = String(newAcct.accountName || '').trim();
+    const accountType = newAcct.accountType || 'EXPENSE';
+    if (!number || !name) {
+      toast('Enter an account number and name');
+      return;
+    }
+    setCreating(true);
+    try {
+      const created = await accountAPI.create(entityId, {
+        accountNumber: number,
+        accountName: name,
+        accountType,
+        description: newAcct.description || '',
+      });
+      const body = created.data || created;
+      const newId = body.id;
+      const entry = {
+        id: newId,
+        number: body.accountNumber || number,
+        name: body.accountName || name,
+        type: body.accountType || accountType,
+      };
+      setPayload((prev) => {
+        if (!prev) return prev;
+        const list = [...(prev.accounts || prev.expenseAccounts || []), entry]
+          .sort((a, b) => String(a.number).localeCompare(String(b.number), undefined, { numeric: true }));
+        return {
+          ...prev,
+          accounts: list,
+          expenseAccounts: list.filter((a) => a.type === 'EXPENSE'),
+        };
+      });
+      if (createForItem) {
+        const r = await accountingAPI.setCategorizationCategory(entityId, createForItem.id, newId);
+        applyCategoryToItem(createForItem.id, r.data || r);
+        toast(`Created ${entry.number} · ${entry.name} and applied to this charge`);
+      } else {
+        toast(`Created ${entry.number} · ${entry.name}`);
+      }
+      setCreateForItem(null);
+    } catch (e) {
+      toast('Could not create account: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -454,13 +595,18 @@ export default function QBDDraftJournals() {
                     style={styles.catSelect}
                     value={it.categoryAccountId || ''}
                     onChange={(e) => changeCategory(it, e.target.value)}
-                    title="Category — changing this teaches the app for next time"
+                    title="Full chart of accounts — change teaches the app for next time"
                   >
-                    <option value="">— pick category —</option>
-                    {expenseAccounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {leafLabel(a.name)}
-                      </option>
+                    <option value="">— pick account —</option>
+                    <option value={CREATE_NEW_VALUE}>＋ Create new account…</option>
+                    {accountGroups.map((g) => (
+                      <optgroup key={g.type} label={g.label}>
+                        {g.accounts.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.number} · {leafLabel(a.name)}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </div>
@@ -502,6 +648,69 @@ export default function QBDDraftJournals() {
           {busy ? 'Posting…' : `Approve & Post${selectedItems.length ? ` (${selectedItems.length})` : ''}`}
         </button>
       </div>
+
+      {createForItem && (
+        <div style={styles.modalBackdrop} onClick={() => !creating && setCreateForItem(null)}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>Create new account</h2>
+            <div style={styles.field}>
+              <label style={styles.label}>Type</label>
+              <select
+                style={styles.input}
+                value={newAcct.accountType}
+                onChange={(e) => {
+                  const accountType = e.target.value;
+                  setNewAcct((f) => ({
+                    ...f,
+                    accountType,
+                    accountNumber: suggestAccountNumber(accounts, accountType),
+                  }));
+                }}
+              >
+                <option value="EXPENSE">Expense</option>
+                <option value="REVENUE">Income</option>
+                <option value="ASSET">Asset</option>
+                <option value="LIABILITY">Liability</option>
+                <option value="EQUITY">Equity</option>
+              </select>
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label}>Account number</label>
+              <input
+                style={styles.input}
+                value={newAcct.accountNumber}
+                onChange={(e) => setNewAcct((f) => ({ ...f, accountNumber: e.target.value }))}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label}>Account name</label>
+              <input
+                style={styles.input}
+                value={newAcct.accountName}
+                onChange={(e) => setNewAcct((f) => ({ ...f, accountName: e.target.value }))}
+                placeholder="e.g. Meals & Entertainment"
+                autoFocus
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label}>Description (optional)</label>
+              <input
+                style={styles.input}
+                value={newAcct.description}
+                onChange={(e) => setNewAcct((f) => ({ ...f, description: e.target.value }))}
+              />
+            </div>
+            <div style={styles.modalActions}>
+              <button type="button" style={styles.btn} disabled={creating} onClick={() => setCreateForItem(null)}>
+                Cancel
+              </button>
+              <button type="button" style={styles.btnPrimary} disabled={creating} onClick={saveNewAccount}>
+                {creating ? 'Creating…' : 'Create & apply'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
