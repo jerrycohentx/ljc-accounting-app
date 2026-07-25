@@ -53,6 +53,7 @@ import {
 import { rebuildLonestarRecons } from '../lib/rebuild-lonestar-recons.js';
 import { rebuildSimmonsRecons } from '../lib/rebuild-simmons-recons.js';
 import { RECONCILIATION_TARGETS } from '../config/bank-import-targets.js';
+import { removePersonalSimmons4177 } from '../lib/remove-personal-simmons-4177.js';
 import { normalizeIsoDate } from '../lib/bank-statement-view.js';
 
 const router = express.Router({ mergeParams: true });
@@ -1246,6 +1247,43 @@ router.post('/lonestar/fix-opening-balance', [entityAccessMiddleware, requireRol
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * POST /api/entities/:entityId/accounting/remove-personal-simmons-4177
+ * Zero GL 1015 (personal Simmons x4177) into Member's Draws 3005 and deactivate.
+ * Body: { confirm: "REMOVE-PERSONAL-4177-<entityId>", postingDate?: "YYYY-MM-DD" }
+ */
+router.post(
+  '/remove-personal-simmons-4177',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const expected = `REMOVE-PERSONAL-4177-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const db = await getDatabase();
+      // Rename COA parent label if present (4177 is personal).
+      await db.run(
+        `UPDATE accounts SET account_name = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE entity_id = ? AND account_number = '1010'
+           AND account_name LIKE '%4177%'`,
+        ['Cash - Simmons Sub-Accounts (4790/7036)', req.entityId]
+      );
+      const result = await removePersonalSimmons4177(db, {
+        entityId: req.entityId,
+        userId: req.user?.id || 'usr-admin',
+        postingDate: req.body?.postingDate || '2026-06-30',
+      });
+      res.json({ message: 'Personal Simmons x4177 removed from LJC books', ...result });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 // POST /api/entities/:entityId/accounting/purge
 // DESTRUCTIVE: wipes ALL journal entries, GL, import rows and reconciliation artifacts for the

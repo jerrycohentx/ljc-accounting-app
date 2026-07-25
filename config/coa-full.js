@@ -10,7 +10,8 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '1030', name: 'Cash:Simmons-Bank-Ckg-0260', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1001', name: 'Cash - Lone Star Bank', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1002', name: 'Cash - CSB Checking', type: 'ASSET' },
-  { entity: 'ent-ljc', number: '1010', name: 'Cash - Simmons Sub-Accounts (4177/4790/7036)', type: 'ASSET' },
+  // 4177 is Jerry's personal Simmons DDA — not an LJC cash account (do not add 1015).
+  { entity: 'ent-ljc', number: '1010', name: 'Cash - Simmons Sub-Accounts (4790/7036)', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1100', name: 'Undeposited Funds', type: 'ASSET' },
   { entity: 'ent-ljc', number: '1200', name: 'Accounts Receivable', type: 'ASSET' },
   // Sub-account of 1200 (parent linkage set on the account row); holds ACH interest in transit from the bank.
