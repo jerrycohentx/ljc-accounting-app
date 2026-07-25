@@ -23,6 +23,13 @@ import { categorizeDumpForApproval } from '../lib/categorize-dump-for-approval.j
 import { buildCategorizationReview } from '../lib/categorization-review.js';
 import { learnFromUserCategory } from '../lib/category-learn.js';
 import {
+  upsertVendorCategoryRule,
+  listVendorCategoryRules,
+  applyVendorRuleToOpenDrafts,
+  deriveVendorPattern,
+} from '../lib/vendor-category-rule.js';
+import { findDuplicateCatApprDrafts } from '../lib/cat-appr-dedupe.js';
+import {
   applyWentworthTenantUtilityTreatment,
   WENTWORTH_UTIL_CONFIRM,
 } from '../lib/wentworth-tenant-utilities.js';
@@ -889,6 +896,149 @@ router.post(
 );
 
 /**
+ * GET /api/entities/:entityId/accounting/vendor-category-rules
+ * List active bank_categorization_rules (vendor → account).
+ */
+router.get(
+  '/vendor-category-rules',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const db = await getDatabase();
+      const rules = await listVendorCategoryRules(db, { entityId: req.entityId });
+      res.json({ entityId: req.entityId, count: rules.length, rules });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/entities/:entityId/accounting/vendor-category-rule
+ * Create/update a durable contains-rule for a vendor pattern.
+ * Body: { pattern?, accountId, label?, description?, applyToOpenDrafts? }
+ */
+router.post(
+  '/vendor-category-rule',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const db = await getDatabase();
+      const { pattern, accountId, label, description, applyToOpenDrafts } = req.body || {};
+      if (!accountId) return res.status(400).json({ error: 'accountId required' });
+
+      const rule = await upsertVendorCategoryRule(db, {
+        entityId: req.entityId,
+        pattern,
+        accountId,
+        label,
+        description,
+        priority: 4,
+      });
+
+      let draftUpdate = null;
+      if (applyToOpenDrafts) {
+        draftUpdate = await applyVendorRuleToOpenDrafts(db, {
+          entityId: req.entityId,
+          pattern: rule.pattern,
+          accountId: rule.accountId,
+        });
+      }
+
+      res.json({
+        ok: true,
+        rule,
+        suggestedPattern: description ? deriveVendorPattern(description) : null,
+        draftUpdate,
+      });
+    } catch (error) {
+      const status = /required|not found|min 3/i.test(error.message) ? 400 : 500;
+      res.status(status).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/entities/:entityId/accounting/cleanup-duplicate-cat-appr-drafts
+ * Delete extra DRAFT CAT-APPR journals for the same source (keep earliest).
+ * Body: { confirm: "DEDUP-CAT-APPR-<entityId>", dryRun? }
+ */
+router.post(
+  '/cleanup-duplicate-cat-appr-drafts',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const expected = `DEDUP-CAT-APPR-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const db = await getDatabase();
+      const found = await findDuplicateCatApprDrafts(db, { entityId: req.entityId });
+      if (req.body?.dryRun) {
+        return res.json({
+          dryRun: true,
+          totalDrafts: found.totalDrafts,
+          duplicateGroups: found.groups.length,
+          wouldDelete: found.deleteIds.length,
+          deleteIds: found.deleteIds,
+          groups: found.groups.slice(0, 50),
+        });
+      }
+      if (!found.deleteIds.length) {
+        return res.json({
+          deleted: 0,
+          totalDrafts: found.totalDrafts,
+          message: 'No duplicate CAT-APPR drafts found',
+        });
+      }
+
+      const deleted = [];
+      // delete-journal-entries caps at 50 — batch
+      for (let i = 0; i < found.deleteIds.length; i += 50) {
+        const batch = found.deleteIds.slice(i, i + 50);
+        const owned = await db.all(
+          `SELECT id, je_number, status, memo FROM journal_entries
+           WHERE entity_id = ? AND id IN (${batch.map(() => '?').join(',')})`,
+          [req.entityId, ...batch]
+        );
+        const safe = owned.filter(
+          (r) => r.status === 'DRAFT'
+            && String(r.je_number || '').startsWith('CAT-APPR-')
+            && /cat-approve:/i.test(String(r.memo || ''))
+        );
+        if (!safe.length) continue;
+        const ids = safe.map((r) => r.id);
+        const ph = ids.map(() => '?').join(',');
+        const safeRun = async (sql, params) => {
+          try { await db.run(sql, params); } catch { /* table may not exist */ }
+        };
+        await safeRun(`DELETE FROM journal_entry_documents WHERE journal_entry_id IN (${ph})`, ids);
+        await safeRun(`DELETE FROM journal_entry_lines WHERE journal_entry_id IN (${ph})`, ids);
+        await safeRun(`DELETE FROM general_ledger WHERE journal_entry_id IN (${ph})`, ids);
+        await db.run(
+          `DELETE FROM journal_entries WHERE entity_id = ? AND status = 'DRAFT' AND id IN (${ph})`,
+          [req.entityId, ...ids]
+        );
+        deleted.push(...safe);
+      }
+
+      res.json({
+        deleted: deleted.length,
+        totalDraftsBefore: found.totalDrafts,
+        remainingEstimate: found.totalDrafts - deleted.length,
+        deletedEntries: deleted.map((r) => ({ id: r.id, jeNumber: r.je_number })),
+        groups: found.groups.length,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
  * POST /api/entities/:entityId/accounting/categorize-dump-for-approval
  * Find uncategorized dump-account lines (default 5700/4091), attach statement PDFs,
  * and create DRAFT reclass journals (CAT-APPR-*) for Jerry to approve.
@@ -1127,7 +1277,7 @@ router.post('/purge', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT'
 router.post('/delete-journal-entries', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
   try {
     const e = req.entityId;
-    const { journalEntryIds } = req.body || {};
+    const { journalEntryIds, draftCatApprOnly } = req.body || {};
     if (!Array.isArray(journalEntryIds) || journalEntryIds.length === 0) {
       return res.status(400).json({ error: 'journalEntryIds[] required' });
     }
@@ -1137,10 +1287,17 @@ router.post('/delete-journal-entries', [entityAccessMiddleware, requireRole('ADM
     const db = await getDatabase();
     // Only operate on entries that actually belong to this entity.
     const inPh = journalEntryIds.map(() => '?').join(',');
-    const owned = await db.all(
-      `SELECT id, je_number, description FROM journal_entries WHERE entity_id = ? AND id IN (${inPh})`,
+    let owned = await db.all(
+      `SELECT id, je_number, description, status, memo FROM journal_entries WHERE entity_id = ? AND id IN (${inPh})`,
       [e, ...journalEntryIds]
     );
+    if (draftCatApprOnly) {
+      owned = owned.filter(
+        (r) => r.status === 'DRAFT'
+          && String(r.je_number || '').startsWith('CAT-APPR-')
+          && /cat-approve:/i.test(String(r.memo || ''))
+      );
+    }
     const ids = owned.map((r) => r.id);
     if (ids.length === 0) return res.status(404).json({ error: 'no matching journal entries for this entity' });
     const ph = ids.map(() => '?').join(',');
@@ -1161,6 +1318,7 @@ router.post('/delete-journal-entries', [entityAccessMiddleware, requireRole('ADM
     await run('bank_reconciliation_session_lines',
       `DELETE FROM bank_reconciliation_session_lines WHERE gl_id IN (SELECT id FROM general_ledger WHERE journal_entry_id IN (${ph}))`, ids);
     await run('journal_entry_documents', `DELETE FROM journal_entry_documents WHERE journal_entry_id IN (${ph})`, ids);
+    await run('journal_entry_lines', `DELETE FROM journal_entry_lines WHERE journal_entry_id IN (${ph})`, ids);
     await run('general_ledger', `DELETE FROM general_ledger WHERE journal_entry_id IN (${ph})`, ids);
     await run('import_transactions', `DELETE FROM import_transactions WHERE journal_entry_id IN (${ph})`, ids);
     await run('journal_entries', `DELETE FROM journal_entries WHERE entity_id = ? AND id IN (${ph})`, [e, ...ids]);

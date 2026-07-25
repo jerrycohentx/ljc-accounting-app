@@ -350,6 +350,10 @@ export const accountingAPI = {
     client.post(`/api/entities/${entityId}/accounting/categorization-review/${draftId}/category`, {
       accountId,
     }),
+  listVendorRules: (entityId) =>
+    client.get(`/api/entities/${entityId}/accounting/vendor-category-rules`),
+  createVendorRule: (entityId, data) =>
+    client.post(`/api/entities/${entityId}/accounting/vendor-category-rule`, data),
 };
 
 export const emailIngestAPI = {

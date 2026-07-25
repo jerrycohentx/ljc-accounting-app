@@ -56,6 +56,29 @@ function fmtMoney(n) {
   return `$${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+/** Client-side vendor pattern for the “Always use…” confirm dialog. */
+function deriveVendorPatternClient(description) {
+  let text = String(description || '')
+    .replace(/^Amex(?:\s+stmt\s+\d{4}-\d{2}-\d{2})?:\s*/i, '')
+    .replace(/\s+-\s+FITID:.*$/i, '')
+    .replace(/\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return '';
+  const first = text.split(/\s{2,}/)[0].trim() || text;
+  let cleaned = first
+    .replace(/(?:[\s#]+[\d-]{3,})+\s*$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+  if (cleaned.length > 40) {
+    const cut = cleaned.slice(0, 40);
+    const lastSpace = cut.lastIndexOf(' ');
+    cleaned = (lastSpace > 8 ? cut.slice(0, lastSpace) : cut).trim();
+  }
+  return cleaned.length >= 3 ? cleaned : '';
+}
+
 function fmtStmtDate(iso) {
   const d = String(iso || '').slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return '';
@@ -141,11 +164,22 @@ const styles = {
   list: { flex: 1, overflowY: 'auto', padding: '0 8px 24px' },
   row: {
     display: 'grid',
-    gridTemplateColumns: '28px 72px 1fr 96px minmax(220px, 280px)',
+    gridTemplateColumns: '28px 72px 1fr 96px minmax(220px, 300px)',
     gap: 10,
     alignItems: 'start',
     padding: '12px 8px',
     borderBottom: '1px solid #e0e0e0',
+  },
+  alwaysLabel: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 6,
+    fontSize: 11,
+    color: '#444',
+    cursor: 'pointer',
+    lineHeight: 1.3,
+    userSelect: 'none',
   },
   modalBackdrop: {
     position: 'fixed',
@@ -249,6 +283,9 @@ export default function QBDDraftJournals() {
     accountType: 'EXPENSE',
     description: '',
   });
+  const [ruleForItem, setRuleForItem] = useState(null);
+  const [rulePattern, setRulePattern] = useState('');
+  const [savingRule, setSavingRule] = useState(false);
 
   const revokeDoc = () => {
     if (docUrlRef.current) {
@@ -420,6 +457,45 @@ export default function QBDDraftJournals() {
       toast(`Saved — future ${item.descLines[0] || 'similar'} charges will use this category`);
     } catch (e) {
       toast('Could not save category: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
+    }
+  };
+
+  const openAlwaysRule = (item) => {
+    if (!item.categoryAccountId) {
+      toast('Pick a category first, then save the vendor rule');
+      return;
+    }
+    const raw = (item.descLines && item.descLines[0]) || item.sourceDescription || '';
+    const suggested = deriveVendorPatternClient(raw);
+    setRulePattern(suggested);
+    setRuleForItem(item);
+  };
+
+  const saveVendorRule = async () => {
+    if (!ruleForItem) return;
+    const pattern = String(rulePattern || '').trim();
+    if (pattern.length < 3) {
+      toast('Pattern needs at least 3 characters');
+      return;
+    }
+    const acct = accounts.find((a) => a.id === ruleForItem.categoryAccountId);
+    setSavingRule(true);
+    try {
+      await accountingAPI.createVendorRule(entityId, {
+        pattern,
+        accountId: ruleForItem.categoryAccountId,
+        label: acct
+          ? `${acct.number} · ${leafLabel(acct.name)}`
+          : `Vendor: ${pattern.slice(0, 28)}`,
+        description: (ruleForItem.descLines && ruleForItem.descLines[0]) || '',
+        applyToOpenDrafts: true,
+      });
+      toast('Rule saved — future matching charges will categorize automatically');
+      setRuleForItem(null);
+    } catch (e) {
+      toast('Could not save rule: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
+    } finally {
+      setSavingRule(false);
     }
   };
 
@@ -609,6 +685,18 @@ export default function QBDDraftJournals() {
                       onCreateRequest={() => changeCategory(it, CREATE_NEW_VALUE)}
                       title="Type to search the chart of accounts — change teaches the app for next time"
                     />
+                    <label style={styles.alwaysLabel}>
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        disabled={!it.categoryAccountId}
+                        onChange={(e) => {
+                          if (e.target.checked) openAlwaysRule(it);
+                        }}
+                        style={{ marginTop: 1 }}
+                      />
+                      <span>Always use this category for this vendor</span>
+                    </label>
                   </div>
                 </div>
               ))}
@@ -649,6 +737,44 @@ export default function QBDDraftJournals() {
           {busy ? 'Posting…' : `Approve & Post${selectedItems.length ? ` (${selectedItems.length})` : ''}`}
         </button>
       </div>
+
+      {ruleForItem && (
+        <div style={styles.modalBackdrop} onClick={() => !savingRule && setRuleForItem(null)}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>Always use this category for this vendor</h2>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#444', lineHeight: 1.4 }}>
+              {(() => {
+                const a = accounts.find((x) => x.id === ruleForItem.categoryAccountId);
+                const cat = a ? `${a.number} · ${leafLabel(a.name)}` : 'selected category';
+                return (
+                  <>
+                    Future charges containing:{' '}
+                    <strong>[{rulePattern || '…'}]</strong>
+                    {' '}→ {cat}
+                  </>
+                );
+              })()}
+            </p>
+            <div style={styles.field}>
+              <label style={styles.label}>Match text (editable)</label>
+              <input
+                style={styles.input}
+                value={rulePattern}
+                onChange={(e) => setRulePattern(e.target.value.toUpperCase())}
+                autoFocus
+              />
+            </div>
+            <div style={styles.modalActions}>
+              <button type="button" style={styles.btn} disabled={savingRule} onClick={() => setRuleForItem(null)}>
+                Cancel
+              </button>
+              <button type="button" style={styles.btnPrimary} disabled={savingRule} onClick={saveVendorRule}>
+                {savingRule ? 'Saving…' : 'Save rule'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {createForItem && (
         <div style={styles.modalBackdrop} onClick={() => !creating && setCreateForItem(null)}>
