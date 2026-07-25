@@ -53,7 +53,8 @@ export const FULL_CHART_OF_ACCOUNTS = [
   { entity: 'ent-ljc', number: '5300', name: 'Insurance Expense', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5400', name: 'Health Insurance', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5410', name: 'Member Medical / Dental', type: 'EXPENSE' },
-  { entity: 'ent-ljc', number: '5500', name: 'Utilities', type: 'EXPENSE' },
+  // Catch-all utilities under Rental; prefer 6140/6150/6160 (or per-property 62xx) when known
+  { entity: 'ent-ljc', number: '5500', name: 'Utilities', type: 'EXPENSE', parent: '6100' },
   { entity: 'ent-ljc', number: '5600', name: 'Professional Fees', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5700', name: 'Office & Software', type: 'EXPENSE' },
   { entity: 'ent-ljc', number: '5710', name: 'Computer & Internet Expenses', type: 'EXPENSE' },
