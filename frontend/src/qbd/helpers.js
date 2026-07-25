@@ -96,17 +96,22 @@ export function reconColumnLabels(account) {
     : { col1: 'Deposit', col2: 'Payment', cleared1: 'Cleared deposits', cleared2: 'Cleared payments' };
 }
 
+/** Coerce GL debit/credit from API (number, numeric string, or *_amount aliases). */
+function glDebitCredit(entry) {
+  const d = entry?.debit ?? entry?.debit_amount ?? 0;
+  const c = entry?.credit ?? entry?.credit_amount ?? 0;
+  return { d: +d || 0, c: +c || 0 };
+}
+
 /** Signed register delta for reconcile math (matches backend normal_balance). */
 export function signedGlDelta(entry, account) {
-  const d = +(entry.debit || 0);
-  const c = +(entry.credit || 0);
+  const { d, c } = glDebitCredit(entry);
   return isCreditCardAccount(account) ? c - d : d - c;
 }
 
 /** QBD column amounts for register row display. */
 export function registerDisplayAmounts(entry, account) {
-  const d = +(entry.debit || 0);
-  const c = +(entry.credit || 0);
+  const { d, c } = glDebitCredit(entry);
   if (isCreditCardAccount(account)) return { col1: c || null, col2: d || null };
   return { col1: d || null, col2: c || null };
 }

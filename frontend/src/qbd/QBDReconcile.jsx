@@ -42,9 +42,17 @@ function base64ToObjectUrl(b64, mime = 'application/pdf') {
   return URL.createObjectURL(new Blob([bytes], { type: mime }));
 }
 
+function isoDateOnly(value) {
+  if (value == null || value === '') return '';
+  const m = String(value).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : '';
+}
+
 function isAfterStatementEnd(postingDate, statementEndDate) {
-  if (!postingDate || !statementEndDate) return false;
-  return String(postingDate).slice(0, 10) > String(statementEndDate).slice(0, 10);
+  const post = isoDateOnly(postingDate);
+  const end = isoDateOnly(statementEndDate);
+  if (!post || !end) return false;
+  return post > end;
 }
 
 function flat(nodes, out) {
@@ -748,15 +756,20 @@ export default function QBDReconcile() {
         applyAutoChecked(r.data);
         setHighlightGlId(null);
         setStarted(true);
-        if (r.data.statementDate) setStmtDate(r.data.statementDate);
-        // Reflect the running reconciliation in the URL so browser Back (e.g.
-        // returning from the draft-review screen) lands on THIS reconciliation,
-        // not a blank default screen. Before this, account/date/session lived
-        // only in component state and navigating away destroyed them.
+        // Never keep a stale Modify-panel override across worksheet loads — that
+        // can flip Beginning negative and hide a balanced close behind a fake difference.
+        setBeginningOverride('');
         {
+          const resolvedDate = isoDateOnly(r.data.statementDate || stmtDate);
+          if (resolvedDate) setStmtDate(resolvedDate);
+          // Reflect the running reconciliation in the URL so browser Back (e.g.
+          // returning from the draft-review screen) lands on THIS reconciliation,
+          // not a blank default screen. Before this, account/date/session lived
+          // only in component state and navigating away destroyed them.
           const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountId;
-          const resolvedDate = String(r.data.statementDate || stmtDate).slice(0, 10);
-          setSearchParams({ account: String(acctNo), date: resolvedDate, go: '1' }, { replace: true });
+          if (resolvedDate) {
+            setSearchParams({ account: String(acctNo), date: resolvedDate, go: '1' }, { replace: true });
+          }
           // Also persist it: the URL only survives browser Back, not a fresh
           // visit to /reconcile after a draft-review round trip.
           try {
@@ -770,7 +783,10 @@ export default function QBDReconcile() {
         } else if (r.data.endingBalance != null) {
           setEndBal(String(r.data.endingBalance));
         }
-        if (r.data.displayBeginning != null) setBeginBal(String(r.data.displayBeginning));
+        {
+          const beginSrc = r.data.periodSession?.beginningBalance ?? r.data.displayBeginning ?? r.data.beginningBalance;
+          if (beginSrc != null) setBeginBal(String(beginSrc));
+        }
         // Pull interest / service charge off the statement — but ONLY when the
         // amount is not already a booked transaction (alreadyRecorded). Statement
         // lines are normally auto-imported, so an interest line that is already a
@@ -905,7 +921,9 @@ export default function QBDReconcile() {
 
   const entries = data?.entries || [];
   const matchedGlSet = useMemo(() => new Set(data?.suggestedCheckedGlIds || []), [data?.suggestedCheckedGlIds]);
-  const beginning = +(beginningOverride !== '' ? beginningOverride : (data?.displayBeginning ?? data?.beginningBalance ?? beginBal ?? 0));
+  const beginning = +(beginningOverride !== ''
+    ? beginningOverride
+    : (data?.periodSession?.beginningBalance ?? data?.displayBeginning ?? data?.beginningBalance ?? beginBal ?? 0));
   const svc = parseFloat(serviceCharge || '0') || 0;
   const int = parseFloat(interestEarned || '0') || 0;
   let markedDeposits = 0;
