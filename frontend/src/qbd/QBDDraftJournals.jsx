@@ -542,9 +542,33 @@ export default function QBDDraftJournals() {
     setDocUrl(null);
   };
 
-  const load = useCallback(() => {
+  const removeItemsFromPayload = useCallback((ids) => {
+    const drop = new Set((ids || []).filter(Boolean));
+    if (!drop.size) return;
+    setPayload((prev) => {
+      if (!prev?.feeds) return prev;
+      const feedsNext = (prev.feeds || []).map((f) => {
+        const months = (f.months || []).map((m) => {
+          const items = (m.items || []).filter((it) => !drop.has(it.id));
+          return { ...m, items, count: items.length };
+        }).filter((m) => m.count > 0);
+        const count = months.reduce((s, m) => s + m.count, 0);
+        return { ...f, months, count };
+      }).filter((f) => f.count > 0);
+      const total = feedsNext.reduce((s, f) => s + f.count, 0);
+      return { ...prev, feeds: feedsNext, total };
+    });
+    setSel((prev) => {
+      const next = new Set(prev);
+      for (const id of drop) next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const load = useCallback((opts = {}) => {
     if (!entityId) return;
-    setLoading(true);
+    const soft = opts.soft === true;
+    if (!soft) setLoading(true);
     accountingAPI.categorizationReview(entityId, { limit: 1000 })
       .then((r) => {
         const data = r.data || r;
@@ -552,9 +576,16 @@ export default function QBDDraftJournals() {
         const feeds = data.feeds || [];
         if (feeds.length) {
           const first = feeds[0];
-          setFeedKey((prev) => prev || first.key);
-          const m0 = (first.months || [])[0];
-          setMonthKey((prev) => prev || (m0 && m0.key) || null);
+          setFeedKey((prev) => {
+            if (prev && feeds.some((f) => f.key === prev)) return prev;
+            return first.key;
+          });
+          setMonthKey((prev) => {
+            const feed = feeds.find((f) => f.key === (feedKey || first.key)) || first;
+            if (prev && (feed.months || []).some((m) => m.key === prev)) return prev;
+            const m0 = (feed.months || [])[0];
+            return (m0 && m0.key) || null;
+          });
           setOpenFeeds((s) => {
             const n = new Set(s);
             feeds.forEach((f) => n.add(f.key));
@@ -567,7 +598,7 @@ export default function QBDDraftJournals() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId]);
 
-  useEffect(() => { setSel(new Set()); load(); }, [load]);
+  useEffect(() => { setSel(new Set()); load({ soft: false }); }, [load]);
 
   useEffect(() => () => revokeDoc(), []);
 
@@ -794,6 +825,8 @@ export default function QBDDraftJournals() {
       const matched = Number(body.draftUpdate?.matched || 0);
       const posted = Number(body.postResult?.posted || 0);
       const failed = Number(body.postResult?.failed || 0);
+      const postedIds = body.postResult?.postedIds || [];
+      if (postedIds.length) removeItemsFromPayload(postedIds);
       toast(
         failed
           ? `Posted ${posted} of ${matched}; ${failed} failed — ${(body.postResult?.errors?.[0]?.error) || 'see logs'}`
@@ -805,7 +838,7 @@ export default function QBDDraftJournals() {
       );
       setRuleForItem(null);
       setSel(new Set());
-      load();
+      load({ soft: true });
     } catch (e) {
       toast('Could not save rule: ' + ((e.response && e.response.data && e.response.data.error) || e.message));
     } finally {
@@ -910,19 +943,22 @@ export default function QBDDraftJournals() {
     setBusy(true);
     let ok = 0;
     const errs = [];
+    const postedIds = [];
+    // Post alone auto-approves DRAFT — skip a separate approve round-trip per charge.
     for (const it of toPost) {
       try {
-        await journalAPI.approve(entityId, it.id);
         await journalAPI.post(entityId, it.id);
         ok += 1;
+        postedIds.push(it.id);
       } catch (e) {
         errs.push((e.response && e.response.data && e.response.data.error) || e.message);
       }
     }
+    removeItemsFromPayload(postedIds);
     setBusy(false);
     setSel(new Set());
     toast(errs.length ? `Posted ${ok}; ${errs.length} failed — ${errs[0]}` : `Posted ${ok} charge${ok === 1 ? '' : 's'}`);
-    load();
+    load({ soft: true });
   };
 
   const docSrc = docUrl
