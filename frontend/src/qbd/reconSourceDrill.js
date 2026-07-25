@@ -16,14 +16,20 @@ function base64ToObjectUrl(b64, mime = 'application/pdf') {
 
 /** Explicit "view statement" action (toolbar) — not used for line drill-down. */
 export async function openStatementPdf(entityId, accountId, statementDate) {
-  if (!entityId || !accountId || !statementDate) return false;
-  const r = await bankReconAPI.statementFile(entityId, accountId, statementDate);
-  const d = r.data || {};
-  if (!d.found || !d.dataBase64) return false;
-  const url = base64ToObjectUrl(d.dataBase64, d.mime || 'application/pdf');
+  const url = await fetchStatementObjectUrl(entityId, accountId, statementDate);
+  if (!url) return false;
   window.open(url, '_blank', 'noopener,noreferrer');
   setTimeout(() => URL.revokeObjectURL(url), 120000);
   return true;
+}
+
+/** Load statement PDF as a blob URL for an in-app iframe (caller must revoke). */
+export async function fetchStatementObjectUrl(entityId, accountId, statementDate) {
+  if (!entityId || !accountId || !statementDate) return null;
+  const r = await bankReconAPI.statementFile(entityId, accountId, statementDate);
+  const d = r.data || {};
+  if (!d.found || !d.dataBase64) return null;
+  return base64ToObjectUrl(d.dataBase64, d.mime || 'application/pdf');
 }
 
 export async function openJournalSourceDocument(entityId, journalEntryId) {

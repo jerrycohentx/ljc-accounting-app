@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { reconReportAPI, journalAPI, mgmtReportAPI } from '../services/api';
 import { fmt, leafLabel, fmtReconDate } from './helpers';
-import { drillReconLineSource } from './reconSourceDrill';
+import { drillReconLineSource, fetchStatementObjectUrl } from './reconSourceDrill';
 
 function LineTable({ title, rows, paymentsLabel, onDrillLine }) {
   const list = rows || [];
@@ -108,8 +108,8 @@ function TxnDetailModal({ entry, entityId, onClose }) {
   );
 }
 
-/** Instant HTML preview from archived report JSON (no Playwright wait). */
-function ReconHtmlPreviewModal({
+/** Instant HTML preview from archived report JSON, with bank statement on the left. */
+export function ReconHtmlPreviewModal({
   title,
   full,
   mode,
@@ -119,6 +119,9 @@ function ReconHtmlPreviewModal({
   onModeChange,
   onExport,
   onDrillLine,
+  entityId,
+  /** Optional preloaded blob URL (Reconcile screen already has the statement loaded). */
+  statementPdfUrl: statementPdfUrlProp = null,
 }) {
   const summary = full?.summary || {};
   const detail = full?.detail || {};
@@ -129,13 +132,75 @@ function ReconHtmlPreviewModal({
   const cleared = detail.cleared || {};
   const uncleared = detail.uncleared || {};
 
+  const [statementPdfUrl, setStatementPdfUrl] = useState(statementPdfUrlProp || null);
+  const [stmtLoading, setStmtLoading] = useState(false);
+  const [stmtMissing, setStmtMissing] = useState(false);
+  const [showStmt, setShowStmt] = useState(true);
+  const [stmtZoom, setStmtZoom] = useState(0);
+  const [stmtSplitPct] = useState(46);
+  const ownsUrlRef = React.useRef(false);
+
+  useEffect(() => {
+    if (statementPdfUrlProp) {
+      setStatementPdfUrl(statementPdfUrlProp);
+      setStmtMissing(false);
+      ownsUrlRef.current = false;
+      return undefined;
+    }
+    const accountId = full?.account_id;
+    const statementDate = full?.statement_date;
+    if (!entityId || !accountId || !statementDate) {
+      setStatementPdfUrl(null);
+      setStmtMissing(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setStmtLoading(true);
+    setStmtMissing(false);
+    fetchStatementObjectUrl(entityId, accountId, statementDate)
+      .then((url) => {
+        if (cancelled) {
+          if (url) URL.revokeObjectURL(url);
+          return;
+        }
+        if (!url) {
+          setStatementPdfUrl(null);
+          setStmtMissing(true);
+          return;
+        }
+        ownsUrlRef.current = true;
+        setStatementPdfUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStatementPdfUrl(null);
+          setStmtMissing(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setStmtLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [entityId, full?.account_id, full?.statement_date, statementPdfUrlProp]);
+
+  useEffect(() => () => {
+    if (ownsUrlRef.current && statementPdfUrl) URL.revokeObjectURL(statementPdfUrl);
+  }, [statementPdfUrl]);
+
+  const zoomIn = () => setStmtZoom((z) => Math.min(250, (z > 0 ? z : 100) + 15));
+  const zoomOut = () => setStmtZoom((z) => Math.max(40, (z > 0 ? z : 100) - 15));
+  const zoomFit = () => setStmtZoom(0);
+  const showLeft = showStmt && (statementPdfUrl || stmtLoading || stmtMissing);
+
   return (
     <div className="qbd-modal-backdrop" onClick={onClose}>
       <div
         className="qbd-window"
         style={{
-          width: 'min(1100px, 96vw)',
-          height: 'min(90vh, 920px)',
+          width: 'min(1400px, 98vw)',
+          height: 'min(92vh, 960px)',
           margin: 0,
           display: 'flex',
           flexDirection: 'column',
@@ -161,6 +226,11 @@ function ReconHtmlPreviewModal({
             </button>
           ))}
           <span className="sp" />
+          {(statementPdfUrl || stmtMissing) && (
+            <button type="button" className="qbd-btn" onClick={() => setShowStmt((v) => !v)}>
+              {showStmt ? 'Hide Statement' : 'Show Statement'}
+            </button>
+          )}
           <button type="button" className="qbd-btn" disabled={exportBusy || !full} onClick={onExport}>
             {exportBusy ? 'Building PDF…' : 'Export PDF'}
           </button>
@@ -168,79 +238,135 @@ function ReconHtmlPreviewModal({
             Close
           </button>
         </div>
-        <div className="qbd-recon-rep-body" style={{ flex: 1, minHeight: 0 }}>
-          {busy && !full ? (
-            <div className="qbd-loading">Loading reconciliation…</div>
-          ) : !full ? (
-            <div className="qbd-muted">No preview available.</div>
-          ) : (
-            <>
-              <div className="qbd-recon-rep-title">
-                <div>
-                  <strong>
-                    {full.account_number} · {leafLabel(full.account_name)}
-                  </strong>
-                </div>
-                <div className="qbd-muted">
-                  Period ending {fmtReconDate(full.statement_date)}
-                  {full.is_closed ? ' · Closed' : ' · Open'}
-                  {showDetail ? ' · Double-click a line to open its attached source document' : ''}
-                </div>
-              </div>
 
-              {showSummary && (
-                <div className="qbd-recon-rep-summary">
-                  <div className="sum-row"><span>Beginning Balance</span><span>{fmt(summary.beginningBalance)}</span></div>
-                  <div className="sum-row">
-                    <span>{pl} cleared ({summary.cleared?.paymentsCount || 0})</span>
-                    <span>{fmt(summary.cleared?.paymentsTotal)}</span>
+        <div
+          className={`qbd-recon-split${showLeft ? '' : ' register-only'}`}
+          style={{ flex: 1, minHeight: 0, borderTop: '1px solid #c9d3df' }}
+        >
+          {showLeft && (
+            <div className="qbd-recon-pane qbd-recon-stmt" style={{ width: `calc(${stmtSplitPct}% - 4px)` }}>
+              <div className="qbd-recon-panehead">
+                Statement
+                <span className="qbd-muted">bank / card PDF</span>
+                <span className="sp" style={{ flex: 1 }} />
+                {statementPdfUrl && (
+                  <>
+                    <button type="button" className="qbd-btn qbd-zoom-btn" title="Zoom out" onClick={zoomOut}>−</button>
+                    <span className="qbd-muted qbd-zoom-lbl">{stmtZoom > 0 ? `${stmtZoom}%` : 'Fit'}</span>
+                    <button type="button" className="qbd-btn qbd-zoom-btn" title="Zoom in" onClick={zoomIn}>+</button>
+                    <button type="button" className="qbd-btn qbd-zoom-btn" title="Fit width" onClick={zoomFit}>⤢</button>
+                  </>
+                )}
+                <button type="button" className="qbd-btn qbd-zoom-btn" title="Hide statement" onClick={() => setShowStmt(false)}>✕</button>
+              </div>
+              <div className="qbd-recon-panebody stmt-with-pdf">
+                {stmtLoading && !statementPdfUrl ? (
+                  <div className="qbd-muted" style={{ padding: 16 }}>Loading statement…</div>
+                ) : statementPdfUrl ? (
+                  <div className="qbd-stmt-pdf qbd-stmt-pdf-full">
+                    <iframe
+                      title="Bank statement"
+                      key={stmtZoom}
+                      src={`${statementPdfUrl}#toolbar=1&navpanes=0&${stmtZoom > 0 ? `zoom=${stmtZoom}` : 'view=FitH'}`}
+                    />
                   </div>
-                  <div className="sum-row">
-                    <span>{dl} cleared ({summary.cleared?.depositsCount || 0})</span>
-                    <span>{fmt(summary.cleared?.depositsTotal)}</span>
+                ) : (
+                  <div className="qbd-muted" style={{ padding: 16 }}>
+                    No statement PDF on file for this period. Upload it on the Reconcile screen to see it here.
                   </div>
-                  <div className="sum-row sum-total"><span>Cleared Balance</span><span>{fmt(summary.clearedBalance)}</span></div>
-                  {(summary.uncleared?.paymentsCount || 0) + (summary.uncleared?.depositsCount || 0) > 0 && (
-                    <>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div
+            className="qbd-recon-pane"
+            style={{
+              width: showLeft ? `calc(${100 - stmtSplitPct}% - 4px)` : '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+            }}
+          >
+            <div className="qbd-recon-panehead">
+              Reconciliation
+              <span className="qbd-muted">preview</span>
+            </div>
+            <div className="qbd-recon-rep-body" style={{ flex: 1, minHeight: 0 }}>
+              {busy && !full ? (
+                <div className="qbd-loading">Loading reconciliation…</div>
+              ) : !full ? (
+                <div className="qbd-muted">No preview available.</div>
+              ) : (
+                <>
+                  <div className="qbd-recon-rep-title">
+                    <div>
+                      <strong>
+                        {full.account_number} · {leafLabel(full.account_name)}
+                      </strong>
+                    </div>
+                    <div className="qbd-muted">
+                      Period ending {fmtReconDate(full.statement_date)}
+                      {full.is_closed ? ' · Closed' : ' · Open'}
+                      {showDetail ? ' · Double-click a line to open its attached source document' : ''}
+                    </div>
+                  </div>
+
+                  {showSummary && (
+                    <div className="qbd-recon-rep-summary">
+                      <div className="sum-row"><span>Beginning Balance</span><span>{fmt(summary.beginningBalance)}</span></div>
                       <div className="sum-row">
-                        <span>Uncleared {pl} ({summary.uncleared?.paymentsCount || 0})</span>
-                        <span>{fmt(summary.uncleared?.paymentsTotal)}</span>
+                        <span>{pl} cleared ({summary.cleared?.paymentsCount || 0})</span>
+                        <span>{fmt(summary.cleared?.paymentsTotal)}</span>
                       </div>
                       <div className="sum-row">
-                        <span>Uncleared {dl} ({summary.uncleared?.depositsCount || 0})</span>
-                        <span>{fmt(summary.uncleared?.depositsTotal)}</span>
+                        <span>{dl} cleared ({summary.cleared?.depositsCount || 0})</span>
+                        <span>{fmt(summary.cleared?.depositsTotal)}</span>
                       </div>
-                      <div className="sum-row sum-total">
-                        <span>Register as of statement</span>
-                        <span>{fmt(summary.registerBalance)}</span>
-                      </div>
-                    </>
-                  )}
-                  <div className="sum-row sum-total"><span>Ending Balance</span><span>{fmt(summary.endingBalance)}</span></div>
-                  {summary.statementEndingBalance != null && (
-                    <div className="sum-row">
-                      <span>Statement Ending</span>
-                      <span>{fmt(summary.statementEndingBalance)}</span>
+                      <div className="sum-row sum-total"><span>Cleared Balance</span><span>{fmt(summary.clearedBalance)}</span></div>
+                      {(summary.uncleared?.paymentsCount || 0) + (summary.uncleared?.depositsCount || 0) > 0 && (
+                        <>
+                          <div className="sum-row">
+                            <span>Uncleared {pl} ({summary.uncleared?.paymentsCount || 0})</span>
+                            <span>{fmt(summary.uncleared?.paymentsTotal)}</span>
+                          </div>
+                          <div className="sum-row">
+                            <span>Uncleared {dl} ({summary.uncleared?.depositsCount || 0})</span>
+                            <span>{fmt(summary.uncleared?.depositsTotal)}</span>
+                          </div>
+                          <div className="sum-row sum-total">
+                            <span>Register as of statement</span>
+                            <span>{fmt(summary.registerBalance)}</span>
+                          </div>
+                        </>
+                      )}
+                      <div className="sum-row sum-total"><span>Ending Balance</span><span>{fmt(summary.endingBalance)}</span></div>
+                      {summary.statementEndingBalance != null && (
+                        <div className="sum-row">
+                          <span>Statement Ending</span>
+                          <span>{fmt(summary.statementEndingBalance)}</span>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {showDetail && (
-                <>
-                  <div className="qbd-recon-rep-h">Cleared Transactions</div>
-                  <LineTable title={pl} rows={cleared.payments} paymentsLabel={pl} onDrillLine={onDrillLine} />
-                  <LineTable title={dl} rows={cleared.deposits} paymentsLabel={dl} onDrillLine={onDrillLine} />
-                  <div className="qbd-recon-rep-h" style={{ marginTop: 12 }}>Uncleared Transactions</div>
-                  <LineTable title={pl} rows={uncleared.payments} paymentsLabel={pl} onDrillLine={onDrillLine} />
-                  <LineTable title={dl} rows={uncleared.deposits} paymentsLabel={dl} onDrillLine={onDrillLine} />
-                  {!(uncleared.payments || []).length && !(uncleared.deposits || []).length && (
-                    <div className="qbd-muted" style={{ padding: '4px 0' }}>None</div>
+                  {showDetail && (
+                    <>
+                      <div className="qbd-recon-rep-h">Cleared Transactions</div>
+                      <LineTable title={pl} rows={cleared.payments} paymentsLabel={pl} onDrillLine={onDrillLine} />
+                      <LineTable title={dl} rows={cleared.deposits} paymentsLabel={dl} onDrillLine={onDrillLine} />
+                      <div className="qbd-recon-rep-h" style={{ marginTop: 12 }}>Uncleared Transactions</div>
+                      <LineTable title={pl} rows={uncleared.payments} paymentsLabel={pl} onDrillLine={onDrillLine} />
+                      <LineTable title={dl} rows={uncleared.deposits} paymentsLabel={dl} onDrillLine={onDrillLine} />
+                      {!(uncleared.payments || []).length && !(uncleared.deposits || []).length && (
+                        <div className="qbd-muted" style={{ padding: '4px 0' }}>None</div>
+                      )}
+                    </>
                   )}
                 </>
               )}
-            </>
-          )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -511,6 +637,7 @@ export default function QBDReconReports() {
           mode={preview.mode}
           busy={!!busyKey}
           exportBusy={exportBusy}
+          entityId={entityId}
           onClose={() => setPreview(null)}
           onModeChange={(m) => setPreview((p) => (p ? { ...p, mode: m } : p))}
           onExport={() => download(preview.report, preview.mode)}

@@ -16,6 +16,7 @@ import {
   entrySide,
 } from './helpers';
 import { drillReconLineSource } from './reconSourceDrill';
+import { ReconHtmlPreviewModal } from './QBDReconReports';
 
 const REGISTER_SPLIT_STORAGE_KEY = 'qbd-recon-register-split-pct';
 const HIDE_AFTER_END_KEY = 'qbd-recon-hide-after-end';
@@ -943,6 +944,7 @@ export default function QBDReconcile() {
         setPdfPreview({
           mode,
           full: {
+            account_id: accountId,
             account_number: built.header?.accountNumber,
             account_name: built.header?.accountName,
             statement_date: built.header?.statementDate || stmtDate,
@@ -1021,106 +1023,23 @@ export default function QBDReconcile() {
         </div>
       )}
       {pdfPreview?.full && (
-        <div className="qbd-modal-backdrop" onClick={() => setPdfPreview(null)}>
-          <div
-            className="qbd-window"
-            style={{ width: 'min(1100px, 96vw)', height: 'min(90vh, 920px)', margin: 0, display: 'flex', flexDirection: 'column' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="qbd-wtitle">
-              Reconciliation Preview — {stmtDate}
-              <span className="x" onClick={() => setPdfPreview(null)}>✕</span>
-            </div>
-            <div className="qbd-tools" style={{ gap: 6, flexWrap: 'wrap' }}>
-              <button type="button" className="qbd-btn" style={{ fontWeight: pdfPreview.mode === 'summary' ? 'bold' : 'normal' }} onClick={() => setPdfPreview((p) => ({ ...p, mode: 'summary' }))}>Summary</button>
-              <button type="button" className="qbd-btn" style={{ fontWeight: pdfPreview.mode === 'detail' ? 'bold' : 'normal' }} onClick={() => setPdfPreview((p) => ({ ...p, mode: 'detail' }))}>Detail</button>
-              <button type="button" className="qbd-btn" style={{ fontWeight: pdfPreview.mode === 'both' ? 'bold' : 'normal' }} onClick={() => setPdfPreview((p) => ({ ...p, mode: 'both' }))}>Both</button>
-              <span className="sp" />
-              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={exportReconPdf}>
-                {reportBusy ? 'Building PDF…' : 'Export PDF'}
-              </button>
-              <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={() => setPdfPreview(null)}>Close</button>
-            </div>
-            <div className="qbd-recon-rep-body" style={{ flex: 1, minHeight: 0 }}>
-              {(() => {
-                const full = pdfPreview.full;
-                const summary = full.summary || {};
-                const detail = full.detail || {};
-                const pl = summary.paymentsLabel || 'Checks and Payments';
-                const dl = summary.depositsLabel || 'Deposits and Credits';
-                const mode = pdfPreview.mode || 'both';
-                const showSummary = mode === 'summary' || mode === 'both';
-                const showDetail = mode === 'detail' || mode === 'both';
-                const Section = ({ title, rows }) => {
-                  const list = rows || [];
-                  if (!list.length) return null;
-                  const total = list.reduce((s, r) => s + (Number(r.amount) || 0), 0);
-                  return (
-                    <div className="qbd-recon-rep-section">
-                      <div className="qbd-recon-rep-h">{title} ({list.length})</div>
-                      <table className="qbd-reg">
-                        <thead><tr><th className="qbd-d">DATE</th><th>MEMO</th><th className="qbd-amt">AMOUNT</th></tr></thead>
-                        <tbody>
-                          {list.map((r) => (
-                            <tr
-                              key={r.glId || `${r.date}-${r.amount}`}
-                              className="qbd-drill"
-                              style={{ cursor: 'pointer' }}
-                              title="Double-click to open source document"
-                              onDoubleClick={() => drillEntryOpen({
-                                journal_entry_id: r.journalEntryId || r.journal_entry_id,
-                                journalEntryId: r.journalEntryId || r.journal_entry_id,
-                                glId: r.glId,
-                              })}
-                            >
-                              <td className="qbd-d">{fmtReconDate(r.date)}</td>
-                              <td>{r.description || ''}</td>
-                              <td className="qbd-amt">{fmt(r.amount)}</td>
-                            </tr>
-                          ))}
-                          <tr style={{ fontWeight: 'bold', background: '#eef4fb' }}>
-                            <td colSpan={2}>Total</td>
-                            <td className="qbd-amt">{fmt(total)}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                };
-                return (
-                  <>
-                    <div className="qbd-recon-rep-title">
-                      <div><strong>{full.account_number} · {leafLabel(full.account_name)}</strong></div>
-                      <div className="qbd-muted">Period ending {fmtReconDate(full.statement_date)}</div>
-                    </div>
-                    {showSummary && (
-                      <div className="qbd-recon-rep-summary">
-                        <div className="sum-row"><span>Beginning Balance</span><span>{fmt(summary.beginningBalance)}</span></div>
-                        <div className="sum-row"><span>{pl} cleared</span><span>{fmt(summary.cleared?.paymentsTotal)}</span></div>
-                        <div className="sum-row"><span>{dl} cleared</span><span>{fmt(summary.cleared?.depositsTotal)}</span></div>
-                        <div className="sum-row sum-total"><span>Cleared Balance</span><span>{fmt(summary.clearedBalance)}</span></div>
-                        <div className="sum-row sum-total"><span>Ending Balance</span><span>{fmt(summary.endingBalance)}</span></div>
-                        {summary.statementEndingBalance != null && (
-                          <div className="sum-row"><span>Statement Ending</span><span>{fmt(summary.statementEndingBalance)}</span></div>
-                        )}
-                      </div>
-                    )}
-                    {showDetail && (
-                      <>
-                        <div className="qbd-recon-rep-h">Cleared</div>
-                        <Section title={pl} rows={detail.cleared?.payments} />
-                        <Section title={dl} rows={detail.cleared?.deposits} />
-                        <div className="qbd-recon-rep-h">Uncleared</div>
-                        <Section title={pl} rows={detail.uncleared?.payments} />
-                        <Section title={dl} rows={detail.uncleared?.deposits} />
-                      </>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
+        <ReconHtmlPreviewModal
+          title={`Reconciliation Preview — ${stmtDate}`}
+          full={pdfPreview.full}
+          mode={pdfPreview.mode || 'both'}
+          busy={reportBusy}
+          exportBusy={reportBusy}
+          entityId={entityId}
+          statementPdfUrl={statementPdfUrl}
+          onClose={() => setPdfPreview(null)}
+          onModeChange={(m) => setPdfPreview((p) => (p ? { ...p, mode: m } : p))}
+          onExport={exportReconPdf}
+          onDrillLine={(line) => drillEntryOpen({
+            journal_entry_id: line.journalEntryId || line.journal_entry_id,
+            journalEntryId: line.journalEntryId || line.journal_entry_id,
+            glId: line.glId,
+          })}
+        />
       )}
     </>
   );
