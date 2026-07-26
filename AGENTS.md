@@ -10,6 +10,8 @@ Jerry Cohen — owner of LJC Financial LLC. Not a developer. Never hand him tech
 
 **No circumvention.** Do not weaken gates, redefine “done,” or talk around Jerry’s instructions to get a green status. Fix the books. If you find a loophole, close it in code/rules in the same turn (see `.cursor/rules/no-circumvention.mdc`).
 
+**Proof required.** Never tell Jerry a month is closed, a recon is done, or books are clean unless that **same message** pastes live integrity / `verify-books-clean` proof (`isClosed`, blockers, per-account ok). No proof → no claim. See `.cursor/rules/proof-required.mdc`.
+
 ## North-star goal
 
 Build an **agentic, autonomous accounting system** that:

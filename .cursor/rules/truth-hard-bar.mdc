@@ -21,3 +21,7 @@ Amex and other cards are credit cards. They count. Partial session $0.00 Cleared
 ## Response shape when status is bad
 
 Lead with the truth in one sentence. Then facts. No excuses, no blame-shifting, no “from a certain point of view.”
+
+## Proof in the same message
+
+See `proof-required.mdc`. Status claims without pasted live `isClosed` / blockers / per-account results are forbidden — Jerry must not have to second-guess.

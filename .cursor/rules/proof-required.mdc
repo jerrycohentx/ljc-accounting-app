@@ -1,0 +1,35 @@
+---
+description: Never claim closed/reconciled/clean without pasting live proof in the same message
+alwaysApply: true
+---
+
+# Proof required (once and for good)
+
+Jerry must never have to second-guess status claims. **No proof in the message = you may not make the claim.**
+
+## When this applies
+
+Any statement that a month is **closed**, a bank/card is **reconciled**, books are **clean**, or reports are **reliable**.
+
+## Required in the same assistant message
+
+1. Call live production (not memory):
+   - Closed / month status → `GET /api/entities/ent-ljc/accounting/periods/integrity?year=YYYY&month=M`
+   - Clean books → `node scripts/verify-books-clean.mjs --entity ent-ljc --asOf YYYY-MM-DD` (and `--requireClosed` if claiming closed)
+2. **Paste the proof** — at minimum these fields from the live response:
+   - `isClosed`, `canClose`, `closedButCompromised`
+   - `blockers` (or explicit “blockers: none”)
+   - each monitored account: `accountNumber`, `ok`, session `status`, `endingBalance`, `difference` / issue code
+   - `plugsOrRollupsOk`, `netIncomeTieoutOk`
+3. Only then state the conclusion. The proof comes **before** or **with** the claim — never “trust me, I checked.”
+
+## Forbidden
+
+- “January is closed” with no integrity payload in that message
+- Paraphrase without numbers (“all good,” “tied out”) 
+- Citing a prior chat turn as proof
+- `databasePeriodStatus: CLOSED` alone (must use `isClosed`)
+
+## If the live call fails
+
+Say the check could not run. Do **not** invent status from memory.
