@@ -12,6 +12,7 @@ Jerry’s complaint is correct: agents keep finding new ways around his instruct
 - Weakening integrity gates (`BOOK_NE_STATEMENT`, plug/$0 accounts, NI tie-out, Cleared = statement) to make a month “pass”
 - Saying closed / reconciled / reliable when any blocker remains
 - “Closed with caveats,” “good enough,” “session $0 so we’re done” while books disagree
+- Closing a recon with **beginning = ending and zero cleared lines** while the register still has uncleared activity (`FAKE_EMPTY_RECON`) — that is not reconciled
 - Stopping at diagnosis or explanation when the work can be finished in the app
 - Posting to 3900 / 2999 / 1999 / force-balance / reconcile-adjustment for any reason
 - Asking Jerry to click through work the agent can do via API/scripts
