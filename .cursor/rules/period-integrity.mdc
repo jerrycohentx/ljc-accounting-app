@@ -15,6 +15,7 @@ These rules override convenience. They exist because assistants previously claim
 2. You may tell Jerry a period is **closed** only if the JSON has **`isClosed: true`**.
 3. If `databasePeriodStatus` is `CLOSED` but `isClosed` is false (`closedButCompromised`), say the period was marked closed but **fails integrity** — list `blockers`. Do not call it reliably closed.
 4. If `canClose` is false, say what is missing (from `blockers` / `accounts`). Do not close by force.
+5. **No exceptions.** If any blocker remains (BOOK_NE_STATEMENT, non-zero 3900/plugs, open recon, NI mismatch), the month is **not closed** — even if some sessions show $0.00 Cleared. Do not say “closed with caveats.”
 
 ## No plug entries
 
@@ -31,17 +32,18 @@ These rules override convenience. They exist because assistants previously claim
 - Integrity payload includes `netIncomeTieout` / `netIncomeTieoutOk`. If prior-year P&L is still open in revenue/expense accounts, `canClose` is false — close it to Retained Earnings (not a plug).
 - Do not treat “TB balances” or “plugs are zero” alone as done.
 
-## Cleared Balance = statement (hard)
+## Cleared Balance = statement AND books = statement (hard)
 
-- A CLOSED recon is valid only when **live Cleared Balance** (beginning + session-locked lines) equals **statement ending**, not merely when the stored `difference` column is 0.
+- A CLOSED recon is valid only when **live Cleared Balance** equals **statement ending**, not merely when the stored `difference` column is 0.
+- **Also required:** books as of the statement date must equal statement ending (`BOOK_NE_STATEMENT` if not). Leftover uncleared register lines through the statement date mean the month is **not** reconciled to $0.
 - Cleared for a CLOSED session = `bank_reconciliation_session_lines` only. Orphan `RECONCILED` rows with `reconciliation_session_id IS NULL` must not inflate Cleared or keep a fake close.
-- Integrity code `CLEARED_NE_STATEMENT` means Cleared ≠ bank — treat as **not closed**; fix the session lines (never plug).
+- Integrity code `CLEARED_NE_STATEMENT` / `BOOK_NE_STATEMENT` → treat as **not closed**; fix register/session (never plug).
 - Worksheet API: never tell Jerry a recon is done unless `periodSession.balanced === true` and `liveTotals.difference === 0`. A green CLOSED banner with a red Difference is a bug — treat as **not reconciled**.
-- Server must not leave `status=CLOSED` when live Cleared ≠ statement; repair reopens those sessions.
+- Plug/rollup/clearing accounts (1999, 2999, 3020, 3900, 3995, 1100, 1020, 1021) must be **$0.00** as of period end (`plugsOrRollupsOk`) or the month is not closed.
 
 ## Period close
 
-- `POST .../accounting/periods/close` refuses (**409**) unless every monitored bank/card account has a **CLOSED** reconciliation covering that month with **$0.00** live difference (Cleared = statement), no plug JEs, and `netIncomeTieoutOk` (prior-year P&L closed; BS NI = YTD P&L).
+- `POST .../accounting/periods/close` refuses (**409**) unless every monitored bank/card account has a **CLOSED** recon covering that month with Cleared = statement = books, plug/rollup accounts $0, no plug JEs, and `netIncomeTieoutOk`.
 - Do not ask Jerry to "accept" a variance to close.
 
 ## Reports / narrative

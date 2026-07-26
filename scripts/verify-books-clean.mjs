@@ -82,8 +82,22 @@ async function main() {
     },
     { id: 'plugs_zero', pass: plugsClean, detail: JSON.stringify(plugBalances) },
     {
+      id: 'plugs_or_rollups_ok',
+      pass: integrity.plugsOrRollupsOk !== false,
+      detail: `plugsOrRollupsOk=${integrity.plugsOrRollupsOk}`,
+    },
+    {
+      id: 'books_eq_statement',
+      pass: !(integrity.accounts || []).some((a) => a.issue?.code === 'BOOK_NE_STATEMENT'),
+      detail:
+        (integrity.accounts || [])
+          .filter((a) => a.issue)
+          .map((a) => `${a.accountNumber}:${a.issue.code}`)
+          .join(',') || 'ok',
+    },
+    {
       id: 'integrity',
-      pass: requireClosed ? integrity.isClosed === true : true,
+      pass: requireClosed ? integrity.isClosed === true : integrity.canClose !== false,
       detail: `isClosed=${integrity.isClosed} canClose=${integrity.canClose} blockers=${JSON.stringify(integrity.blockers || [])}`,
     },
   ];

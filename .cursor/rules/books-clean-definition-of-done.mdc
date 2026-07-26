@@ -23,13 +23,14 @@ node scripts/verify-books-clean.mjs --entity ent-ljc --asOf YYYY-MM-DD
 | 4 | Prior-year P&L | No open revenue/expense residual before Jan 1 of asOf year |
 | 5 | Plug/rollup accounts | 1999, 2999, 3020, 3900, 3995, 1100, 1020, 1021 all **$0** |
 | 6 | Period integrity | `isClosed: true` only when claiming closed; else quote `canClose` + `blockers` |
-| 7 | Cash/cards (if month in scope) | Monitored recons $0.00 difference / statement-tied |
+| 7 | Cash/cards (if month in scope) | Monitored recons: Cleared = statement = **books as of statement date** ($0.00, no leftovers) |
 
 ## Forbidden shortcuts
 
 - “TB balances” alone
 - “Plugs are zero” alone
-- “Cash reconciles” alone
+- “Cash reconciles” alone / “session difference $0” while books ≠ statement
+- “Closed with exceptions / caveats”
 - Integrity `databasePeriodStatus: CLOSED` without `isClosed: true`
 - Chat memory of a prior close
 

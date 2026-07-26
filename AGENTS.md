@@ -35,8 +35,8 @@ Do **not** treat the OneDrive “Cohen Entities Accounting” shortcut folder as
 1. Prefer smallest correct diffs; match existing Express / `lib/` / `routes/` patterns
 2. After meaningful changes: verify locally or on Render; deploy when production must reflect the fix
 3. Commit/push when shipping is part of finishing (production on `master`)
-4. Before claiming a month is closed: call the integrity endpoint; only `isClosed: true` counts
-5. Before claiming a bank/card recon is done: worksheet must show `periodSession.balanced === true` and `liveTotals.difference === 0` (never trust a CLOSED banner alone)
+4. Before claiming a month is closed: call the integrity endpoint; only `isClosed: true` counts. **No exceptions** — BOOK_NE_STATEMENT, non-zero 3900/plugs, or any blocker means **not closed** (never “closed with caveats”).
+5. Before claiming a bank/card recon is done: Cleared = statement **and** books as of statement date = statement ending (`liveTotals.difference === 0`); never trust a CLOSED banner alone
 6. Never create plug / reconcile-adjustment / force-balance journal entries
 7. Before claiming books are clean or openings rebuilt: run `node scripts/verify-books-clean.mjs --entity ent-ljc --asOf YYYY-MM-DD` — **BS Net Income must equal calendar YTD P&L**, prior-year P&L closed (`netIncomeTieoutOk`), TB/BS balanced, plugs $0. See `.cursor/rules/books-clean-definition-of-done.mdc`.
 8. **Anticipate Jerry’s next click.** If he is in Review & Approve on a closed month, make posting work *before* he hits the error — do not wait for a screenshot (see `.cursor/rules/anticipate-workflow-blockers.mdc`)
