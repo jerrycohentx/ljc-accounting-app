@@ -564,39 +564,90 @@ export default function QBDReconcile() {
 
   useEffect(() => {
     if (!entityId) return;
-    Promise.all([
-      accountAPI.list(entityId),
-      bankReconAPI.reconcilableAccounts(entityId),
-    ]).then(([acctRes, reconRes]) => {
-      const all = flat(Array.isArray(acctRes.data) ? acctRes.data : (acctRes.data?.data || []), []);
-      const bankAccounts = Array.isArray(reconRes.data?.accounts) ? reconRes.data.accounts : [];
-      const cashOnly = all.filter((a) => a.account_type === 'ASSET' && /^cash\b/i.test(String(a.account_name || '')) && !INTERNAL_ACCOUNT.test(String(a.account_name || '')));
-      setAccounts(bankAccounts);
-      setCashAccounts(cashOnly);
-      setExpenseAccounts(all.filter((a) => a.account_type === 'EXPENSE'));
-      setIncomeAccounts(all.filter((a) => a.account_type === 'REVENUE'));
-      setPayFromAccountId((prev) => {
-        if (prev && cashOnly.some((a) => a.id === prev)) return prev;
-        const simmons = cashOnly.find((a) => a.account_number === '1000');
-        const loneStar = cashOnly.find((a) => a.account_number === '1001');
-        return (simmons || loneStar || cashOnly[0])?.id || prev || '';
-      });
-      setAccountId((prev) => {
-        // The URL param outranks a previously-defaulted selection: the resume
-        // effect writes ?account=… BEFORE this list resolves, and a first
-        // resolution may already have defaulted to Lone Star. (User picks are
-        // safe — changing the picker doesn't change searchParams, so this
-        // effect doesn't re-run on a manual selection.)
-        const want = searchParams.get('account');
-        const match = want
-          ? bankAccounts.find((a) => a.id === want || a.account_number === want)
-          : null;
-        if (match) return match.id;
-        if (prev && bankAccounts.some((a) => a.id === prev)) return prev;
-        return '';
-      });
-    }).catch(() => {});
-  }, [entityId, searchParams]);
+    let cancelled = false;
+
+    async function loadReconcileAccounts() {
+      let bankAccounts = [];
+      let all = [];
+
+      try {
+        const reconRes = await bankReconAPI.reconcilableAccounts(entityId);
+        bankAccounts = Array.isArray(reconRes.data?.accounts) ? reconRes.data.accounts : [];
+      } catch (err) {
+        console.error('reconcilableAccounts failed', err);
+      }
+
+      try {
+        const acctRes = await accountAPI.list(entityId);
+        all = flat(Array.isArray(acctRes.data) ? acctRes.data : (acctRes.data?.data || []), []);
+      } catch (err) {
+        console.error('accountAPI.list failed', err);
+      }
+
+      if (cancelled) return;
+
+      const allowed = reconcilableNumbersForEntity(entityId);
+      const merged = new Map();
+      for (const a of bankAccounts) {
+        const num = String(a.account_number || '');
+        if (num && (!allowed.size || allowed.has(num))) merged.set(num, a);
+      }
+      for (const a of all) {
+        const num = String(a.account_number || '');
+        if (num && allowed.has(num) && !merged.has(num)) merged.set(num, a);
+      }
+      if (!merged.size) {
+        for (const a of all) {
+          if (isReconcilableAccount(a, entityId)) {
+            const num = String(a.account_number || '');
+            if (num) merged.set(num, a);
+          }
+        }
+      }
+
+      const list = Array.from(merged.values()).sort((a, b) =>
+        String(a.account_number).localeCompare(String(b.account_number), undefined, { numeric: true })
+      );
+
+      if (all.length) {
+        const bankNums = reconcilableNumbersForEntity(entityId);
+        const cashOnly = all.filter((a) => {
+          const name = String(a.account_name || '');
+          if (INTERNAL_ACCOUNT.test(name)) return false;
+          const num = String(a.account_number || '');
+          if (a.account_type === 'ASSET' && bankNums.has(num)) return true;
+          return a.account_type === 'ASSET' && /^cash\b/i.test(name);
+        });
+        setCashAccounts(cashOnly);
+        setExpenseAccounts(all.filter((a) => a.account_type === 'EXPENSE'));
+        setIncomeAccounts(all.filter((a) => a.account_type === 'REVENUE'));
+        setPayFromAccountId((prev) => {
+          if (prev && cashOnly.some((a) => a.id === prev)) return prev;
+          const simmons = cashOnly.find((a) => a.account_number === '1000');
+          const loneStar = cashOnly.find((a) => a.account_number === '1001');
+          return (simmons || loneStar || cashOnly[0])?.id || prev || '';
+        });
+      }
+
+      if (list.length) {
+        setAccounts(list);
+        setAccountId((prev) => {
+          const want = searchParams.get('account');
+          const match = want
+            ? list.find((a) => a.id === want || a.account_number === want)
+            : null;
+          if (match) return match.id;
+          if (prev && list.some((a) => a.id === prev)) return prev;
+          return '';
+        });
+      } else {
+        showToast && showToast('Could not load bank accounts for reconciliation');
+      }
+    }
+
+    loadReconcileAccounts();
+    return () => { cancelled = true; };
+  }, [entityId, searchParams, showToast]);
 
   const onAccountChange = useCallback((id) => {
     const urlDate = searchParams.get('date') || searchParams.get('asOf');
