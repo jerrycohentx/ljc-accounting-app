@@ -150,6 +150,7 @@ export const bankReconAPI = {
     params: { entityId, accountId, statementDate },
   }),
   reopen: (data) => client.post('/api/reconciliation/bank/reopen', data),
+  undoLast: (data) => client.post('/api/reconciliation/bank/undo-last', data),
   importStatement: (data) => client.post('/api/reconciliation/bank/import-statement', data),
   statementFile: (entityId, accountId, statementDate) => client.get('/api/reconciliation/bank/statement-file', {
     params: { entityId, accountId, statementDate },

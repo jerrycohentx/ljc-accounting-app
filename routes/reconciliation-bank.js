@@ -22,6 +22,7 @@ import {
   buildWorksheet,
   closeBankReconciliation,
   reopenBankReconciliation,
+  undoLastBankReconciliation,
 } from '../lib/bank-reconcile-session.js';
 import { buildReconciliationReport, saveReconciliationReport } from '../lib/reconciliation-report.js';
 import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
@@ -939,6 +940,23 @@ router.post('/reopen', async (req, res) => {
   } catch (error) {
     console.error('Reopen recon error:', error);
     return res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/reconciliation/bank/undo-last — QuickBooks-style undo of the last CLOSED recon
+router.post('/undo-last', async (req, res) => {
+  try {
+    const { entityId, accountId } = req.body;
+    if (!entityId || !accountId) {
+      return res.status(400).json({ error: 'entityId and accountId required' });
+    }
+    const db = await getDatabase();
+    const result = await undoLastBankReconciliation(db, { entityId, accountId });
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    console.error('Undo last recon error:', error);
+    const status = error.code === 'NO_CLOSED_RECON' ? 404 : 500;
+    return res.status(status).json({ error: error.message, code: error.code || null });
   }
 });
 

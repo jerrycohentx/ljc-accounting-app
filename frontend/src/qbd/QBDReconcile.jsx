@@ -747,10 +747,12 @@ export default function QBDReconcile() {
     setChecked(next);
   }, []);
 
-  const loadWorksheet = useCallback(() => {
+  const loadWorksheet = useCallback((dateOverride) => {
     if (!accountId) return Promise.resolve();
+    const dateForLoad = isoDateOnly(dateOverride) || stmtDate;
+    if (!dateForLoad) return Promise.resolve();
     setBusy(true);
-    return bankReconAPI.worksheet(entityId, accountId, stmtDate, { autoMatch: true })
+    return bankReconAPI.worksheet(entityId, accountId, dateForLoad, { autoMatch: true })
       .then((r) => {
         setData(r.data);
         applyAutoChecked(r.data);
@@ -760,7 +762,7 @@ export default function QBDReconcile() {
         // can flip Beginning negative and hide a balanced close behind a fake difference.
         setBeginningOverride('');
         {
-          const resolvedDate = isoDateOnly(r.data.statementDate || stmtDate);
+          const resolvedDate = isoDateOnly(r.data.statementDate || dateForLoad);
           if (resolvedDate) setStmtDate(resolvedDate);
           // Reflect the running reconciliation in the URL so browser Back (e.g.
           // returning from the draft-review screen) lands on THIS reconciliation,
@@ -995,18 +997,32 @@ export default function QBDReconcile() {
       .finally(() => setBusy(false));
   };
 
-  // QuickBooks "Undo Last Reconciliation" from the Begin dialog: reopen the
-  // selected account's period for the chosen statement date and open the worksheet.
+  // QuickBooks "Undo Last Reconciliation": reopen the account's most recent
+  // CLOSED period (e.g. January), not the statement date on screen (February).
+  // Then open that period's worksheet so you can rework until ending = statement.
   const undoLastReconciliation = () => {
     if (!accountId) { showToast && showToast('Pick an account first'); return; }
     if (!window.confirm(
-      `Undo the completed reconciliation for ${stmtDate}? The cleared checkmarks are removed and the period reopens so you can re-do it. `
-      + 'No transactions are deleted, and any service charge / interest already posted are kept.'
+      'Undo the last completed reconciliation for this account?\n\n'
+      + 'This reopens the most recent closed month (for example January when you are starting February), '
+      + 'clears its checkmarks, and lets you rework it until the ending balance matches that month\'s bank statement. '
+      + 'No transactions are deleted.'
     )) return;
     setBusy(true);
-    bankReconAPI.reopen({ entityId, accountId, statementDate: stmtDate })
-      .then(() => { showToast && showToast('Reconciliation reopened — cleared lines restored'); return loadWorksheet(); })
-      .catch((e) => showToast && showToast('Nothing to undo for this period: ' + (e.response?.data?.error || e.message)))
+    bankReconAPI.undoLast({ entityId, accountId })
+      .then((res) => {
+        const data = res?.data || res || {};
+        const undone = data.undoneStatementDate || stmtDate;
+        const label = periodLabel(undone);
+        showToast && showToast(
+          `Undid ${label} reconciliation — rework that month until ending matches the statement`
+        );
+        setStmtDate(undone);
+        return loadWorksheet(undone);
+      })
+      .catch((e) => showToast && showToast(
+        e.response?.data?.error || e.message || 'Nothing to undo for this account'
+      ))
       .finally(() => setBusy(false));
   };
 
@@ -1370,7 +1386,7 @@ export default function QBDReconcile() {
         )}
         <div className="qbd-botbar">
           <button type="button" className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} title="Open the reconcile worksheet to find unmatched items and the difference">Locate Discrepancies</button>
-          <button type="button" className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={undoLastReconciliation} title="Undo the last completed reconciliation for this account and reopen the period">Undo Last Reconciliation</button>
+          <button type="button" className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={undoLastReconciliation} title="Undo the most recent closed month for this account (e.g. January when starting February) so you can rework it until ending matches that statement">Undo Last Reconciliation</button>
           <span className="sp" />
           <button className="qbd-btn" disabled={busy || prepareBusy || !accountId} onClick={start} style={{ fontWeight: 'bold', background: 'linear-gradient(#dff3e2,#bfe6c8)' }}>Continue →</button>
           <button type="button" className="qbd-btn" disabled={busy || prepareBusy} onClick={() => navigate('/')}>Cancel</button>
