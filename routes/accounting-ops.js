@@ -35,6 +35,7 @@ import {
   WENTWORTH_UTIL_CONFIRM,
 } from '../lib/wentworth-tenant-utilities.js';
 import { reverseDuplicateBankImports } from '../lib/reverse-duplicate-bank-imports.js';
+import { fixAmexJanuaryBooks } from '../lib/fix-amex-january-books.js';
 import {
   reclassOpeningBalanceEquity,
   previewReclassOpeningBalanceEquity,
@@ -1204,6 +1205,46 @@ router.post('/reverse-duplicate-bank-imports', [entityAccessMiddleware, requireR
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * POST /api/entities/:entityId/accounting/fix-amex-january-books
+ * Undo RESTORE noise, reverse Amex duplicate twins, dedupe JE twins, rebuild Jan Amex recon.
+ * Body: { confirm: "FIX-AMEX-JAN-<entityId>", dryRun?: boolean }
+ */
+router.post(
+  '/fix-amex-january-books',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      if (req.entityId !== 'ent-ljc') {
+        return res.status(400).json({ error: 'Only implemented for ent-ljc' });
+      }
+      const expected = `FIX-AMEX-JAN-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const db = await getDatabase();
+      const result = await fixAmexJanuaryBooks(db, {
+        entityId: req.entityId,
+        userId: req.user.id,
+        dryRun: !!req.body?.dryRun,
+        rebuildRecon: req.body?.rebuildRecon !== false,
+      });
+      const status = result.booksMatchStatement ? 200 : 409;
+      res.status(status).json({
+        message: result.booksMatchStatement
+          ? 'Amex books match Jan 9 statement'
+          : 'Amex cleanup ran but books still do not match statement',
+        ...result,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 /**
  * POST /api/entities/:entityId/accounting/close-h1-2026
