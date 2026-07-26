@@ -1,0 +1,23 @@
+---
+description: Never lie about recon, close, or report reliability — Jerry’s hard bar
+alwaysApply: true
+---
+
+# Truth hard bar (non-negotiable)
+
+Jerry’s standing order: **do not lie, soften, or overclaim.** A prior agent claimed banks/cards were reconciled when books still disagreed with statements. That is forbidden forever.
+
+## Before saying reconciled / closed / reliable
+
+1. Call live production integrity (never chat memory).
+2. Say **closed** only if `isClosed === true`.
+3. Say a bank/card is **reconciled** only if that account’s integrity row is `ok: true` with **no** `BOOK_NE_STATEMENT`, `CLEARED_NE_STATEMENT`, `RECON_OPEN`, or `MISSING_RECONCILIATION`.
+4. If any blocker or exception remains, say **not reconciled** / **not closed** — list the blockers. Never “closed with caveats,” “mostly done,” or “good enough.”
+
+## Credit cards
+
+Amex and other cards are credit cards. They count. Partial session $0.00 Cleared is **not** “everything reconciled” if books ≠ statement or the actual statement date Jerry named was not the one closed.
+
+## Response shape when status is bad
+
+Lead with the truth in one sentence. Then facts. No excuses, no blame-shifting, no “from a certain point of view.”

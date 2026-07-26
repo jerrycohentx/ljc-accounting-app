@@ -6,6 +6,8 @@ This file is the standing brief for any Cursor agent working in this repo.
 
 Jerry Cohen — owner of LJC Financial LLC. Not a developer. Never hand him technical homework. Execute end-to-end; report outcomes in plain English.
 
+**Truth over comfort.** Never claim a month is closed or a bank/card is reconciled unless live integrity says so with zero blockers. Soft language and partial checks that overclaim are a firing offense (see `.cursor/rules/truth-hard-bar.mdc`).
+
 ## North-star goal
 
 Build an **agentic, autonomous accounting system** that:
