@@ -320,6 +320,7 @@ export default function QBDReconcile() {
   const [beginBal, setBeginBal] = useState('');
   const [endBal, setEndBal] = useState('');
   const [prepareMsg, setPrepareMsg] = useState('');
+  const [lastReconciledDate, setLastReconciledDate] = useState('');
   const [prepareBusy, setPrepareBusy] = useState(false);
   const [started, setStarted] = useState(false);
   // Unposted draft journal entries dated on or before the statement date. Drafts
@@ -511,6 +512,7 @@ export default function QBDReconcile() {
       setPrepareMsg('');
       setBeginBal('');
       setEndBal('');
+      setLastReconciledDate('');
       return Promise.resolve();
     }
     const requestId = prepareRequestRef.current + 1;
@@ -521,29 +523,36 @@ export default function QBDReconcile() {
       .then((r) => {
         if (prepareRequestRef.current !== requestId) return;
         const p = r.data;
+        setLastReconciledDate(p.lastReconciledDate || '');
         // Default to the month after the last completed reconciliation, unless the
         // user has explicitly chosen a date.
+        let nextDate = isoDateOnly(stmtDate);
         if (!userPickedDateRef.current && p.suggestedStatementDate
             && /^\d{4}-\d{2}-\d{2}$/.test(p.suggestedStatementDate)) {
+          nextDate = p.suggestedStatementDate;
           setStmtDate((prev) => (prev === p.suggestedStatementDate ? prev : p.suggestedStatementDate));
           setDateDraft(p.suggestedStatementDate);
+        } else if (!nextDate && p.suggestedStatementDate) {
+          nextDate = p.suggestedStatementDate;
         }
         if (p.endingBalance != null) setEndBal(String(p.endingBalance));
         else setEndBal('');
         if (p.beginningBalance != null) setBeginBal(String(p.beginningBalance));
         else setBeginBal('');
         setPrepareMsg(p.message || '');
+        if (nextDate) attachStoredStatement(nextDate);
       })
       .catch((e) => {
         if (prepareRequestRef.current !== requestId) return;
         setPrepareMsg(e.response?.data?.error || 'Could not load statement');
         setBeginBal('');
         setEndBal('');
+        setLastReconciledDate('');
       })
       .finally(() => {
         if (prepareRequestRef.current === requestId) setPrepareBusy(false);
       });
-  }, [entityId, accountId]);
+  }, [entityId, accountId, stmtDate, attachStoredStatement]);
 
   useEffect(() => {
     if (!entityId) return;
@@ -577,6 +586,26 @@ export default function QBDReconcile() {
       });
     }).catch(() => {});
   }, [entityId, searchParams]);
+
+  const onAccountChange = useCallback((id) => {
+    const urlDate = searchParams.get('date') || searchParams.get('asOf');
+    if (!urlDate) {
+      userPickedDateRef.current = false;
+      setStmtDate('');
+      setDateDraft('');
+      setBeginBal('');
+      setEndBal('');
+      setLastReconciledDate('');
+      setPrepareMsg('');
+    }
+    stmtAutoLoadKeyRef.current = null;
+    stmtLoadedForRef.current = null;
+    setStatementPdfUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setAccountId(id);
+  }, [searchParams]);
 
   // Suggest due date (~25 days) once per card/statement; hydrate amount/date from existing draft.
   const suggestedDueKeyRef = useRef('');
@@ -1260,8 +1289,8 @@ export default function QBDReconcile() {
         <div className="fhd">Begin Reconciliation</div>
         <div className="qbd-muted" style={{ padding: '0 12px 10px', fontSize: 11, lineHeight: 1.45 }}>
           Get your monthly statement from your bank, then <strong>Banking → Reconcile</strong>.
-          Enter the <strong>statement ending date</strong> and verify the <strong>beginning balance</strong> matches your statement.
-          Enter the <strong>ending balance</strong> and any <strong>service charge</strong> or <strong>interest</strong> not already recorded.
+          Pick an account — the app finds the <strong>next period</strong> after your last completed reconciliation, fills in balances, and attaches the statement PDF when it can find it.
+          Verify the <strong>beginning balance</strong> matches your statement before you continue.
           <br />
           Every posted transaction for the account is then shown — checks and payments on the left, deposits and credits on the right.
           Lines that match your statement are pre-checked; check off the rest as you find them.
@@ -1271,13 +1300,23 @@ export default function QBDReconcile() {
             <AccountCombobox
               accounts={accounts}
               value={accountId}
-              onChange={setAccountId}
+              onChange={onAccountChange}
               placeholder="— select bank / card account —"
             />
           </div>
         </div>
         {accountId && (
           <>
+            {(lastReconciledDate || prepareBusy) && (
+              <div className="qbd-muted" style={{ padding: '0 12px 8px', fontSize: 11 }}>
+                {prepareBusy && !stmtDate ? 'Finding the next period after your last reconciliation…'
+                  : lastReconciledDate
+                    ? <>Last reconciled: <strong>{fmtReconDate(lastReconciledDate)}</strong>
+                      {stmtDate ? <> — loading <strong>{periodLabel(stmtDate)}</strong></> : null}
+                    </>
+                    : stmtDate ? <>Loading <strong>{periodLabel(stmtDate)}</strong> statement…</> : null}
+              </div>
+            )}
             <div className="frow"><label>Statement ending date</label>
               <input
                 type="date"
@@ -1390,26 +1429,41 @@ export default function QBDReconcile() {
               </div>
             </div>
             <div className="frow"><label>Bank statement</label>
-              <div>
-                <input
-                  ref={statementFileRef}
-                  type="file"
-                  accept=".pdf,.ofx,.qfx"
-                  style={{ display: 'none' }}
-                  onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleStatementUpload(f); }}
-                />
-                <button
-                  type="button"
-                  className="qbd-btn"
-                  disabled={uploadBusy || !accountId}
-                  onClick={() => statementFileRef.current && statementFileRef.current.click()}
-                  style={{ fontWeight: 'bold' }}
-                >
-                  {uploadBusy ? 'Reading statement…' : '⬆ Upload statement (PDF / OFX)'}
-                </button>
-                <div className="qbd-muted" style={{ fontSize: 10, marginTop: 4 }}>
-                  Reads the statement date and beginning / ending balances automatically.
-                </div>
+              <div style={{ flex: 1, maxWidth: 560 }}>
+                {statementPdfUrl ? (
+                  <div style={{ border: '1px solid #c9d3df', borderRadius: 4, overflow: 'hidden', background: '#525659' }}>
+                    <div className="qbd-muted" style={{ padding: '4px 8px', fontSize: 10, background: '#eef4fb', color: '#2a5596' }}>
+                      Statement attached for {periodLabel(stmtDate)}
+                    </div>
+                    <iframe
+                      title="Bank statement preview"
+                      src={`${statementPdfUrl}#toolbar=0&navpanes=0&view=FitH`}
+                      style={{ width: '100%', height: 220, border: 0, display: 'block' }}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      ref={statementFileRef}
+                      type="file"
+                      accept=".pdf,.ofx,.qfx"
+                      style={{ display: 'none' }}
+                      onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleStatementUpload(f); }}
+                    />
+                    <button
+                      type="button"
+                      className="qbd-btn"
+                      disabled={uploadBusy || !accountId || prepareBusy}
+                      onClick={() => statementFileRef.current && statementFileRef.current.click()}
+                      style={{ fontWeight: 'bold' }}
+                    >
+                      {uploadBusy ? 'Reading statement…' : prepareBusy ? 'Looking for statement…' : '⬆ Upload statement (PDF / OFX)'}
+                    </button>
+                    <div className="qbd-muted" style={{ fontSize: 10, marginTop: 4 }}>
+                      The next period after your last close is chosen automatically. The statement PDF is attached when found in your bank folders or from a prior upload.
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             {prepareMsg && (
