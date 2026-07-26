@@ -8,6 +8,8 @@ Jerry Cohen — owner of LJC Financial LLC. Not a developer. Never hand him tech
 
 **Truth over comfort.** Never claim a month is closed or a bank/card is reconciled unless live integrity says so with zero blockers. Soft language and partial checks that overclaim are a firing offense (see `.cursor/rules/truth-hard-bar.mdc`).
 
+**No circumvention.** Do not weaken gates, redefine “done,” or talk around Jerry’s instructions to get a green status. Fix the books. If you find a loophole, close it in code/rules in the same turn (see `.cursor/rules/no-circumvention.mdc`).
+
 ## North-star goal
 
 Build an **agentic, autonomous accounting system** that:

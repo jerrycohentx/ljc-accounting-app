@@ -36,3 +36,5 @@ Do **not** rely on “I’ll remember.” Encode the lesson before ending the tu
 3. **`scripts/verify-books-clean.mjs`** (or extend it) so the next agent cannot skip the check
 
 Chat apologies are not learning. Repo + production gates are.
+
+**Never circumvent.** If a rule is inconvenient, enforce it harder — do not invent a workaround that green-washes status (see `no-circumvention.mdc`).

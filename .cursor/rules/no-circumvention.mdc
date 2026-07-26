@@ -1,0 +1,30 @@
+---
+description: Never weaken, bypass, or talk around Jerry’s accounting integrity rules
+alwaysApply: true
+---
+
+# No circumvention (hard bar)
+
+Jerry’s complaint is correct: agents keep finding new ways around his instructions. That stops here.
+
+## Forbidden
+
+- Weakening integrity gates (`BOOK_NE_STATEMENT`, plug/$0 accounts, NI tie-out, Cleared = statement) to make a month “pass”
+- Saying closed / reconciled / reliable when any blocker remains
+- “Closed with caveats,” “good enough,” “session $0 so we’re done” while books disagree
+- Stopping at diagnosis or explanation when the work can be finished in the app
+- Posting to 3900 / 2999 / 1999 / force-balance / reconcile-adjustment for any reason
+- Asking Jerry to click through work the agent can do via API/scripts
+- Treating chat memory as status instead of live integrity
+
+## Required
+
+1. **Rules live in code + Cursor rules + `AGENTS.md`** — not in promises.
+2. Before claiming done: live `GET .../periods/integrity` and quote `isClosed` / `canClose` / `blockers`.
+3. If a gate fails: **fix the books or recon**, then re-check. Do not redefine “done.”
+4. If truly blocked (secret/login only Jerry can provide): say **one** gate. Otherwise execute.
+5. When you discover a loophole you used: **close it in code/rules in the same turn** before ending.
+
+## Intent
+
+Integrity first. Speed second. Never invent a path that makes Jerry’s rules optional.
