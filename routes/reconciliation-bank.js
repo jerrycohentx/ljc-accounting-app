@@ -27,6 +27,7 @@ import {
 import { buildReconciliationReport, saveReconciliationReport } from '../lib/reconciliation-report.js';
 import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
 import { ensureStatementFileSchema, saveStatementFile, getStatementFile } from '../lib/statement-file-schema.js';
+import { resolveStatementFile } from '../lib/statement-file-locate.js';
 import { prepareReconciliation } from '../lib/reconcile-prepare.js';
 import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/statement-auto-load.js';
 import { ensureCreditCardPaymentDue, getCreditCardPaymentDue } from '../lib/cc-payment-due.js';
@@ -859,7 +860,18 @@ router.get('/statement-file', async (req, res) => {
     }
     const db = await getDatabase();
     await ensureStatementFileSchema(db);
-    const row = await getStatementFile(db, { entityId, accountId, statementDate });
+    const account = await db.get(
+      'SELECT account_number FROM accounts WHERE id = ? AND entity_id = ?',
+      [accountId, entityId]
+    );
+    const row = await resolveStatementFile(db, {
+      entityId,
+      accountId,
+      accountNumber: account?.account_number,
+      statementDate,
+      userId: req.user?.id || 'usr-admin',
+      discover: req.query.discover !== '0',
+    });
     if (!row || !row.file_data) return res.json({ found: false });
     return res.json({
       found: true,
@@ -869,6 +881,8 @@ router.get('/statement-file', async (req, res) => {
       statementDate: row.matchedStatementDate || String(statementDate).slice(0, 10),
       fuzzy: !!row.fuzzy,
       requestedStatementDate: row.requestedStatementDate || String(statementDate).slice(0, 10),
+      source: row.source || 'database',
+      discoveredPath: row.discoveredPath || null,
     });
   } catch (error) {
     console.error('Statement file fetch error:', error);

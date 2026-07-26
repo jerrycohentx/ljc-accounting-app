@@ -357,6 +357,7 @@ export default function QBDReconcile() {
   const outerSplitRef = useRef(null);
   const reconStmtFileRef = useRef(null);
   const stmtAutoLoadKeyRef = useRef(null);
+  const stmtLoadedForRef = useRef(null);
   const regScrollRef = useRef(null);
   const prepareTimerRef = useRef(null);
   const prepareRequestRef = useRef(0);
@@ -433,45 +434,69 @@ export default function QBDReconcile() {
 
   // Switching accounts drops any statement carried over from the previous one.
   useEffect(() => {
-    setStatementPdfUrl(null);
+    setStatementPdfUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     stmtAutoLoadKeyRef.current = null;
+    stmtLoadedForRef.current = null;
   }, [accountId]);
 
-  // Automatically show the statement being reconciled: once a session is open,
-  // fetch the stored PDF for this period (if one was uploaded before) and load
-  // it into the side-by-side pane — no re-upload needed. Server also fuzzy-matches
-  // nearby statement dates (e.g. Simmons cycle ending on the 1st).
-  useEffect(() => {
-    if (!started || !entityId || !accountId || statementPdfUrl) return undefined;
-    const date = (data && data.statementDate) || stmtDate;
-    if (!date) return undefined;
+  // Load the stored (or folder-discovered) statement PDF for this account/period.
+  const attachStoredStatement = useCallback(async (dateOverride) => {
+    if (!entityId || !accountId) return false;
+    const date = isoDateOnly(dateOverride) || isoDateOnly(data?.statementDate) || isoDateOnly(stmtDate);
+    if (!date) return false;
     const key = `${entityId}|${accountId}|${date}`;
-    if (stmtAutoLoadKeyRef.current === key) return undefined; // try once per period
+    if (stmtLoadedForRef.current === key) return true;
+    if (stmtAutoLoadKeyRef.current === key) return false;
+
     stmtAutoLoadKeyRef.current = key;
-    let cancelled = false;
     const tryDates = [
       date,
       data?.statementPeriod?.periodEnd,
       data?.periodSession?.statementDate && String(data.periodSession.statementDate).slice(0, 10),
     ].filter((d, i, arr) => d && /^\d{4}-\d{2}-\d{2}$/.test(String(d).slice(0, 10)) && arr.indexOf(d) === i);
 
-    (async () => {
-      for (const d0 of tryDates) {
-        try {
-          const r = await bankReconAPI.statementFile(entityId, accountId, String(d0).slice(0, 10));
-          const d = r.data || {};
-          if (cancelled || !d.found || !d.dataBase64) continue;
-          const url = base64ToObjectUrl(d.dataBase64, d.mime || 'application/pdf');
-          setStatementPdfUrl((prev) => { if (prev) { URL.revokeObjectURL(url); return prev; } return url; });
-          setShowStmt(true);
-          return;
-        } catch {
-          /* try next date */
-        }
+    for (const d0 of tryDates) {
+      try {
+        const r = await bankReconAPI.statementFile(entityId, accountId, String(d0).slice(0, 10));
+        const d = r.data || {};
+        if (!d.found || !d.dataBase64) continue;
+        const url = base64ToObjectUrl(d.dataBase64, d.mime || 'application/pdf');
+        setStatementPdfUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+        setShowStmt(true);
+        stmtLoadedForRef.current = key;
+        return true;
+      } catch {
+        /* try next date */
       }
-    })();
-    return () => { cancelled = true; };
-  }, [started, entityId, accountId, stmtDate, data, statementPdfUrl]);
+    }
+    stmtAutoLoadKeyRef.current = null;
+    return false;
+  }, [entityId, accountId, stmtDate, data]);
+
+  // Auto-attach on Begin Reconciliation and on the open worksheet until closed.
+  useEffect(() => {
+    if (!accountId || !stmtDate) return undefined;
+    attachStoredStatement();
+    return undefined;
+  }, [accountId, stmtDate, started, attachStoredStatement]);
+
+  useEffect(() => {
+    stmtAutoLoadKeyRef.current = null;
+    const date = isoDateOnly(stmtDate);
+    if (stmtLoadedForRef.current && date && !stmtLoadedForRef.current.endsWith(`|${date}`)) {
+      setStatementPdfUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      stmtLoadedForRef.current = null;
+    }
+  }, [stmtDate]);
 
   const zoomIn = useCallback(() => setStmtZoom((z) => Math.min(250, (z > 0 ? z : 100) + 15)), []);
   const zoomOut = useCallback(() => setStmtZoom((z) => Math.max(40, (z > 0 ? z : 100) - 15)), []);
@@ -548,11 +573,7 @@ export default function QBDReconcile() {
           : null;
         if (match) return match.id;
         if (prev) return prev;
-        if (entityId === 'ent-ljc') {
-          const loneStar = bankAccounts.find((a) => a.account_number === '1001');
-          if (loneStar) return loneStar.id;
-        }
-        return prev;
+        return '';
       });
     }).catch(() => {});
   }, [entityId, searchParams]);
@@ -706,6 +727,7 @@ export default function QBDReconcile() {
             userPickedDateRef.current = true;
             setStmtDate(d.statementDate);
             setDateDraft(d.statementDate);
+            stmtLoadedForRef.current = `${entityId}|${accountId}|${d.statementDate}`;
           }
           if (d.endingBalance != null) setEndBal(String(d.endingBalance));
           if (d.beginningBalance != null) setBeginBal(String(d.beginningBalance));
