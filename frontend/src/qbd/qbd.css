@@ -225,6 +225,8 @@
 .qbd-placeholder{background:#fff;border:1px dashed #aebccd;border-radius:5px;padding:40px;text-align:center;color:#6a7889;margin:10px}
 /* Begin Reconciliation — QuickBooks-style contained dialog, not a full-width form */
 .qbd-form{background:#eef1f5;margin:16px auto;max-width:700px;border:1px solid #6f8197;border-radius:5px;padding:0 0 2px;box-shadow:0 8px 26px rgba(20,40,70,.24);overflow:hidden}
+/* Begin Reconciliation: let account picker menus extend outside the dialog frame. */
+.qbd-form.qbd-recon-begin{overflow:visible}
 /* Wider, user-resizable window: drag the bottom-right corner. For screens whose
    tables need more room than the standard 700px form (e.g. draft review). */
 /* Resizable window (drag the bottom-right corner).

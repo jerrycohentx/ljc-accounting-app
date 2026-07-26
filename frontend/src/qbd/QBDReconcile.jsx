@@ -647,7 +647,7 @@ export default function QBDReconcile() {
 
     loadReconcileAccounts();
     return () => { cancelled = true; };
-  }, [entityId, searchParams, showToast]);
+  }, [entityId, searchParams]);
 
   const onAccountChange = useCallback((id) => {
     const urlDate = searchParams.get('date') || searchParams.get('asOf');
@@ -1347,7 +1347,7 @@ export default function QBDReconcile() {
   if (!started) {
     return (
       <>
-      <div className="qbd-form">
+      <div className="qbd-form qbd-recon-begin">
         <div className="fhd">Begin Reconciliation</div>
         <div className="qbd-muted" style={{ padding: '0 12px 10px', fontSize: 11, lineHeight: 1.45 }}>
           Get your monthly statement from your bank, then <strong>Banking → Reconcile</strong>.

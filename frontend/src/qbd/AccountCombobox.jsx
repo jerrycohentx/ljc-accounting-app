@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { leafLabel } from './helpers';
 
 export const CREATE_NEW_VALUE = '__create_new__';
@@ -86,9 +87,23 @@ export default function AccountCombobox({
 }) {
   const rootRef = useRef(null);
   const listRef = useRef(null);
+  const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
+  const [menuStyle, setMenuStyle] = useState(null);
+
+  const updateMenuPos = useCallback(() => {
+    if (!rootRef.current) return;
+    const rect = rootRef.current.getBoundingClientRect();
+    setMenuStyle({
+      position: 'fixed',
+      left: rect.left,
+      top: rect.bottom + 2,
+      width: rect.width,
+      zIndex: 500,
+    });
+  }, []);
 
   const normalized = useMemo(
     () => (accounts || []).map(normalizeAccount).filter((a) => a && a.id != null),
@@ -143,16 +158,28 @@ export default function AccountCombobox({
   );
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open) {
+      setMenuStyle(null);
+      return undefined;
+    }
+    updateMenuPos();
+    const onReposition = () => updateMenuPos();
+    window.addEventListener('scroll', onReposition, true);
+    window.addEventListener('resize', onReposition);
     const onDoc = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) {
-        setOpen(false);
-        setQuery('');
-      }
+      const target = e.target;
+      if (rootRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
+      setQuery('');
     };
     document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
+    return () => {
+      window.removeEventListener('scroll', onReposition, true);
+      window.removeEventListener('resize', onReposition);
+      document.removeEventListener('mousedown', onDoc);
+    };
+  }, [open, updateMenuPos]);
 
   useEffect(() => {
     if (!open) return;
@@ -215,6 +242,62 @@ export default function AccountCombobox({
 
   let selIdx = -1;
 
+  const menu = open && !disabled && menuStyle ? (() => {
+    selIdx = -1;
+    return (
+      <div
+        ref={(node) => {
+          listRef.current = node;
+          menuRef.current = node;
+        }}
+        style={{ ...styles.menu, ...menuStyle }}
+        role="listbox"
+      >
+        {!filtered.length && (
+          <div style={styles.empty}>
+            {query.trim() ? `No accounts match “${query.trim()}”` : 'No accounts'}
+          </div>
+        )}
+        {options.map((opt) => {
+          if (opt.kind === 'header') {
+            return (
+              <div key={opt.id} style={styles.header}>
+                {opt.label}
+              </div>
+            );
+          }
+          selIdx += 1;
+          const idx = selIdx;
+          const active = idx === highlight;
+          return (
+            <button
+              key={String(opt.id)}
+              type="button"
+              role="option"
+              data-opt-idx={idx}
+              aria-selected={active}
+              style={{
+                ...styles.option,
+                ...(opt.kind === 'action' ? styles.action : null),
+                ...(active ? styles.optionActive : null),
+              }}
+              onMouseEnter={() => setHighlight(idx)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                pick(opt.id);
+              }}
+            >
+              <span style={styles.optionLabel}>{opt.label}</span>
+              {opt.kind === 'account' && opt.typeLabel ? (
+                <span style={styles.typeTag}>{opt.typeLabel}</span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    );
+  })() : null;
+
   return (
     <div ref={rootRef} style={{ ...styles.wrap, ...style }} title={title}>
       <input
@@ -227,11 +310,13 @@ export default function AccountCombobox({
           if (disabled) return;
           setOpen(true);
           setQuery('');
+          updateMenuPos();
         }}
         onChange={(e) => {
           if (disabled) return;
           setOpen(true);
           setQuery(e.target.value);
+          updateMenuPos();
         }}
         onKeyDown={onKeyDown}
         autoComplete="off"
@@ -239,51 +324,7 @@ export default function AccountCombobox({
         aria-autocomplete="list"
         aria-expanded={open}
       />
-      {open && !disabled && (
-        <div ref={listRef} style={styles.menu} role="listbox">
-          {!filtered.length && (
-            <div style={styles.empty}>
-              {query.trim() ? `No accounts match “${query.trim()}”` : 'No accounts'}
-            </div>
-          )}
-          {options.map((opt) => {
-            if (opt.kind === 'header') {
-              return (
-                <div key={opt.id} style={styles.header}>
-                  {opt.label}
-                </div>
-              );
-            }
-            selIdx += 1;
-            const idx = selIdx;
-            const active = idx === highlight;
-            return (
-              <button
-                key={String(opt.id)}
-                type="button"
-                role="option"
-                data-opt-idx={idx}
-                aria-selected={active}
-                style={{
-                  ...styles.option,
-                  ...(opt.kind === 'action' ? styles.action : null),
-                  ...(active ? styles.optionActive : null),
-                }}
-                onMouseEnter={() => setHighlight(idx)}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  pick(opt.id);
-                }}
-              >
-                <span style={styles.optionLabel}>{opt.label}</span>
-                {opt.kind === 'account' && opt.typeLabel ? (
-                  <span style={styles.typeTag}>{opt.typeLabel}</span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {menu && typeof document !== 'undefined' ? createPortal(menu, document.body) : null}
     </div>
   );
 }
@@ -309,12 +350,6 @@ const styles = {
     cursor: 'not-allowed',
   },
   menu: {
-    position: 'absolute',
-    zIndex: 40,
-    left: 0,
-    right: 0,
-    top: '100%',
-    marginTop: 2,
     maxHeight: 260,
     overflowY: 'auto',
     background: '#fff',
