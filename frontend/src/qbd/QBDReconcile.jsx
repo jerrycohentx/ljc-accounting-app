@@ -64,18 +64,26 @@ function flat(nodes, out) {
 // Checked first so "Cash Clearing" can't sneak in on the leading "Cash".
 const INTERNAL_ACCOUNT = /clearing|in transit|undeposited|holdback|due from|due to|suspense/i;
 
+// Authoritative bank/card accounts that receive monthly statements — see
+// config/bank-import-targets.js and config/recon-bank-folders.js. Number-based
+// matching avoids dropping Lone Star when the COA name is "Lone Star Bank ckg-7367"
+// instead of "Cash - Lone Star Bank".
+const RECON_ACCOUNT_NUMBERS = {
+  'ent-ljc': ['1000', '1001', '1002', '2010'],
+};
+
+function reconcilableNumbersForEntity(entityId) {
+  return new Set((RECON_ACCOUNT_NUMBERS[entityId] || []).map(String));
+}
+
 /**
  * Reconcilable = an account with a real statement from a bank or card issuer.
- *
- * The previous test was `/^Cash|Bank/` for assets and `/Credit-Cards/` for
- * liabilities, and both halves were wrong. `^` binds only to `Cash`, so the
- * second branch meant "contains Bank ANYWHERE" and dragged in
- * "Holdbacks - Simmons Bank" and "ACH Collections - Due from Bank". And no
- * account is named "Credit-Cards" -- they are "Credit Card - American Express"
- * etc. -- so NO credit card was ever listed, which is why the AMEX card could
- * not be reconciled at all.
  */
-function isReconcilableAccount(a) {
+function isReconcilableAccount(a, entityId) {
+  const num = String(a?.account_number || '');
+  const allowed = reconcilableNumbersForEntity(entityId);
+  if (allowed.size && num && allowed.has(num)) return true;
+
   const name = String(a?.account_name || '');
   if (INTERNAL_ACCOUNT.test(name)) return false;
   if (a?.account_type === 'ASSET') return /^cash\b/i.test(name);
@@ -558,7 +566,7 @@ export default function QBDReconcile() {
     if (!entityId) return;
     accountAPI.list(entityId).then((r) => {
       const all = flat(Array.isArray(r.data) ? r.data : (r.data?.data || []), []);
-      const bankAccounts = all.filter(isReconcilableAccount);
+      const bankAccounts = all.filter((a) => isReconcilableAccount(a, entityId));
       const cashOnly = all.filter((a) => a.account_type === 'ASSET' && /^cash\b/i.test(String(a.account_name || '')) && !INTERNAL_ACCOUNT.test(String(a.account_name || '')));
       setAccounts(bankAccounts);
       setCashAccounts(cashOnly);
