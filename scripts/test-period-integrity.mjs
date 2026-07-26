@@ -37,7 +37,14 @@ assert.strictEqual(yearMonths[11].periodEnd, '2025-12-31');
 const ljc = monitoredAccountNumbers('ent-ljc');
 assert.ok(ljc.includes('1000'), 'Simmons monitored');
 assert.ok(ljc.includes('1001'), 'Lone Star monitored');
+assert.ok(ljc.includes('1002'), 'CSB monitored when period not scoped');
 assert.ok(ljc.includes('2010'), 'Amex monitored via targets');
+
+const ljcJan = monitoredAccountNumbers('ent-ljc', { periodStart: '2026-01-01' });
+assert.ok(ljcJan.includes('1002'), 'CSB still monitored for January 2026');
+const ljcFeb = monitoredAccountNumbers('ent-ljc', { periodStart: '2026-02-01' });
+assert.ok(!ljcFeb.includes('1002'), 'CSB not monitored after January close');
+assert.ok(ljcFeb.includes('1000') && ljcFeb.includes('1001') && ljcFeb.includes('2010'));
 
 assert.ok(PLUG_JOURNAL_SOURCES.includes('reconcile-adjustment'));
 

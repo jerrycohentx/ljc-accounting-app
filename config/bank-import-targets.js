@@ -6,7 +6,14 @@ export const BANK_ACCOUNTS = {
   'ent-ljc': [
     { accountNumber: '1000', name: 'Simmons Bank ckg-0260', ofxAccountId: '0260' },
     { accountNumber: '1001', name: 'Lone Star Bank ckg-7367', ofxAccountId: '7367' },
-    { accountNumber: '1002', name: 'Citizens State Bank ckg-1385', ofxAccountId: '1385' },
+    // Closed Jan 2026 — keep on COA/history; stop requiring recons after monitorThrough.
+    {
+      accountNumber: '1002',
+      name: 'Citizens State Bank ckg-1385',
+      ofxAccountId: '1385',
+      monitorThrough: '2026-01',
+      closedNote: 'Bank account closed January 2026 — no statements after 2026-01-13',
+    },
     { accountNumber: '2010', name: 'American Express 88007', ofxAccountId: '88007' },
   ],
   'ent-justin': [{ accountNumber: '1000', name: 'Primary checking' }],
