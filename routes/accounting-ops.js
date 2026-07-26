@@ -458,6 +458,71 @@ router.post(
 );
 
 /**
+ * POST /api/entities/:entityId/accounting/auto-reconcile-target
+ * One account / one statement — clear real register lines to statement ending (no fake empty close).
+ * Body: { confirm: "AUTO-RECON-<entityId>", accountNumber, statementDate, endingBalance,
+ *         clearedAfterDate?, reopen?, beginningBalance? }
+ */
+router.post(
+  '/auto-reconcile-target',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const expected = `AUTO-RECON-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const accountNumber = String(req.body?.accountNumber || '');
+      const statementDate = String(req.body?.statementDate || '').slice(0, 10);
+      const endingBalance = Number(req.body?.endingBalance);
+      if (!accountNumber || !statementDate || Number.isNaN(endingBalance)) {
+        return res.status(400).json({
+          error: 'accountNumber, statementDate, endingBalance required',
+        });
+      }
+      const db = await getDatabase();
+      const acc = await db.get(
+        `SELECT id FROM accounts WHERE entity_id = ? AND account_number = ?`,
+        [req.entityId, accountNumber]
+      );
+      if (!acc) return res.status(404).json({ error: `Account ${accountNumber} not found` });
+      if (req.body?.reopen) {
+        try {
+          await reopenBankReconciliation(db, {
+            entityId: req.entityId,
+            accountId: acc.id,
+            statementDate,
+          });
+        } catch (e) {
+          /* already open */
+        }
+      }
+      const result = await autoReconcileToTarget(db, {
+        entityId: req.entityId,
+        accountNumber,
+        statementDate,
+        endingBalance,
+        userId: req.user.id,
+        notes: req.body?.notes || `Auto-reconcile ${accountNumber} ${statementDate}`,
+        clearedAfterDate: req.body?.clearedAfterDate || null,
+        beginningBalanceOverride:
+          req.body?.beginningBalance != null ? Number(req.body.beginningBalance) : null,
+      });
+      const status = result.reconciled ? 200 : 409;
+      res.status(status).json(result);
+    } catch (error) {
+      if (error.code === 'FAKE_EMPTY_RECON_BLOCKED') {
+        return res.status(409).json({ error: error.message, code: error.code });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
  * POST /api/entities/:entityId/accounting/rebuild-amex-recons
  * Reopen + auto-reconcile Amex (2010) for configured 2026 statement targets.
  * Body: { confirm: "REBUILD-AMEX-<entityId>", throughMonth?: "YYYY-MM", reopen?: boolean }
