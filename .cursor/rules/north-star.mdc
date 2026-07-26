@@ -1,0 +1,38 @@
+---
+description: North-star — autonomous learning accounting app (not Cowork-as-ledger)
+alwaysApply: true
+---
+
+# North star
+
+Jerry’s goal: an **agentic, autonomous accounting app** that runs the books as automatically as possible and **learns** from every confirmed categorization.
+
+## System of record
+
+- **This repo** (`ljc-accounting-app`) + Postgres on Render is the ledger runtime.
+- Cursor agents build, harden, and operate it.
+- Claude Cowork / generic chat is **not** the books engine — do not close periods or invent balances there.
+
+## Hard constraints (non-negotiable)
+
+- No plug / force-balance journal entries
+- No claiming a period is closed unless `GET .../accounting/periods/integrity` returns `isClosed: true`
+- Money math: integer cents / Decimal — never floats for stored amounts
+- Posted ledger is append-only; corrections via reversing entries
+- Automate first; Jerry only does human-only gates (bank MFA, policy yes/no)
+
+## When adding automation or “AI”
+
+- Persist learning in the database (rules tables), not in chat memory
+- Confidence thresholds + review queue for uncertain categorizations
+- Prefer scheduled workers / existing ingest pipelines over one-off agent sessions
+
+## When an agent miss reaches Jerry
+
+Do **not** rely on “I’ll remember.” Encode the lesson before ending the turn:
+
+1. **API / integrity gate** that fails closed (preferred)
+2. **Cursor rule** + `AGENTS.md` definition of done
+3. **`scripts/verify-books-clean.mjs`** (or extend it) so the next agent cannot skip the check
+
+Chat apologies are not learning. Repo + production gates are.

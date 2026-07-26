@@ -38,7 +38,7 @@ Do **not** treat the OneDrive “Cohen Entities Accounting” shortcut folder as
 4. Before claiming a month is closed: call the integrity endpoint; only `isClosed: true` counts
 5. Before claiming a bank/card recon is done: worksheet must show `periodSession.balanced === true` and `liveTotals.difference === 0` (never trust a CLOSED banner alone)
 6. Never create plug / reconcile-adjustment / force-balance journal entries
-7. Before claiming books are clean or openings rebuilt: **BS Net Income must equal calendar YTD P&L** (`netIncomeTieoutOk` on integrity). Prior-year P&L left in income accounts is not done.
+7. Before claiming books are clean or openings rebuilt: run `node scripts/verify-books-clean.mjs --entity ent-ljc --asOf YYYY-MM-DD` — **BS Net Income must equal calendar YTD P&L**, prior-year P&L closed (`netIncomeTieoutOk`), TB/BS balanced, plugs $0. See `.cursor/rules/books-clean-definition-of-done.mdc`.
 8. **Anticipate Jerry’s next click.** If he is in Review & Approve on a closed month, make posting work *before* he hits the error — do not wait for a screenshot (see `.cursor/rules/anticipate-workflow-blockers.mdc`)
 
 ## Learning loop (product direction)

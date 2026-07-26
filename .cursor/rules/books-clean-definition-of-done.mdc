@@ -1,0 +1,40 @@
+---
+description: Definition of done before claiming books are clean, closed, or openings rebuilt
+alwaysApply: true
+---
+
+# Books clean — definition of done
+
+This exists because agents claimed “clean / accurate” books while Balance Sheet Net Income still disagreed with P&L (unclosed prior-year income left in revenue accounts).
+
+## Never say “clean”, “accurate BS”, “fresh open”, or “closed” until ALL pass live
+
+Run (or equivalent API checks) and quote results:
+
+```bash
+node scripts/verify-books-clean.mjs --entity ent-ljc --asOf YYYY-MM-DD
+```
+
+| # | Gate | Pass only if |
+|---|------|----------------|
+| 1 | Trial balance | `isBalanced === true` |
+| 2 | Balance sheet equation | Assets − (L+E) = **$0.00** |
+| 3 | Net Income tie-out | BS Net Income **equals** P&L for calendar YTD (Jan 1 .. asOf) |
+| 4 | Prior-year P&L | No open revenue/expense residual before Jan 1 of asOf year |
+| 5 | Plug/rollup accounts | 1999, 2999, 3020, 3900, 3995, 1100, 1020, 1021 all **$0** |
+| 6 | Period integrity | `isClosed: true` only when claiming closed; else quote `canClose` + `blockers` |
+| 7 | Cash/cards (if month in scope) | Monitored recons $0.00 difference / statement-tied |
+
+## Forbidden shortcuts
+
+- “TB balances” alone
+- “Plugs are zero” alone
+- “Cash reconciles” alone
+- Integrity `databasePeriodStatus: CLOSED` without `isClosed: true`
+- Chat memory of a prior close
+
+## When you miss a gate
+
+1. Fix the books (or the report) — do not argue immateriality
+2. Encode the miss: integrity blocker, rule, or verify-script check so the next agent cannot skip it
+3. Learning lives in **repo + API gates**, not in this chat
