@@ -40,6 +40,7 @@ import { startAutoBackup } from './lib/app-backup.js';
 import { buildHealthPayload } from './lib/health-status.js';
 import { startStatementAutoLoad, getStatementAutoLoadStatus, runStatementAutoLoad } from './lib/statement-auto-load.js';
 import { removeDeprecatedRules } from './lib/categorization-rules.js';
+import { ensureReconcilableBankAccounts } from './lib/ensure-reconcilable-accounts.js';
 import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
 import { startAchJeInboxScan } from './lib/ach-je-inbox-worker.js';
 import { startPlaidAutoSync } from './lib/plaid-auto-sync.js';
@@ -285,6 +286,14 @@ async function start() {
     // Self-heal: remove the deprecated "Wire Transfer Debit" -> Lone Star (1001) rule that
     // contaminated the Lone Star bank account, BEFORE any statement auto-load runs.
     await removeDeprecatedRules(db).catch((e) => console.warn('Rule cleanup skipped:', e.message));
+    const ensured = await ensureReconcilableBankAccounts(db, 'ent-ljc').catch((e) => {
+      console.warn('Reconcilable account ensure skipped:', e.message);
+      return [];
+    });
+    const changed = (ensured || []).filter((e) => e.action !== 'ok');
+    if (changed.length) {
+      console.log(`✓ Reconcilable accounts ensured: ${changed.map((e) => `${e.accountNumber} (${e.action})`).join(', ')}`);
+    }
     startAutoBackup();
     // Auto-importers (email / OFX folder / ACH inbox / Plaid). Opt-in freeze only:
     // set REBUILD_FREEZE=1 during a purge/rebuild. Default is ON (automatic).

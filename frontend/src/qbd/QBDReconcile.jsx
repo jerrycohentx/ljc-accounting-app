@@ -564,9 +564,12 @@ export default function QBDReconcile() {
 
   useEffect(() => {
     if (!entityId) return;
-    accountAPI.list(entityId).then((r) => {
-      const all = flat(Array.isArray(r.data) ? r.data : (r.data?.data || []), []);
-      const bankAccounts = all.filter((a) => isReconcilableAccount(a, entityId));
+    Promise.all([
+      accountAPI.list(entityId),
+      bankReconAPI.reconcilableAccounts(entityId),
+    ]).then(([acctRes, reconRes]) => {
+      const all = flat(Array.isArray(acctRes.data) ? acctRes.data : (acctRes.data?.data || []), []);
+      const bankAccounts = Array.isArray(reconRes.data?.accounts) ? reconRes.data.accounts : [];
       const cashOnly = all.filter((a) => a.account_type === 'ASSET' && /^cash\b/i.test(String(a.account_name || '')) && !INTERNAL_ACCOUNT.test(String(a.account_name || '')));
       setAccounts(bankAccounts);
       setCashAccounts(cashOnly);
@@ -589,7 +592,7 @@ export default function QBDReconcile() {
           ? bankAccounts.find((a) => a.id === want || a.account_number === want)
           : null;
         if (match) return match.id;
-        if (prev) return prev;
+        if (prev && bankAccounts.some((a) => a.id === prev)) return prev;
         return '';
       });
     }).catch(() => {});

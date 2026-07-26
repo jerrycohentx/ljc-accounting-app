@@ -133,6 +133,9 @@ export const reportAPI = {
 };
 
 export const bankReconAPI = {
+  reconcilableAccounts: (entityId) => client.get('/api/reconciliation/bank/reconcilable-accounts', {
+    params: { entityId },
+  }),
   prepare: (entityId, accountId, statementDate) => client.get('/api/reconciliation/bank/prepare', {
     params: { entityId, accountId, statementDate },
   }),

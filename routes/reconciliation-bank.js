@@ -30,6 +30,7 @@ import { ensureStatementFileSchema, saveStatementFile, getStatementFile } from '
 import { resolveStatementFile } from '../lib/statement-file-locate.js';
 import { prepareReconciliation } from '../lib/reconcile-prepare.js';
 import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/statement-auto-load.js';
+import { listReconcilableAccounts } from '../lib/ensure-reconcilable-accounts.js';
 import { ensureCreditCardPaymentDue, getCreditCardPaymentDue } from '../lib/cc-payment-due.js';
 
 const router = express.Router();
@@ -539,6 +540,20 @@ router.post('/auto-load/run', async (req, res) => {
   } catch (error) {
     console.error('Manual statement auto-load error:', error);
     return res.status(500).json({ error: error.message || 'Auto-load failed' });
+  }
+});
+
+// GET /api/reconciliation/bank/reconcilable-accounts — bank/card accounts for Begin Reconciliation
+router.get('/reconcilable-accounts', async (req, res) => {
+  try {
+    const { entityId } = req.query;
+    if (!entityId) return res.status(400).json({ error: 'entityId required' });
+    const db = await getDatabase();
+    const accounts = await listReconcilableAccounts(db, entityId);
+    return res.json({ accounts });
+  } catch (error) {
+    console.error('Reconcilable accounts error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to load reconcilable accounts' });
   }
 });
 
