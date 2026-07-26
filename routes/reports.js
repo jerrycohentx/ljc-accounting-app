@@ -4,6 +4,7 @@ import { getDatabase } from '../config/database.js';
 import { entityAccessMiddleware } from '../middleware/auth.js';
 
 import { POSTED_GL_SUBQUERY, calculateAccountBalance } from '../lib/posted-gl.js';
+import { computePeriodNetIncome, calendarYearStart } from '../lib/net-income-tieout.js';
 import reportAnalyticsRoutes from './report-analytics.js';
 import { buildBalanceSheet, buildProfitLoss, mergeStatements } from '../lib/financial-statement.js';
 import { buildProfitLossFromQboTb, shouldPreferQboProfitLoss } from '../lib/qbo-profit-loss.js';
@@ -210,15 +211,11 @@ router.get('/balance-sheet', entityAccessMiddleware, async (req, res) => {
     let totalAssets = new Decimal(0);
     let totalLiabilities = new Decimal(0);
     let totalEquity = new Decimal(0);
-    let netIncome = new Decimal(0); // current-period earnings (revenue - expense) through reportDate
 
     for (const acc of accounts) {
-      if (acc.account_type === 'REVENUE') {
-        netIncome = netIncome.plus(calculateBalance(acc));
-        continue;
-      }
-      if (acc.account_type === 'EXPENSE') {
-        netIncome = netIncome.minus(calculateBalance(acc));
+      // P&L accounts are NOT lifetime-folded here. Current Year Earnings uses
+      // calendar YTD only (must match income-statement for Jan 1 .. asOfDate).
+      if (acc.account_type === 'REVENUE' || acc.account_type === 'EXPENSE') {
         continue;
       }
       if (acc.account_type === 'ASSET' || acc.account_type === 'CONTRA') {
@@ -253,8 +250,12 @@ router.get('/balance-sheet', entityAccessMiddleware, async (req, res) => {
       }
     }
 
-    // Fold current-period net income into equity (Current Year Earnings) so the
-    // balance sheet balances for an open period before year-end close.
+    // Calendar YTD net income only — same window as P&L Jan 1 .. asOfDate.
+    const ytd = await computePeriodNetIncome(db, req.entityId, calendarYearStart(reportDate), reportDate);
+    const netIncome = new Decimal(ytd.netIncome);
+
+    // Fold current-year earnings into equity so the balance sheet balances
+    // for an open year before year-end close.
     if (!netIncome.isZero()) {
       equity.push({ accountNumber: '', accountName: 'Current Year Earnings', amount: netIncome.toNumber() });
       totalEquity = totalEquity.plus(netIncome);
@@ -269,6 +270,7 @@ router.get('/balance-sheet', entityAccessMiddleware, async (req, res) => {
       equity,
       totalEquity: totalEquity.toNumber(),
       netIncome: netIncome.toNumber(),
+      netIncomePeriod: { startDate: ytd.startDate, endDate: ytd.endDate },
       totalLiabilitiesAndEquity: totalLiabilities.plus(totalEquity).toNumber()
     });
   } catch (error) {

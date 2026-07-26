@@ -25,6 +25,12 @@ These rules override convenience. They exist because assistants previously claim
 - Fix real variances (missing txn, wrong account, duplicate) until bank recon difference is **$0.00**.
 - `taxReturnReady` must be **false** while plug/rollup/suspense accounts (1999, 2999, 3020, 3900, 3995, 1100, 1020, 1021) have non-zero balances, or while the tax package uses rollup-as-SOT instead of the live ledger.
 
+## Net Income tie-out (hard)
+
+- Before claiming books are clean, a month is closed, or openings are rebuilt: **Balance Sheet Net Income / Current Year Earnings must equal P&L for calendar YTD** (Jan 1 of that year through as-of / period end).
+- Integrity payload includes `netIncomeTieout` / `netIncomeTieoutOk`. If prior-year P&L is still open in revenue/expense accounts, `canClose` is false — close it to Retained Earnings (not a plug).
+- Do not treat “TB balances” or “plugs are zero” alone as done.
+
 ## Cleared Balance = statement (hard)
 
 - A CLOSED recon is valid only when **live Cleared Balance** (beginning + session-locked lines) equals **statement ending**, not merely when the stored `difference` column is 0.
@@ -35,7 +41,7 @@ These rules override convenience. They exist because assistants previously claim
 
 ## Period close
 
-- `POST .../accounting/periods/close` refuses (**409**) unless every monitored bank/card account has a **CLOSED** reconciliation covering that month with **$0.00** live difference (Cleared = statement) and no plug JEs in the period.
+- `POST .../accounting/periods/close` refuses (**409**) unless every monitored bank/card account has a **CLOSED** reconciliation covering that month with **$0.00** live difference (Cleared = statement), no plug JEs, and `netIncomeTieoutOk` (prior-year P&L closed; BS NI = YTD P&L).
 - Do not ask Jerry to "accept" a variance to close.
 
 ## Reports / narrative
