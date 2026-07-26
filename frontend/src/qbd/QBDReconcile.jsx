@@ -984,6 +984,8 @@ export default function QBDReconcile() {
   // (QuickBooks-style "Undo Last Reconciliation") to re-do it.
   const canReopen = !!periodSession && (needsReopen || periodSession.status === 'CLOSED');
   const stmtMeta = data?.statementMeta || {};
+  const statementPreviousBalance = stmtMeta.previousBalance != null ? +stmtMeta.previousBalance : null;
+  const beginningMismatch = statementPreviousBalance != null && Math.abs(beginning - statementPreviousBalance) >= 0.01;
 
   const visibleEntries = useMemo(() => {
     let list = entries;
@@ -1439,6 +1441,18 @@ export default function QBDReconcile() {
           {needsReopen || sessionBannerCompromised ? 'Reopen period' : 'Undo / Reopen'}
         </button>
       )}
+      {!isCard && (
+        <button
+          type="button"
+          className="qbd-btn"
+          disabled={busy}
+          onClick={undoLastReconciliation}
+          style={canReopen ? undefined : { marginLeft: 'auto' }}
+          title="Reopen the most recent closed month for this account so you can rework it until its ending balance matches that month's bank statement"
+        >
+          Redo Previous Reconciliation
+        </button>
+      )}
     </div>
   ) : null;
 
@@ -1664,7 +1678,13 @@ export default function QBDReconcile() {
       )}
       <div className="qbd-recon-summary-bar">
         <div className="sum-block">
-          <div className="sum-row"><span className="sum-lbl">Beginning Balance</span><span className="sum-val">{fmt(beginning)}</span></div>
+          <div className="sum-row"><span className="sum-lbl">Beginning Balance</span><span className="sum-val" style={beginningMismatch ? { color: '#b3261e', fontWeight: 'bold' } : undefined}>{fmt(beginning)}</span></div>
+          {beginningMismatch && (
+            <div className="sum-sub" style={{ color: '#b3261e', maxWidth: 420 }}>
+              Statement previous balance is {fmt(statementPreviousBalance)}. A prior month was likely closed with the wrong ending balance.
+              Use <strong>Redo Previous Reconciliation</strong> to reopen and rework that month first.
+            </div>
+          )}
           <div className="sum-sub">Items you have marked cleared</div>
           <div className="sum-row"><span className="sum-lbl">{depositCount} {isCard ? 'Charges and Cash Advances' : 'Deposits and Other Credits'}</span><span className="sum-val">{fmt(markedDeposits)}</span></div>
           <div className="sum-row"><span className="sum-lbl">{paymentCount} {isCard ? 'Payments and Credits' : 'Checks and Payments'}</span><span className="sum-val">{fmt(markedPayments)}</span></div>
@@ -1697,6 +1717,17 @@ export default function QBDReconcile() {
           </span>
         )}
         <span className="sp" />
+        {!isCard && (
+          <button
+            type="button"
+            className="qbd-btn"
+            disabled={busy}
+            onClick={undoLastReconciliation}
+            title="Reopen the most recent closed month (e.g. January when reconciling February) and rework until ending matches that statement"
+          >
+            Redo Previous Reconciliation
+          </button>
+        )}
         {!balanced && (
           <button
             type="button"
