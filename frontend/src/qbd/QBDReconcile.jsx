@@ -862,6 +862,17 @@ export default function QBDReconcile() {
     setChecked({});
   };
 
+  /** Clear cleared checkmarks for one register side only (checks or deposits). */
+  const unmarkSide = (side) => {
+    setChecked((c) => {
+      const next = { ...c };
+      entries.forEach((e) => {
+        if (entrySide(e, account) === side) delete next[e.id];
+      });
+      return next;
+    });
+  };
+
   /** QBD "Matched": check off every line the system matched to the statement. */
   const matched = () => {
     const ids = data?.suggestedCheckedGlIds || [];
@@ -1493,7 +1504,11 @@ export default function QBDReconcile() {
           {!isCard ? (
             <div className="qbd-recon-register-split" ref={registerSplitRef}>
               <div className="qbd-recon-subpane" style={{ width: `calc(${registerSplitPct}% - 3px)` }}>
-                <div className="qbd-recon-panehead">Checks and Payments <span className="qbd-muted">{paymentCount} cleared · {fmt(markedPayments)}</span></div>
+                <div className="qbd-recon-panehead">
+                  Checks and Payments <span className="qbd-muted">{paymentCount} cleared · {fmt(markedPayments)}</span>
+                  <span className="sp" />
+                  <button type="button" className="qbd-btn qbd-pane-btn" disabled={busy || !paymentCount} onClick={() => unmarkSide('payment')} title="Clear all cleared checkmarks in this pane">Unmark</button>
+                </div>
                 <div className="qbd-recon-panebody" ref={regScrollRef}>
                   <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} showDate={showDate} showPayee={showPayee} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} compact amountSide="payment" />
                 </div>
@@ -1507,7 +1522,11 @@ export default function QBDReconcile() {
                 onMouseDown={startRegisterResize}
               />
               <div className="qbd-recon-subpane" style={{ width: `calc(${100 - registerSplitPct}% - 3px)` }}>
-                <div className="qbd-recon-panehead">Deposits and Other Credits <span className="qbd-muted">{depositCount} cleared · {fmt(markedDeposits)}</span></div>
+                <div className="qbd-recon-panehead">
+                  Deposits and Other Credits <span className="qbd-muted">{depositCount} cleared · {fmt(markedDeposits)}</span>
+                  <span className="sp" />
+                  <button type="button" className="qbd-btn qbd-pane-btn" disabled={busy || !depositCount} onClick={() => unmarkSide('deposit')} title="Clear all cleared checkmarks in this pane">Unmark</button>
+                </div>
                 <div className="qbd-recon-panebody">
                   <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} showDate={showDate} showPayee={showPayee} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} compact amountSide="deposit" />
                 </div>
@@ -1533,7 +1552,9 @@ export default function QBDReconcile() {
         </label>
         <span className="sp" />
         <button type="button" className="qbd-btn" disabled={busy} onClick={markAll}>Mark All</button>
-        <button type="button" className="qbd-btn" disabled={busy} onClick={unmarkAll}>Unmark All</button>
+        {isCard && (
+          <button type="button" className="qbd-btn" disabled={busy} onClick={unmarkAll}>Unmark All</button>
+        )}
         <button type="button" className="qbd-btn" disabled={busy} onClick={goTo}>Go To</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={matched} title="Check off everything matched to the statement">Matched</button>
         <input ref={reconStmtFileRef} type="file" accept=".pdf,.ofx,.qfx" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleStatementUpload(f); }} />

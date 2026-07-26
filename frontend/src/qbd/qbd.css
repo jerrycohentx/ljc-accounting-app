@@ -79,6 +79,8 @@
 .qbd-recon-gutter::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:28px;border-radius:2px;background:rgba(255,255,255,.55)}
 .qbd-recon-panehead{background:linear-gradient(#e7f1da,#cfe4b6);border-bottom:1px solid #9cbf7e;padding:4px 8px;font-size:10px;font-weight:bold;color:#2f4d1e;letter-spacing:.4px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
 .qbd-recon-panehead .qbd-muted{font-weight:normal;font-size:10px}
+.qbd-recon-panehead .sp{flex:1}
+.qbd-recon-panehead .qbd-pane-btn{padding:1px 7px!important;min-height:18px;font-size:9px;font-weight:normal}
 .qbd-recon-stmt .qbd-recon-panehead{background:linear-gradient(#eef2f7,#dbe3ee);border-bottom:1px solid #b9c4d2;color:#2a5596}
 .qbd-zoom-btn{padding:0 6px!important;min-width:22px;height:18px;line-height:1;font-size:12px;font-weight:bold}
 .qbd-zoom-lbl{min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
