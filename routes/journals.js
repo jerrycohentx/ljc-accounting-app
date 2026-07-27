@@ -29,27 +29,38 @@ async function ensureJeDocsTable(db) {
 // GET /api/entities/:entityId/journals - List journal entries
 router.get('/', entityAccessMiddleware, async (req, res) => {
   try {
-    const { status, startDate, endDate, page = 1, limit = 50 } = req.query;
+    const { status, startDate, endDate, accountId, page = 1, limit = 50 } = req.query;
     const db = await getDatabase();
-    let query = 'SELECT * FROM journal_entries WHERE entity_id = ?';
     const params = [req.entityId];
+    let query;
+
+    if (accountId) {
+      query = `SELECT DISTINCT je.* FROM journal_entries je
+        INNER JOIN journal_entry_lines jel ON jel.journal_entry_id = je.id
+        WHERE je.entity_id = ? AND jel.account_id = ?`;
+      params.push(accountId);
+    } else {
+      query = 'SELECT * FROM journal_entries WHERE entity_id = ?';
+    }
+
+    const col = accountId ? 'je.' : '';
 
     if (status) {
-      query += ' AND status = ?';
+      query += ` AND ${col}status = ?`;
       params.push(status);
     }
 
     if (startDate) {
-      query += ' AND posting_date >= ?';
+      query += ` AND ${col}posting_date >= ?`;
       params.push(startDate);
     }
 
     if (endDate) {
-      query += ' AND posting_date <= ?';
+      query += ` AND ${col}posting_date <= ?`;
       params.push(endDate);
     }
 
-    query += ' ORDER BY posting_date DESC, created_at DESC LIMIT ? OFFSET ?';
+    query += ` ORDER BY ${col}posting_date DESC, ${col}created_at DESC LIMIT ? OFFSET ?`;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     params.push(parseInt(limit), offset);
 

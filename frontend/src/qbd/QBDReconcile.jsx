@@ -418,19 +418,20 @@ export default function QBDReconcile() {
     localStorage.setItem(STMT_SHOW_STORAGE_KEY, showStmt ? 'true' : 'false');
   }, [showStmt]);
 
-  // Count unposted drafts dated on or before the statement date. These are NOT in
-  // the general ledger, so this reconcile cannot include them -- warn before finishing.
+  // Count unposted drafts on THIS account dated on or before the statement date.
+  // These are not in the general ledger yet, so this reconcile cannot include them.
+  // Do not count Amex categorization drafts or other accounts' drafts.
   useEffect(() => {
-    if (!entityId || !started || !stmtDate) { setPendingDrafts(0); return undefined; }
+    if (!entityId || !started || !stmtDate || !accountId) { setPendingDrafts(0); return undefined; }
     let alive = true;
-    journalAPI.list(entityId, { status: 'DRAFT', endDate: stmtDate, limit: 1000 })
+    journalAPI.list(entityId, { status: 'DRAFT', endDate: stmtDate, accountId, limit: 1000 })
       .then((r) => {
         const all = (r.data && r.data.data) || (Array.isArray(r.data) ? r.data : []);
         if (alive) setPendingDrafts(all.length);
       })
       .catch(() => { if (alive) setPendingDrafts(0); });
     return () => { alive = false; };
-  }, [entityId, started, stmtDate]);
+  }, [entityId, started, stmtDate, accountId]);
 
   // Remember which columns the user wants displayed.
   useEffect(() => { localStorage.setItem('qbd-recon-col-num', showNum ? 'true' : 'false'); }, [showNum]);
@@ -1869,10 +1870,13 @@ export default function QBDReconcile() {
         {balanced && <span className="qbd-muted" style={{ color: '#2f6b3a', marginLeft: 12 }}>Ready to reconcile</span>}
         {pendingDrafts > 0 && (
           <span className="qbd-muted" style={{ color: '#8a6d00', marginLeft: 12 }}>
-            ⚠ {pendingDrafts} unposted draft {pendingDrafts === 1 ? 'entry' : 'entries'} dated on or before {fmtReconDate(stmtDate)} — not included in this reconciliation.{' '}
+            ⚠ {pendingDrafts} unposted draft {pendingDrafts === 1 ? 'entry' : 'entries'} on this account dated on or before {fmtReconDate(stmtDate)} — not included in this reconciliation.{' '}
             <a
-              href="/draft-journals"
-              onClick={(e) => { e.preventDefault(); navigate(`/draft-journals?through=${encodeURIComponent(stmtDate)}&all=1`); }}
+              href="/journal"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(`/journal?status=DRAFT&accountId=${encodeURIComponent(accountId)}&through=${encodeURIComponent(stmtDate)}&from=recon`);
+              }}
               style={{ color: '#1a56a8' }}
             >
               Review drafts

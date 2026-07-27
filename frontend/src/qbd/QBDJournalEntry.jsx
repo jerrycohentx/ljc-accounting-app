@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, journalAPI } from '../services/api';
-import { fmt, todayISO, fmtShortDate } from './helpers';
+import { fmt, todayISO, fmtShortDate, leafLabel } from './helpers';
 import AccountCombobox, { flattenAccounts } from './AccountCombobox';
 
 const blankLine = () => ({ accountId: '', debit: '', credit: '', description: '' });
@@ -10,23 +10,56 @@ const blankLine = () => ({ accountId: '', debit: '', credit: '', description: ''
 export default function QBDJournalEntry() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
+  const [searchParams] = useSearchParams();
   const [accounts, setAccounts] = useState([]);
   const [date, setDate] = useState(todayISO());
   const [memo, setMemo] = useState('');
   const [lines, setLines] = useState([blankLine(), blankLine()]);
   const [busy, setBusy] = useState(false);
   const [recent, setRecent] = useState([]);
+  const [reconDrafts, setReconDrafts] = useState([]);
+  const [reconDraftAccount, setReconDraftAccount] = useState(null);
+
+  const reconFilterAccountId = searchParams.get('accountId') || '';
+  const reconFilterThrough = searchParams.get('through') || searchParams.get('endDate') || '';
+  const reconFilterActive = searchParams.get('from') === 'recon'
+    && searchParams.get('status') === 'DRAFT'
+    && !!reconFilterAccountId;
 
   const loadRecent = useCallback(() => {
     if (!entityId) return;
     journalAPI.list(entityId, { limit: 8 }).then((r) => setRecent(r.data?.data || [])).catch(() => {});
   }, [entityId]);
 
+  const loadReconDrafts = useCallback(() => {
+    if (!entityId || !reconFilterActive) {
+      setReconDrafts([]);
+      setReconDraftAccount(null);
+      return;
+    }
+    Promise.all([
+      accountAPI.get(entityId, reconFilterAccountId).catch(() => null),
+      journalAPI.list(entityId, {
+        status: 'DRAFT',
+        accountId: reconFilterAccountId,
+        endDate: reconFilterThrough || undefined,
+        limit: 1000,
+      }),
+    ]).then(([acctRes, draftRes]) => {
+      setReconDraftAccount(acctRes?.data || null);
+      setReconDrafts(draftRes.data?.data || []);
+    }).catch(() => {
+      setReconDrafts([]);
+      setReconDraftAccount(null);
+    });
+  }, [entityId, reconFilterActive, reconFilterAccountId, reconFilterThrough]);
+
   useEffect(() => {
     if (!entityId) return;
     accountAPI.list(entityId).then((r) => setAccounts(flattenAccounts(Array.isArray(r.data) ? r.data : (r.data?.data || [])))).catch(() => {});
     loadRecent();
-  }, [entityId, loadRecent]);
+    loadReconDrafts();
+  }, [entityId, loadRecent, loadReconDrafts]);
 
   const setLine = (i, k, v) => setLines((ls) => ls.map((l, j) => j === i ? { ...l, [k]: v } : l));
   const addLine = () => setLines((ls) => [...ls, blankLine()]);
@@ -72,6 +105,39 @@ export default function QBDJournalEntry() {
 
   return (
     <div>
+      {reconFilterActive && (
+        <div className="qbd-form" style={{ marginBottom: 12 }}>
+          <div className="fhd">
+            Draft journal entries for{' '}
+            {reconDraftAccount
+              ? `${reconDraftAccount.account_number} · ${leafLabel(reconDraftAccount.account_name)}`
+              : 'this account'}
+            {reconFilterThrough ? ` through ${fmtShortDate(reconFilterThrough)}` : ''}
+          </div>
+          <div className="qbd-wbody">
+            <div className="qbd-muted" style={{ padding: '8px 12px', fontSize: 11, lineHeight: 1.45 }}>
+              These drafts are not in the bank register yet. Post or delete them before you finish reconciling this account.
+              Amex charge categorization lives under <strong>Company → Review &amp; Approve Charges</strong>, not here.
+            </div>
+            <table className="qbd-coa">
+              <thead><tr><th>DATE</th><th>ENTRY #</th><th>MEMO</th><th className="qbd-bal">AMOUNT</th></tr></thead>
+              <tbody>
+                {reconDrafts.length === 0 ? (
+                  <tr><td colSpan={4}><div className="qbd-empty">No draft journal entries on this account for that period.</div></td></tr>
+                ) : reconDrafts.map((j) => (
+                  <tr key={j.id}>
+                    <td className="qbd-num">{fmtShortDate(j.posting_date)}</td>
+                    <td>{j.je_number}</td>
+                    <td>{j.description}</td>
+                    <td className="qbd-bal">{fmt(+j.total_debit)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="qbd-form">
         <div className="fhd">Make General Journal Entries</div>
         <div className="frow">
