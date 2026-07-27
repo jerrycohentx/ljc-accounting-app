@@ -5,6 +5,8 @@ import { accountingAPI, accountAPI, bankReconAPI, journalAPI } from '../services
 import { leafLabel } from './helpers';
 import { fetchStatementObjectUrl } from './reconSourceDrill';
 import AccountCombobox, { CREATE_NEW_VALUE } from './AccountCombobox';
+import VendorAlwaysRuleModal from './VendorAlwaysRuleModal';
+import { deriveVendorPatternClient, vendorPatternMatchesClient } from './vendorRuleHelpers';
 
 const ACCOUNT_TYPE_LABELS = {
   EXPENSE: 'Expenses',
@@ -69,58 +71,6 @@ function accountUsingNumber(accounts, number) {
 function fmtMoney(n) {
   const v = Number(n) || 0;
   return `$${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-const US_STATE_CODES = new Set([
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA',
-  'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT',
-  'VA', 'WA', 'WV', 'WI', 'WY', 'DC',
-]);
-
-/** Client-side vendor pattern — strips order #s/zips so Contains matches all variants. */
-function deriveVendorPatternClient(description) {
-  let text = String(description || '')
-    .replace(/^Amex(?:\s+stmt\s+\d{4}-\d{2}-\d{2})?:\s*/i, '')
-    .replace(/^Categorize\s+\d{4}→\d{4}:\s*/i, '')
-    .replace(/\s+-\s+FITID:.*$/i, '')
-    .replace(/\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, ' ')
-    .replace(/\b\d{3,}(?:-\d+)*\b/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!text) return '';
-  const first = text.split(/\s{2,}/)[0].trim() || text;
-  const tokens = first
-    .toUpperCase()
-    .split(/\s+/)
-    .map((t) => t.replace(/^[^A-Z0-9*]+|[^A-Z0-9*.]+$/g, ''))
-    .filter(Boolean)
-    .filter((t) => !US_STATE_CODES.has(t))
-    .filter((t) => !/^\d+$/.test(t));
-  if (!tokens.length) return '';
-  const domain = tokens.find((t) => /\.[A-Z]{2,}/.test(t) || /^WEB\*[A-Z0-9*.]+$/i.test(t));
-  if (domain) {
-    const bare = domain.replace(/^WEB\*/i, '');
-    const pick = bare.length >= 4 ? bare : domain;
-    return pick.length >= 3 ? pick : '';
-  }
-  const words = tokens.filter((t) => /[A-Z]/.test(t) && t.length >= 3).slice(0, 3);
-  let cleaned = (words.length ? words : tokens.slice(0, 3)).join(' ').trim();
-  if (cleaned.length > 36) {
-    const cut = cleaned.slice(0, 36);
-    const lastSpace = cut.lastIndexOf(' ');
-    cleaned = (lastSpace > 8 ? cut.slice(0, lastSpace) : cut).trim();
-  }
-  return cleaned.length >= 3 ? cleaned : '';
-}
-
-function vendorPatternMatchesClient(text, pattern, matchType = 'contains') {
-  const hay = String(text || '').toUpperCase().replace(/\s+/g, ' ').trim();
-  const pat = String(pattern || '').toUpperCase().replace(/\s+/g, ' ').trim();
-  if (!hay || pat.length < 3) return false;
-  if (matchType === 'exact') return hay === pat;
-  if (matchType === 'starts_with') return hay.startsWith(pat);
-  return hay.includes(pat);
 }
 
 function fmtStmtDate(iso) {
@@ -351,15 +301,17 @@ const styles = {
     borderBottom: '1px solid #e0e0e0',
   },
   alwaysLabel: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 5,
+    display: 'inline-block',
     marginTop: 4,
+    padding: 0,
+    border: 'none',
+    background: 'none',
     fontSize: 11,
     color: '#1a6fb5',
     cursor: 'pointer',
     lineHeight: 1.25,
-    userSelect: 'none',
+    textAlign: 'left',
+    textDecoration: 'underline',
   },
   modalBackdrop: {
     position: 'fixed',
@@ -481,8 +433,6 @@ export default function QBDDraftJournals() {
     parentAccountId: '',
   });
   const [ruleForItem, setRuleForItem] = useState(null);
-  const [rulePattern, setRulePattern] = useState('');
-  const [ruleMatchType, setRuleMatchType] = useState('contains');
   const [savingRule, setSavingRule] = useState(false);
 
   const [folderW, setFolderW] = useState(() => {
@@ -765,10 +715,6 @@ export default function QBDDraftJournals() {
       toast('Pick a category first, then save the vendor rule');
       return;
     }
-    const raw = (item.descLines && item.descLines[0]) || item.sourceDescription || '';
-    const suggested = deriveVendorPatternClient(raw);
-    setRulePattern(suggested);
-    setRuleMatchType('contains');
     setRuleForItem(item);
   };
 
@@ -782,32 +728,13 @@ export default function QBDDraftJournals() {
     return out;
   }, [feeds]);
 
-  const ruleMatchPreviewCount = useMemo(() => {
-    const pat = String(rulePattern || '').trim();
-    if (!ruleForItem || pat.length < 3) return 0;
-    return allReviewItems.filter((it) => {
-      const text = [(it.descLines && it.descLines[0]) || '', it.sourceDescription || ''].join(' ');
-      return vendorPatternMatchesClient(text, pat, ruleMatchType);
-    }).length;
-  }, [allReviewItems, ruleForItem, rulePattern, ruleMatchType]);
-
-  const saveVendorRule = async () => {
+  const confirmVendorRule = async ({ pattern, matchType, postAll }) => {
     if (!ruleForItem) return;
-    const pattern = String(rulePattern || '').trim();
     if (pattern.length < 3) {
       toast('Pattern needs at least 3 characters');
       return;
     }
     const acct = accounts.find((a) => a.id === ruleForItem.categoryAccountId);
-    const matchCount = ruleMatchPreviewCount;
-    if (
-      matchCount > 1
-      && !window.confirm(
-        `Save rule and post all ${matchCount} matching charges now? They will leave Review & Approve.`
-      )
-    ) {
-      return;
-    }
     setSavingRule(true);
     try {
       const res = await accountingAPI.createVendorRule(entityId, {
@@ -817,9 +744,11 @@ export default function QBDDraftJournals() {
           ? `${acct.number} · ${leafLabel(acct.name)}`
           : `Vendor: ${pattern.slice(0, 28)}`,
         description: (ruleForItem.descLines && ruleForItem.descLines[0]) || '',
-        matchType: ruleMatchType,
-        applyToOpenDrafts: true,
-        postMatchingDrafts: true,
+        matchType,
+        applyToOpenDrafts: postAll,
+        postMatchingDrafts: postAll,
+        applyToPendingImports: false,
+        postMatchingPendingImports: false,
       });
       const body = res?.data || res || {};
       const matched = Number(body.draftUpdate?.matched || 0);
@@ -831,10 +760,10 @@ export default function QBDDraftJournals() {
         failed
           ? `Posted ${posted} of ${matched}; ${failed} failed — ${(body.postResult?.errors?.[0]?.error) || 'see logs'}`
           : posted > 0
-            ? `Done — posted ${posted} matching charge${posted === 1 ? '' : 's'} and removed them from the list`
-            : matched > 0
+            ? `Rule saved — posted ${posted} matching charge${posted === 1 ? '' : 's'}; future imports will use this category`
+            : postAll && matched > 0
               ? 'Rule saved — matching charges were already posted'
-              : 'Rule saved — future matching charges will use this category'
+              : 'Rule saved — this vendor will always use this category going forward'
       );
       setRuleForItem(null);
       setSel(new Set());
@@ -1134,17 +1063,15 @@ export default function QBDDraftJournals() {
                       onCreateRequest={() => changeCategory(it, CREATE_NEW_VALUE)}
                       title="Type to search the chart of accounts — change teaches the app for next time"
                     />
-                    <label style={styles.alwaysLabel}>
-                      <input
-                        type="checkbox"
-                        checked={false}
-                        disabled={!it.categoryAccountId}
-                        onChange={(e) => {
-                          if (e.target.checked) openAlwaysRule(it);
-                        }}
-                      />
-                      <span>Always for this vendor</span>
-                    </label>
+                    <button
+                      type="button"
+                      style={styles.alwaysLabel}
+                      disabled={!it.categoryAccountId}
+                      title="Save a rule so every future charge from this vendor uses this category"
+                      onClick={() => openAlwaysRule(it)}
+                    >
+                      Always for this vendor
+                    </button>
                   </div>
                 </div>
                   ))}
@@ -1218,66 +1145,21 @@ export default function QBDDraftJournals() {
         </button>
       </div>
 
-      {ruleForItem && (
-        <div style={styles.modalBackdrop} onClick={() => !savingRule && setRuleForItem(null)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 style={styles.modalTitle}>Always use this category for this vendor</h2>
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#444', lineHeight: 1.4 }}>
-              {(() => {
-                const a = accounts.find((x) => x.id === ruleForItem.categoryAccountId);
-                const cat = a ? `${a.number} · ${leafLabel(a.name)}` : 'selected category';
-                const how = ruleMatchType === 'exact'
-                  ? 'exactly matching'
-                  : ruleMatchType === 'starts_with'
-                    ? 'starting with'
-                    : 'containing';
-                return (
-                  <>
-                    Charges {how} <strong>[{rulePattern || '…'}]</strong> → {cat}.
-                    {' '}Saves the rule, posts every matching charge now, and removes them from this list.
-                  </>
-                );
-              })()}
-            </p>
-            <div style={styles.field}>
-              <label style={styles.label}>Match text (editable — keep it short, e.g. BLUEHOST.COM)</label>
-              <input
-                style={styles.input}
-                value={rulePattern}
-                onChange={(e) => setRulePattern(e.target.value.toUpperCase())}
-                autoFocus
-              />
-            </div>
-            <div style={styles.field}>
-              <label style={styles.label}>Match type</label>
-              <select
-                style={styles.input}
-                value={ruleMatchType}
-                onChange={(e) => setRuleMatchType(e.target.value)}
-              >
-                <option value="contains">Contains (recommended) — matches any charge with this text</option>
-                <option value="starts_with">Starts with — description begins with this text</option>
-                <option value="exact">Exact — whole description must match</option>
-              </select>
-            </div>
-            <p style={{ margin: '0 0 8px', fontSize: 12, color: ruleMatchPreviewCount ? '#1a5f3a' : '#666' }}>
-              {rulePattern.trim().length < 3
-                ? 'Enter at least 3 characters to preview matches.'
-                : `${ruleMatchPreviewCount} charge${ruleMatchPreviewCount === 1 ? '' : 's'} in Review & Approve match this rule.`}
-            </p>
-            <div style={styles.modalActions}>
-              <button type="button" style={styles.btn} disabled={savingRule} onClick={() => setRuleForItem(null)}>
-                Cancel
-              </button>
-              <button type="button" style={styles.btnPrimary} disabled={savingRule} onClick={saveVendorRule}>
-                {savingRule
-                  ? 'Posting…'
-                  : `Save, post all${ruleMatchPreviewCount ? ` (${ruleMatchPreviewCount})` : ''}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <VendorAlwaysRuleModal
+        open={!!ruleForItem}
+        onClose={() => !savingRule && setRuleForItem(null)}
+        accounts={accounts}
+        categoryAccountId={ruleForItem?.categoryAccountId}
+        sourceDescription={(ruleForItem?.descLines && ruleForItem.descLines[0]) || ruleForItem?.sourceDescription || ''}
+        initialPattern={ruleForItem
+          ? deriveVendorPatternClient((ruleForItem.descLines && ruleForItem.descLines[0]) || ruleForItem.sourceDescription || '')
+          : ''}
+        previewItems={allReviewItems}
+        getPreviewText={(it) => [(it.descLines && it.descLines[0]) || '', it.sourceDescription || ''].join(' ')}
+        reviewKind="charges"
+        saving={savingRule}
+        onConfirm={confirmVendorRule}
+      />
 
       {createForItem && (
         <div style={styles.modalBackdrop} onClick={() => !creating && setCreateForItem(null)}>

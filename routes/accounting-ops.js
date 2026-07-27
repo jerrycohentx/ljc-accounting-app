@@ -28,6 +28,8 @@ import {
   listVendorCategoryRules,
   applyVendorRuleToOpenDrafts,
   postMatchingVendorDrafts,
+  applyVendorRuleToPendingImports,
+  postMatchingPendingImports,
   deriveVendorPattern,
 } from '../lib/vendor-category-rule.js';
 import { findDuplicateCatApprDrafts } from '../lib/cat-appr-dedupe.js';
@@ -933,8 +935,8 @@ router.get(
       res.json({
         ...result,
         highPriorityCount: high.length,
-        highPriority: high.slice(0, 50),
-        issues: result.issues.slice(0, 200),
+        highPriority: high,
+        issues: result.issues,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -1066,10 +1068,12 @@ router.post(
     try {
       const db = await getDatabase();
       const { pattern, accountId, label, description, matchType } = req.body || {};
-      // Always apply to open review drafts unless explicitly opted out.
+      // CAT-APPR charge drafts (Review & Approve Charges).
       const applyToOpenDrafts = req.body?.applyToOpenDrafts !== false;
-      // Default: post every matching open draft so they leave Review & Approve.
-      const postMatching = req.body?.postMatchingDrafts !== false;
+      const postMatchingDrafts = req.body?.postMatchingDrafts !== false;
+      // Bank-feed pending imports (Activity Review).
+      const applyToPendingImports = req.body?.applyToPendingImports !== false;
+      const postMatchingPending = req.body?.postMatchingPendingImports === true;
       if (!accountId) return res.status(400).json({ error: 'accountId required' });
 
       const rule = await upsertVendorCategoryRule(db, {
@@ -1084,7 +1088,10 @@ router.post(
 
       let draftUpdate = null;
       let postResult = null;
-      if (applyToOpenDrafts || postMatching) {
+      let pendingUpdate = null;
+      let pendingPostResult = null;
+
+      if (applyToOpenDrafts || postMatchingDrafts) {
         draftUpdate = await applyVendorRuleToOpenDrafts(db, {
           entityId: req.entityId,
           pattern: rule.pattern,
@@ -1092,7 +1099,7 @@ router.post(
           matchType: rule.matchType,
         });
       }
-      if (postMatching && draftUpdate?.matchedIds?.length) {
+      if (postMatchingDrafts && draftUpdate?.matchedIds?.length) {
         postResult = await postMatchingVendorDrafts(db, {
           entityId: req.entityId,
           pattern: rule.pattern,
@@ -1103,14 +1110,34 @@ router.post(
         });
       }
 
+      if (applyToPendingImports || postMatchingPending) {
+        pendingUpdate = await applyVendorRuleToPendingImports(db, {
+          entityId: req.entityId,
+          pattern: rule.pattern,
+          accountId: rule.accountId,
+          matchType: rule.matchType,
+        });
+      }
+      if (postMatchingPending && pendingUpdate?.matchedFitids?.length) {
+        pendingPostResult = await postMatchingPendingImports(db, {
+          entityId: req.entityId,
+          fitids: pendingUpdate.matchedFitids,
+          userId: req.user?.id,
+        });
+      }
+
       res.json({
         ok: true,
         rule,
         suggestedPattern: description ? deriveVendorPattern(description) : null,
         draftUpdate,
         postResult,
+        pendingUpdate,
+        pendingPostResult,
         appliedToOpenDrafts: applyToOpenDrafts,
-        postedMatchingDrafts: postMatching,
+        postedMatchingDrafts: postMatchingDrafts,
+        appliedToPendingImports: applyToPendingImports,
+        postedMatchingPendingImports: postMatchingPending,
       });
     } catch (error) {
       const status = /required|not found|min 3/i.test(error.message) ? 400 : 500;

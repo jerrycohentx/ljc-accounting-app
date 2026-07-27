@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { accountAPI, importAPI, journalAPI } from '../services/api';
+import { accountAPI, importAPI, journalAPI, accountingAPI } from '../services/api';
 import { leafLabel, todayISO, fmtShortDate } from './helpers';
 import AccountCombobox, { flattenAccounts } from './AccountCombobox';
+import VendorAlwaysRuleModal from './VendorAlwaysRuleModal';
+import { deriveVendorPatternClient } from './vendorRuleHelpers';
 
 const SOURCE_LABELS = {
   plaid: 'Plaid',
@@ -125,6 +127,8 @@ export default function QBDFeedReview() {
   const [sortKey, setSortKey] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
   const [detailRow, setDetailRow] = useState(null);
+  const [ruleForRow, setRuleForRow] = useState(null);
+  const [savingRule, setSavingRule] = useState(false);
 
   const loadAllAccounts = useCallback(() => {
     if (!entities.length) return;
@@ -219,6 +223,52 @@ export default function QBDFeedReview() {
     } catch (err) {
       toast('Could not change account: ' + (err.response?.data?.error || err.message));
       loadQueue();
+    }
+  };
+
+  const openAlwaysRule = (row) => {
+    const catId = effectiveCategoryId(row);
+    if (!catId) {
+      toast('Pick a category first, then save the vendor rule');
+      return;
+    }
+    setRuleForRow({ ...row, categoryAccountId: catId });
+  };
+
+  const confirmVendorRule = async ({ pattern, matchType, postAll }) => {
+    if (!ruleForRow) return;
+    const acct = (accountsByEntity[ruleForRow.entityId] || []).find((a) => a.id === ruleForRow.categoryAccountId);
+    setSavingRule(true);
+    try {
+      const res = await accountingAPI.createVendorRule(ruleForRow.entityId, {
+        pattern,
+        accountId: ruleForRow.categoryAccountId,
+        label: acct
+          ? `${acct.number || acct.account_number} · ${leafLabel(acct.name || acct.account_name)}`
+          : `Vendor: ${pattern.slice(0, 28)}`,
+        description: ruleForRow.description || ruleForRow.payee || '',
+        matchType,
+        applyToOpenDrafts: false,
+        postMatchingDrafts: false,
+        applyToPendingImports: true,
+        postMatchingPendingImports: postAll,
+      });
+      const body = res?.data || res || {};
+      const matched = Number(body.pendingUpdate?.matched || 0);
+      const posted = Number(body.pendingPostResult?.posted || 0);
+      toast(
+        posted > 0
+          ? `Rule saved — posted ${posted} matching transaction${posted === 1 ? '' : 's'}; future imports will use this category`
+          : matched > 0
+            ? 'Rule saved — matching items updated in the review queue'
+            : 'Rule saved — this vendor will always use this category going forward'
+      );
+      setRuleForRow(null);
+      loadQueue();
+    } catch (err) {
+      toast('Could not save rule: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSavingRule(false);
     }
   };
 
@@ -327,7 +377,7 @@ export default function QBDFeedReview() {
                   <Th k="payment" label="Payment" cls="qbd-amt" />
                   <Th k="deposit" label="Deposit" cls="qbd-amt" />
                   <Th k="source" label="Source" style={{ width: 72 }} />
-                  <Th k="category" label="Category" style={{ width: 140 }} />
+                  <Th k="category" label="Category" style={{ width: 168 }} />
                   <Th k="status" label="Status" style={{ width: 56 }} />
                 </tr>
               </thead>
@@ -375,6 +425,15 @@ export default function QBDFeedReview() {
                               {row.propertyHint}
                             </span>
                           )}
+                          <button
+                            type="button"
+                            className="qbd-review-always-vendor"
+                            disabled={!catId}
+                            title="Always book this vendor to the selected category"
+                            onClick={() => openAlwaysRule(row)}
+                          >
+                            Always for this vendor
+                          </button>
                         </div>
                       </td>
                       <td><span className="qbd-pill">{row.status}</span></td>
@@ -404,6 +463,22 @@ export default function QBDFeedReview() {
       </div>
 
       {detailRow && <ReviewDetail row={detailRow} onClose={() => setDetailRow(null)} />}
+
+      <VendorAlwaysRuleModal
+        open={!!ruleForRow}
+        onClose={() => !savingRule && setRuleForRow(null)}
+        accounts={ruleForRow ? (accountsByEntity[ruleForRow.entityId] || []) : []}
+        categoryAccountId={ruleForRow?.categoryAccountId}
+        sourceDescription={ruleForRow?.description || ruleForRow?.payee || ''}
+        initialPattern={ruleForRow
+          ? deriveVendorPatternClient(ruleForRow.description || ruleForRow.payee || '')
+          : ''}
+        previewItems={items.filter((r) => !ruleForRow || r.entityId === ruleForRow.entityId)}
+        getPreviewText={(r) => [r.description, r.payee, r.rawDescription].filter(Boolean).join(' ')}
+        reviewKind="bank"
+        saving={savingRule}
+        onConfirm={confirmVendorRule}
+      />
     </div>
   );
 }

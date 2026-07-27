@@ -42,6 +42,9 @@
 .qbd-diamond{color:#3c66a6;font-size:9px;margin-right:5px}
 .qbd-botbar{background:linear-gradient(#eef2f7,#dbe2ec);border-top:1px solid #b9c4d2;padding:5px 10px;display:flex;align-items:center;gap:8px;position:relative}
 .qbd-btn{background:linear-gradient(#fdfdfe,#e7ecf3);border:1px solid #9fb0c2;border-radius:3px;padding:4px 12px;font-size:11px;cursor:pointer;color:#22364f}
+.qbd-btn-primary{background:linear-gradient(#2a7fc4,#1a6fb5);border:1px solid #155a94;border-radius:3px;padding:4px 14px;font-size:11px;cursor:pointer;color:#fff;font-weight:650}
+.qbd-btn-primary:hover{background:linear-gradient(#3590d4,#2078bd)}
+.qbd-btn-primary:disabled,.qbd-btn:disabled{opacity:.55;cursor:not-allowed}
 .qbd-btn:hover{background:linear-gradient(#fff,#dde6f1)}.qbd-botbar .sp{flex:1}
 .qbd-chk{display:flex;align-items:center;gap:5px;font-size:11px;color:#22364f;cursor:pointer}
 .qbd-reg th{position:sticky;top:0;background:linear-gradient(#dfe7f1,#cdd9e8);border:1px solid #aebccd;padding:4px 8px;text-align:left;color:#1f3550;font-weight:bold;z-index:1}
@@ -288,6 +291,8 @@
 .qbd-review-cat-cell{display:flex;align-items:center;gap:4px;min-width:0;flex-wrap:wrap}
 .qbd-review-cat-suggested{border-color:#7ba3d4!important;background:#f4f8fd}
 .qbd-review-prop-hint{font-size:10px;color:#2a5596;background:#e8f0fb;border-radius:3px;padding:1px 4px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.qbd-review-always-vendor{display:block;margin-top:3px;padding:0;border:none;background:none;font-size:10px;color:#1a6fb5;cursor:pointer;text-decoration:underline;text-align:left;width:100%}
+.qbd-review-always-vendor:disabled{color:#aaa;cursor:not-allowed;text-decoration:none}
 .qbd-cat-conf{flex-shrink:0;width:7px;height:7px;border-radius:50%;display:inline-block}
 .qbd-cat-conf-high{background:#2e7d32}
 .qbd-cat-conf-med{background:#c9a227}
