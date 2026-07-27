@@ -897,9 +897,9 @@ export default function QBDDraftJournals() {
   return (
     <div className="qbd-review-window" style={styles.wrap}>
       <div style={styles.head}>
-        <h1 style={styles.title}>Review &amp; approve charges</h1>
+        <h1 style={styles.title}>Check categories</h1>
         <span style={styles.sub}>
-          Drag the blue bars to resize panes. Zoom the statement with − / + / Fit.
+          Confirm or change how charges are categorized. Pick a month on the left, then approve when ready.
         </span>
         <span style={{ flex: 1 }} />
         {!showDoc && (

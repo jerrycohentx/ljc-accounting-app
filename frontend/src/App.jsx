@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { EntityProvider } from './qbd/EntityContext';
 import QBDLayout from './qbd/QBDLayout';
 import QBDHome from './qbd/QBDHome';
+import QBDMonthlyBooks from './qbd/QBDMonthlyBooks';
 import QBDChartOfAccounts from './qbd/QBDChartOfAccounts';
 import QBDRegister from './qbd/QBDRegister';
 import QBDReports from './qbd/QBDReports';
@@ -19,7 +20,6 @@ import QBDReconReports from './qbd/QBDReconReports';
 import ReconcileRedirect from './qbd/ReconcileRedirect';
 import QBDBankFeeds from './qbd/QBDBankFeeds';
 import QBDEntityDashboard from './qbd/QBDEntityDashboard';
-import QBDFeedReview from './qbd/QBDFeedReview';
 import QBDPeriodClose from './qbd/QBDPeriodClose';
 import QBDTaxFinancials from './qbd/QBDTaxFinancials';
 import Receipts from './pages/Receipts';
@@ -48,16 +48,18 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<QBDHome />} />
+            <Route index element={<QBDMonthlyBooks />} />
+            <Route path="home-classic" element={<QBDHome />} />
             <Route path="dashboard" element={<QBDEntityDashboard />} />
-            <Route path="feed-review" element={<QBDFeedReview />} />
+            <Route path="check-categories" element={<QBDDraftJournals />} />
+            <Route path="feed-review" element={<Navigate to="/check-categories" replace />} />
             <Route path="accounts" element={<QBDChartOfAccounts />} />
             <Route path="register/:accountId" element={<QBDRegister />} />
             <Route path="reports" element={<QBDReports />} />
             <Route path="transaction-detail" element={<QBDTxnDetail />} />
             <Route path="tax-financials" element={<QBDTaxFinancials />} />
             <Route path="journal" element={<QBDJournalEntry />} />
-            <Route path="draft-journals" element={<QBDDraftJournals />} />
+            <Route path="draft-journals" element={<Navigate to="/check-categories" replace />} />
             <Route path="ach-interest-import" element={<QBDAchInterestImport />} />
             <Route path="write-checks" element={<QBDCashEntry mode="check" />} />
             <Route path="make-deposits" element={<QBDCashEntry mode="deposit" />} />

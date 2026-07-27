@@ -325,3 +325,33 @@
 .qbd-dash-action{margin:0 10px 10px;align-self:flex-start}
 .qbd-nav-badge{position:absolute;top:2px;right:4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#c0392b;color:#fff;font-size:9px;font-weight:bold;line-height:16px;text-align:center}
 .qbd-review-window{display:flex;flex-direction:column;min-height:calc(100vh - 108px)}
+
+/* 2026 Monthly Books — plain-English workflow home */
+.mb-page{max-width:920px;margin:0 auto;padding:16px 20px 32px}
+.mb-banner{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;background:linear-gradient(#3f6cb0,#2a5596);color:#fff;padding:18px 20px;border-radius:6px;margin-bottom:16px}
+.mb-banner h1{margin:0 0 6px;font-size:22px;font-weight:700}
+.mb-tagline{margin:0;opacity:.92;font-size:13px}
+.mb-month-picker{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600}
+.mb-month-picker select{font-size:13px;padding:6px 10px;border-radius:4px;border:1px solid #8aa8cc;min-width:180px;color:#1b1b1b}
+.mb-intro{background:#fff;border:1px solid #c5d0dc;border-radius:6px;padding:14px 16px;margin-bottom:20px;line-height:1.55;font-size:13px;color:#2a3f55}
+.mb-loading,.mb-error{padding:12px 16px;border-radius:4px;margin-bottom:12px}
+.mb-error{background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a}
+.mb-steps{display:flex;flex-direction:column;gap:14px}
+.mb-step{display:flex;gap:14px;background:#fff;border:1px solid #c5d0dc;border-radius:6px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.mb-step-num{flex:0 0 32px;height:32px;border-radius:50%;background:#2a5596;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
+.mb-step-body{flex:1;min-width:0}
+.mb-step-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.mb-step-head h3{margin:0;font-size:16px;color:#1f3550}
+.mb-step-detail{margin:0 0 4px;font-size:13px;color:#37474f;font-weight:600}
+.mb-step-sub{margin:6px 0 0;font-size:12px;color:#607d8b;line-height:1.45}
+.mb-step-btn{margin-top:12px}
+.mb-done{color:#1b5e20!important;font-weight:600}
+.mb-recon-list{list-style:none;margin:10px 0 0;padding:0}
+.mb-recon-list li{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid #eef2f6;font-size:12px}
+.mb-recon-list li span:first-child{flex:1;font-weight:500}
+.mb-link-btn{background:none;border:none;color:#1565c0;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;padding:0}
+.mb-blockers{margin:8px 0 0;padding-left:18px;font-size:12px;color:#b71c1c}
+.mb-footer-note{margin-top:20px;font-size:11px;color:#78909c;line-height:1.5}
+.qbd-btn-primary{background:#2ca01c!important;color:#fff!important;border-color:#248516!important;font-weight:600}
+.qbd-btn-primary:hover{background:#25901a!important}
+

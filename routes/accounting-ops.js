@@ -21,6 +21,7 @@ import { reclassPostedByLearnedRules } from '../lib/reclass-posted-by-rules.js';
 import { learnCategorizationFromHistory } from '../lib/learn-categorization-from-history.js';
 import { categorizeDumpForApproval } from '../lib/categorize-dump-for-approval.js';
 import { buildCategorizationReview } from '../lib/categorization-review.js';
+import { getMonthlyBooksStatus } from '../lib/monthly-books-status.js';
 import { auditSurgicalReclass } from '../lib/audit-surgical-reclass.js';
 import { learnFromUserCategory } from '../lib/category-learn.js';
 import {
@@ -950,6 +951,31 @@ router.get(
  * display fields for the review UI.
  */
 router.get(
+  '/monthly-books',
+  entityAccessMiddleware,
+  async (req, res) => {
+    try {
+      const db = await getDatabase();
+      const year = req.query.year || new Date().getFullYear();
+      const month = req.query.month || (new Date().getMonth() + 1);
+      const result = await getMonthlyBooksStatus(db, {
+        entityId: req.entityId,
+        year,
+        month,
+      });
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * GET /api/entities/:entityId/accounting/categorization-review
+ * Draft categorizations grouped by feed type then month, with statement-style
+ * display fields for the review UI.
+ */
+router.get(
   '/categorization-review',
   [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
   async (req, res) => {
@@ -1010,6 +1036,12 @@ router.post(
         accountId,
         categoryLine.id,
       ]);
+
+      await db.run(
+        `UPDATE import_transactions SET offset_account_id = ?
+         WHERE journal_entry_id = ? AND entity_id = ?`,
+        [accountId, draftId, req.entityId]
+      );
 
       const srcMatch = String(draft.memo || '').match(/cat-approve:(je-[a-f0-9-]+)/i);
       let learnDesc = draft.description || '';

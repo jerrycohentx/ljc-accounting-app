@@ -355,6 +355,8 @@ export const accountingAPI = {
     client.post(`/api/entities/${entityId}/accounting/year-end/close`, data),
   categorizationReview: (entityId, params = {}) =>
     client.get(`/api/entities/${entityId}/accounting/categorization-review`, { params }),
+  monthlyBooks: (entityId, params = {}) =>
+    client.get(`/api/entities/${entityId}/accounting/monthly-books`, { params }),
   setCategorizationCategory: (entityId, draftId, accountId) =>
     client.post(`/api/entities/${entityId}/accounting/categorization-review/${draftId}/category`, {
       accountId,

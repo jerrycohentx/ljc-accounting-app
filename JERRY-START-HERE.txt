@@ -1,50 +1,59 @@
 ================================================================================
-  JERRY — START HERE
+  JERRY — START HERE (2026 MONTHLY BOOKS)
 ================================================================================
 
-YOUR ROLE: CEO / owner. You use the app. The computer team handles the rest.
+YOUR ROLE: CEO / owner. You use the app. Cursor agents handle the computer work.
 
 --------------------------------------------------------------------------------
-OPEN THE APP (every day)
+OPEN THE BOOKS
 --------------------------------------------------------------------------------
 
-  1. Double-click the **LJC Accounting** icon on your desktop or taskbar
-     — OR double-click **START-APP.bat** in your project folder
+  Double-click the LJC Accounting icon — OR open:
+  https://ljc-accounting-app.onrender.com
 
-  2. Your browser opens to:  https://ljc-accounting-app.onrender.com
+  Log in with your usual email and password.
 
-  3. Log in with your usual email and password
-
-  4. Banking → Reconcile → pick account → Start reconciling
-
-  Updates appear on the website automatically. You do not need to rebuild
-  anything on your PC.
+  The home screen shows your 2026 monthly workflow in four plain steps.
 
 --------------------------------------------------------------------------------
-FIRST TIME (or if shortcuts still open localhost)
+YOUR MONTHLY WORKFLOW (2026)
 --------------------------------------------------------------------------------
 
-  1. In your project folder, double-click:  INSTALL-SHORTCUTS.bat
+  1. DOWNLOADS — Automatic
+     Bank and credit card activity download throughout the month.
+     You do not need to do anything for this step.
 
-  2. That replaces desktop and taskbar shortcuts with the web version.
+  2. CHECK CATEGORIES — When you have a few minutes
+     Toolbar: Check Categories
+     Confirm the category looks right for each charge. Change it if not.
+     Use "Always for this vendor" when the same merchant should always go
+     to the same place.
 
-  3. If the old icon stays on the taskbar, right-click it → Unpin, then
-     right-click the new desktop icon → Pin to taskbar.
+  3. RECONCILE — When the monthly statement is available
+     Toolbar: Reconcile
+     Match your books to the bank statement. If something is missing or
+     miscategorized, fix it here (Fix category, add missing items, etc.).
+     When Difference = $0.00, close the reconciliation.
+
+  4. MONTH VERIFIED
+     When every account for that month is reconciled and the books pass
+     integrity checks, the month shows as closed on the home screen.
 
 --------------------------------------------------------------------------------
-RECONCILE
+WORK WITH CURSOR (build / automate / fix)
 --------------------------------------------------------------------------------
 
-  • Left side = bank statement  |  Right side = your register
-  • Click "Import bank statement" to load OFX or PDF
-  • Check off cleared lines until Difference = $0.00
-  • Then click Reconcile Now
+  Open this folder in Cursor (not the OneDrive shortcut folder):
+
+    C:\Users\jerry\Claude\Projects\AI accounting\ljc-accounting-app
+
+  Tell the agent the outcome you want (e.g. "June must reconcile to the penny").
+  You do not run commands or edit code — the agent does that.
 
 --------------------------------------------------------------------------------
 WHEN SOMETHING BREAKS
 --------------------------------------------------------------------------------
 
   Tell your AI assistant in Cursor what you see (screenshot helps).
-  You do not need to run commands — that is what the project rule is for.
 
 ================================================================================

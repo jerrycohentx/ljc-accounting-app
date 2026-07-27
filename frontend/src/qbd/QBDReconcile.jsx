@@ -278,7 +278,7 @@ function TxnDetailModal({
 
   const applyReclass = () => {
     if (!reclassLineId || !reclassAccountId) {
-      showToast && showToast('Pick the account to reclass to');
+      showToast && showToast('Pick the account for this category');
       return;
     }
     const target = accounts.find((a) => a.id === reclassAccountId);
@@ -287,7 +287,7 @@ function TxnDetailModal({
     const toNum = target?.account_number || target?.number || '';
     const toName = (target?.account_name || target?.name || '').split(':').pop();
     const toLabel = target ? `${toNum} · ${toName}` : 'the new account';
-    if (!window.confirm(`Reclass ${fromLabel} → ${toLabel}? A balancing entry will post and future similar imports will learn this account.`)) return;
+    if (!window.confirm(`Change category from ${fromLabel} to ${toLabel}? Future similar items will learn this category.`)) return;
     setBusy(true);
     journalAPI.reclassOffset(entityId, entry.id, {
       lineId: reclassLineId,
@@ -296,7 +296,7 @@ function TxnDetailModal({
       bankAccountIds: reconcileAccountId ? [reconcileAccountId] : [],
     })
       .then((r) => {
-        showToast && showToast(r.data?.message || 'Reclassified');
+        showToast && showToast(r.data?.message || 'Category updated');
         setReclassLineId(null);
         setReclassAccountId('');
         return refreshEntry();
@@ -338,7 +338,7 @@ function TxnDetailModal({
         <div className="qbd-wbody">
           <p className="qbd-muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
             {entry.status === 'POSTED' && !entry.reversed_by_je_id
-              ? 'Click Reclass on the offset line to move it to another GL account (e.g. Due To - GM for intercompany wires).'
+              ? 'Click Fix category on the expense line to move it to another account (e.g. Due To - GM for intercompany wires).'
               : null}
           </p>
           <table className="qbd-reg">
@@ -362,7 +362,7 @@ function TxnDetailModal({
                           disabled={busy}
                           onClick={() => startReclass(l)}
                         >
-                          Reclass
+                          Fix category
                         </button>
                       )}
                     </td>
@@ -379,7 +379,7 @@ function TxnDetailModal({
           </table>
           {reclassLineId && (
             <div className="qbd-form" style={{ marginTop: 12, padding: 10, border: '1px solid #c5d4e8' }}>
-              <div className="fhd">Reclass offset line</div>
+              <div className="fhd">Fix category</div>
               <div className="frow">
                 <label>New account</label>
                 <AccountCombobox
@@ -393,7 +393,7 @@ function TxnDetailModal({
               <div className="qbd-botbar">
                 <button type="button" className="qbd-btn" disabled={busy} onClick={() => { setReclassLineId(null); setReclassAccountId(''); }}>Cancel</button>
                 <span className="sp" />
-                <button type="button" className="qbd-btn qbd-primary" disabled={busy || !reclassAccountId} onClick={applyReclass}>Apply reclass</button>
+                <button type="button" className="qbd-btn qbd-primary" disabled={busy || !reclassAccountId} onClick={applyReclass}>Save category</button>
               </div>
             </div>
           )}
