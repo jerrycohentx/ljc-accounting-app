@@ -106,9 +106,18 @@ export default function QBDMonthlyBooks() {
   );
 
   const goCategories = () => nav('/check-categories');
-  const goReconcile = (accountId) => {
-    if (accountId) nav(`/reconcile?accountId=${accountId}`);
-    else nav('/reconcile');
+  const goReconcile = (accountId, statementDate) => {
+    if (!accountId) {
+      nav('/reconcile');
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set('account', accountId);
+    if (statementDate && /^\d{4}-\d{2}-\d{2}$/.test(statementDate)) {
+      params.set('date', statementDate);
+      params.set('go', '1');
+    }
+    nav(`/reconcile?${params.toString()}`);
   };
 
   return (
@@ -184,7 +193,7 @@ export default function QBDMonthlyBooks() {
                       <button
                         type="button"
                         className="mb-link-btn"
-                        onClick={() => goReconcile(a.accountId)}
+                        onClick={() => goReconcile(a.accountId, a.statementDate)}
                       >
                         Reconcile
                       </button>

@@ -407,6 +407,10 @@ function TxnDetailModal({
   );
 }
 
+function accountFromSearchParams(searchParams) {
+  return searchParams.get('account') || searchParams.get('accountId') || '';
+}
+
 export default function QBDReconcile() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
@@ -752,7 +756,7 @@ export default function QBDReconcile() {
       if (list.length) {
         setAccounts(list);
         setAccountId((prev) => {
-          const want = searchParams.get('account');
+          const want = accountFromSearchParams(searchParams);
           const match = want
             ? list.find((a) => a.id === want || a.account_number === want)
             : null;
@@ -771,7 +775,7 @@ export default function QBDReconcile() {
 
   const onAccountChange = useCallback((id) => {
     const urlDate = searchParams.get('date') || searchParams.get('asOf');
-    const urlAccount = searchParams.get('account');
+    const urlAccount = accountFromSearchParams(searchParams);
     const picked = accounts.find((a) => String(a.id) === String(id));
     const urlMatchesAccount = !!(urlAccount && picked && (
       urlAccount === picked.id || urlAccount === picked.account_number
@@ -1092,7 +1096,7 @@ export default function QBDReconcile() {
   const storeResumedRef = useRef(false);
   useEffect(() => {
     if (storeResumedRef.current || started || accountId) return;
-    if (searchParams.get('go') === '1' || searchParams.get('account')) return;
+    if (searchParams.get('go') === '1' || accountFromSearchParams(searchParams)) return;
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(RECON_IN_PROGRESS_KEY) || 'null'); } catch { saved = null; }
     if (!saved || saved.entity !== entityId || !saved.account || !/^\d{4}-\d{2}-\d{2}$/.test(String(saved.date))) return;
@@ -1101,6 +1105,15 @@ export default function QBDReconcile() {
     setStmtDate(saved.date);
     setSearchParams({ account: String(saved.account), date: saved.date, go: '1' }, { replace: true });
   }, [entityId, started, accountId, searchParams, setSearchParams]);
+
+  // Deep link from Monthly Books: ?account=…&date=…&go=1 — sync statement date once.
+  useEffect(() => {
+    const urlDate = searchParams.get('date') || searchParams.get('asOf');
+    if (!urlDate || !/^\d{4}-\d{2}-\d{2}$/.test(urlDate)) return;
+    userPickedDateRef.current = true;
+    setStmtDate(urlDate);
+    setDateDraft(urlDate);
+  }, [searchParams]);
 
   const toggle = (id) => {
     setChecked((c) => ({ ...c, [id]: !c[id] }));
@@ -1484,6 +1497,26 @@ export default function QBDReconcile() {
       )}
     </>
   );
+
+  const deepLinkPending = searchParams.get('go') === '1'
+    && !!accountFromSearchParams(searchParams)
+    && !!(searchParams.get('date') || searchParams.get('asOf'));
+
+  if (!started && deepLinkPending) {
+    const acct = accounts.find((a) => a.id === accountId);
+    const urlDate = searchParams.get('date') || searchParams.get('asOf') || '';
+    return (
+      <>
+        <div className="qbd-form qbd-recon-begin">
+          <div className="fhd">Opening reconciliation…</div>
+          <div className="qbd-muted" style={{ padding: '12px 16px', fontSize: 12, lineHeight: 1.5 }}>
+            {acct ? <><strong>{leafLabel(acct.account_name)}</strong> — </> : 'Loading account… '}
+            statement ending <strong>{urlDate}</strong>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   if (!started) {
     return (
