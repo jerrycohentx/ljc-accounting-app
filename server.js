@@ -17,6 +17,7 @@ import importRoutes from './routes/import.js';
 import bankReconciliationRoutes from './routes/reconciliation-bank.js';
 import reconciliationReportsRoutes from './routes/reconciliation-reports.js';
 import plaidRoutes, { plaidWebhookHandler } from './routes/plaid.js';
+import rampRoutes, { rampWebhookHandler, setRampWebhookDb } from './routes/ramp.js';
 import receiptRoutes, { whatsappWebhookHandler } from './routes/receipts.js';
 import mgmtReportRoutes from './routes/mgmt-reports.js';
 import holdbackDrawRoutes from './routes/holdback-draws.js';
@@ -45,6 +46,7 @@ import { ensureReconcilableBankAccounts } from './lib/ensure-reconcilable-accoun
 import { startStatementEmailIngest, getStatementEmailIngestStatus } from './lib/statement-email-ingest.js';
 import { startAchJeInboxScan } from './lib/ach-je-inbox-worker.js';
 import { startPlaidAutoSync } from './lib/plaid-auto-sync.js';
+import { startRampAutoSync } from './lib/ramp-sync.js';
 import feedsRoutes from './routes/feeds.js';
 import dashboardRoutes from './routes/dashboard.js';
 import { ingestLoanTrackerEvent } from './lib/loan-event-ingest.js';
@@ -159,6 +161,9 @@ app.use('/auth', authRoutes);
 // Plaid webhook (no JWT — Plaid server calls this)
 app.post('/api/plaid/webhook', plaidWebhookHandler);
 
+// Ramp webhook (no JWT — Ramp server calls this)
+app.post('/api/ramp/webhook', rampWebhookHandler);
+
 // WhatsApp receipt-bot webhook (no JWT — secured by shared token)
 app.post('/api/receipts/webhook/whatsapp', whatsappWebhookHandler);
 
@@ -194,6 +199,7 @@ app.use('/api/automation', automationRoutes);
 app.use('/api/intercompany', intercompanyRoutes);
 app.use('/api/tax-financials', taxFinancialsRoutes);
 app.use('/api/plaid', plaidRoutes);
+app.use('/api/ramp', rampRoutes);
 app.use('/api/receipts', receiptRoutes);
 app.use('/api/mgmt-reports', mgmtReportRoutes);
 app.use('/api/holdback-draws', holdbackDrawRoutes);
@@ -308,7 +314,9 @@ async function start() {
       startStatementEmailIngest(getDatabase);
       startAchJeInboxScan(getDatabase);
       startPlaidAutoSync(getDatabase);
-      console.log('✓ Auto-importers started (statement email, OFX folder, ACH inbox, Plaid)');
+      setRampWebhookDb(getDatabase);
+      startRampAutoSync(getDatabase);
+      console.log('✓ Auto-importers started (statement email, OFX folder, ACH inbox, Plaid, Ramp)');
     }
   } catch (error) {
     console.error('Database initialization failed:', error);

@@ -19,6 +19,7 @@ import QBDReconcile from './qbd/QBDReconcile';
 import QBDReconReports from './qbd/QBDReconReports';
 import ReconcileRedirect from './qbd/ReconcileRedirect';
 import QBDBankFeeds from './qbd/QBDBankFeeds';
+import QBDRampConnect from './qbd/QBDRampConnect';
 import QBDEntityDashboard from './qbd/QBDEntityDashboard';
 import QBDPeriodClose from './qbd/QBDPeriodClose';
 import QBDTaxFinancials from './qbd/QBDTaxFinancials';
@@ -66,6 +67,7 @@ function App() {
             <Route path="reconcile" element={<QBDReconcile />} />
             <Route path="reconciliation-reports" element={<QBDReconReports />} />
             <Route path="bank-feeds" element={<QBDBankFeeds />} />
+            <Route path="ramp" element={<QBDRampConnect />} />
             <Route path="period-close" element={<QBDPeriodClose />} />
             <Route path="receipts" element={<Receipts />} />
             <Route path="mgmt-reports" element={<MgmtReports />} />

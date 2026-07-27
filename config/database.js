@@ -9,6 +9,7 @@ import { bootstrapPostgres } from './bootstrap-postgres.js';
 import { bootstrapSqlite } from './bootstrap-sqlite.js';
 import { isPostgresUrl } from './db-url.js';
 import { ensurePlaidSchema } from './plaid-schema.js';
+import { ensureRampSchema } from './ramp-schema.js';
 import { ensureQboReplacementSchema } from './qbo-replacement-schema.js';
 import { ensureReceiptsSchema } from './receipts-schema.js';
 import { ensureMgmtReportsSchema } from './mgmt-reports-schema.js';
@@ -81,6 +82,7 @@ export async function getDatabase() {
           postgresBootstrapped = true;
         }
         await ensurePlaidSchema(db);
+        await ensureRampSchema(db);
         await ensureQboReplacementSchema(db);
         await ensureReceiptsSchema(db);
         await ensureMgmtReportsSchema(db);
@@ -118,6 +120,7 @@ export async function getDatabase() {
       sqliteBootstrapped = true;
     }
     await ensurePlaidSchema(db);
+    await ensureRampSchema(db);
     await ensureQboReplacementSchema(db);
     await ensureReceiptsSchema(db);
     await ensureMgmtReportsSchema(db);

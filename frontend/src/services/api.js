@@ -265,6 +265,14 @@ export const plaidAPI = {
     client.post('/api/plaid/sandbox-connect-institution', { entityId, institutionKey, ...options }),
 };
 
+export const rampAPI = {
+  status: (entityId) => client.get('/api/ramp/status', { params: entityId ? { entityId } : {} }),
+  connect: (entityId, { clientId, clientSecret, environment = 'production', businessName = null }) =>
+    client.post('/api/ramp/connect', { entityId, clientId, clientSecret, environment, businessName }),
+  sync: (entityId) => client.post('/api/ramp/sync', { entityId }),
+  disconnect: (entityId) => client.post('/api/ramp/disconnect', { entityId }),
+};
+
 export const importAPI = {
   pending: (entityId) => client.get('/api/import/pending', { params: { entityId } }),
   pendingCount: (entityId) => client.get('/api/import/pending-count', { params: entityId ? { entityId } : {} }),
