@@ -50,6 +50,7 @@ import {
   autoReconcileToTarget,
   reopenBankReconciliation,
   ensureBankReconSessionTables,
+  undoBankReconsInRange,
 } from '../lib/bank-reconcile-session.js';
 import { rebuildLonestarRecons } from '../lib/rebuild-lonestar-recons.js';
 import { rebuildSimmonsRecons } from '../lib/rebuild-simmons-recons.js';
@@ -337,6 +338,44 @@ router.get('/recon-session-diagnose', entityAccessMiddleware, async (req, res) =
 
 /** In-memory status for long Simmons rebuilds (Render request timeout workaround). */
 const simmonsRebuildJobs = new Map();
+
+/**
+ * POST /api/entities/:entityId/accounting/undo-bank-recons-range
+ * Reopen all CLOSED bank/card reconciliations in a statement-month span.
+ * Body: {
+ *   confirm: "UNDO-RECONS-<entityId>",
+ *   fromMonth?: "YYYY-MM",
+ *   throughMonth?: "YYYY-MM",
+ *   accountNumbers?: ["1000","1001","1002","2010"]
+ * }
+ */
+router.post(
+  '/undo-bank-recons-range',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const expected = `UNDO-RECONS-${req.entityId}`;
+      if (req.body?.confirm !== expected) {
+        return res.status(400).json({
+          error: `confirm must equal "${expected}"`,
+          code: 'CONFIRM_REQUIRED',
+        });
+      }
+      const db = await getDatabase();
+      const result = await undoBankReconsInRange(db, {
+        entityId: req.entityId,
+        fromMonth: req.body?.fromMonth || '2026-03',
+        throughMonth: req.body?.throughMonth || '2026-06',
+        accountNumbers: Array.isArray(req.body?.accountNumbers)
+          ? req.body.accountNumbers.map(String)
+          : undefined,
+      });
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 /**
  * POST /api/entities/:entityId/accounting/rebuild-simmons-recons

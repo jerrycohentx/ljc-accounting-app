@@ -534,14 +534,18 @@ export default function QBDReconcile() {
         setLastReconciledDate(p.lastReconciledDate || '');
         // Default to the month after the last completed reconciliation, unless the
         // user has explicitly chosen a date.
-        let nextDate = isoDateOnly(stmtDate);
+        let nextDate = null;
         if (!userPickedDateRef.current && p.suggestedStatementDate
             && /^\d{4}-\d{2}-\d{2}$/.test(p.suggestedStatementDate)) {
           nextDate = p.suggestedStatementDate;
           setStmtDate((prev) => (prev === p.suggestedStatementDate ? prev : p.suggestedStatementDate));
           setDateDraft(p.suggestedStatementDate);
-        } else if (!nextDate && p.suggestedStatementDate) {
+        } else if (userPickedDateRef.current) {
+          nextDate = isoDateOnly(stmtDate) || isoDateOnly(p.suggestedStatementDate);
+        } else if (p.suggestedStatementDate) {
           nextDate = p.suggestedStatementDate;
+          setStmtDate(p.suggestedStatementDate);
+          setDateDraft(p.suggestedStatementDate);
         }
         if (p.endingBalance != null) setEndBal(String(p.endingBalance));
         else setEndBal('');
@@ -651,7 +655,13 @@ export default function QBDReconcile() {
 
   const onAccountChange = useCallback((id) => {
     const urlDate = searchParams.get('date') || searchParams.get('asOf');
-    if (!urlDate) {
+    const urlAccount = searchParams.get('account');
+    const picked = accounts.find((a) => String(a.id) === String(id));
+    const urlMatchesAccount = !!(urlAccount && picked && (
+      urlAccount === picked.id || urlAccount === picked.account_number
+    ));
+
+    if (!urlDate || !urlMatchesAccount) {
       userPickedDateRef.current = false;
       setStmtDate('');
       setDateDraft('');
@@ -660,6 +670,21 @@ export default function QBDReconcile() {
       setLastReconciledDate('');
       setPrepareMsg('');
     }
+
+    try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
+
+    if (urlDate && !urlMatchesAccount) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('date');
+        next.delete('asOf');
+        next.delete('go');
+        if (picked?.account_number) next.set('account', picked.account_number);
+        else if (id) next.set('account', id);
+        return next;
+      }, { replace: true });
+    }
+
     stmtAutoLoadKeyRef.current = null;
     stmtLoadedForRef.current = null;
     setStatementPdfUrl((prev) => {
@@ -667,7 +692,7 @@ export default function QBDReconcile() {
       return null;
     });
     setAccountId(id);
-  }, [searchParams]);
+  }, [searchParams, accounts, setSearchParams]);
 
   // Suggest due date (~25 days) once per card/statement; hydrate amount/date from existing draft.
   const suggestedDueKeyRef = useRef('');
@@ -950,7 +975,7 @@ export default function QBDReconcile() {
   // and go=1 effects above take it from there.
   const storeResumedRef = useRef(false);
   useEffect(() => {
-    if (storeResumedRef.current || started) return;
+    if (storeResumedRef.current || started || accountId) return;
     if (searchParams.get('go') === '1' || searchParams.get('account')) return;
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(RECON_IN_PROGRESS_KEY) || 'null'); } catch { saved = null; }
@@ -959,7 +984,7 @@ export default function QBDReconcile() {
     userPickedDateRef.current = true; // stop the prepare suggestion from re-dating it
     setStmtDate(saved.date);
     setSearchParams({ account: String(saved.account), date: saved.date, go: '1' }, { replace: true });
-  }, [entityId, started, searchParams, setSearchParams]);
+  }, [entityId, started, accountId, searchParams, setSearchParams]);
 
   const toggle = (id) => {
     setChecked((c) => ({ ...c, [id]: !c[id] }));
