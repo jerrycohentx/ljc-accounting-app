@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountingAPI } from '../services/api';
+import { statementDateForMonth } from './reconDeepLink';
 
 const MONTHS_2026 = [
   { value: 1, label: 'January 2026' },
@@ -106,17 +107,20 @@ export default function QBDMonthlyBooks() {
   );
 
   const goCategories = () => nav('/check-categories');
-  const goReconcile = (accountId, statementDate) => {
-    if (!accountId) {
+  const goReconcile = (acct) => {
+    if (!acct?.accountId && !acct?.accountNumber) {
       nav('/reconcile');
       return;
     }
+    const accountNumber = acct.accountNumber || acct.accountId;
+    const statementDate = acct.statementDate
+      || statementDateForMonth(entityId, accountNumber, 2026, month);
     const params = new URLSearchParams();
-    params.set('account', accountId);
-    if (statementDate && /^\d{4}-\d{2}-\d{2}$/.test(statementDate)) {
-      params.set('date', statementDate);
-      params.set('go', '1');
-    }
+    params.set('account', String(accountNumber));
+    params.set('year', '2026');
+    params.set('month', String(month));
+    if (statementDate) params.set('date', statementDate);
+    params.set('go', '1');
     nav(`/reconcile?${params.toString()}`);
   };
 
@@ -193,7 +197,7 @@ export default function QBDMonthlyBooks() {
                       <button
                         type="button"
                         className="mb-link-btn"
-                        onClick={() => goReconcile(a.accountId, a.statementDate)}
+                        onClick={() => goReconcile(a)}
                       >
                         Reconcile
                       </button>

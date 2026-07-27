@@ -18,6 +18,12 @@ import {
 import { drillReconLineSource } from './reconSourceDrill';
 import { ReconHtmlPreviewModal } from './QBDReconReports';
 import AccountCombobox from './AccountCombobox';
+import {
+  accountFromSearchParams,
+  resolveAccountId,
+  resolveDeepLinkDate,
+  shouldAutoOpenRecon,
+} from './reconDeepLink';
 
 const REGISTER_SPLIT_STORAGE_KEY = 'qbd-recon-register-split-pct';
 const HIDE_AFTER_END_KEY = 'qbd-recon-hide-after-end';
@@ -407,21 +413,22 @@ function TxnDetailModal({
   );
 }
 
-function accountFromSearchParams(searchParams) {
-  return searchParams.get('account') || searchParams.get('accountId') || '';
-}
-
 export default function QBDReconcile() {
   const { entityId } = useEntity();
   const { showToast } = useOutletContext() || {};
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const urlAccountToken = accountFromSearchParams(searchParams);
+  const urlResolvedDate = resolveDeepLinkDate(searchParams, entityId, urlAccountToken);
+  const autoOpenRequested = shouldAutoOpenRecon(searchParams, urlResolvedDate);
   const [accounts, setAccounts] = useState([]);
   const [allAccounts, setAllAccounts] = useState([]);
   const [expenseAccounts, setExpenseAccounts] = useState([]);
   const [incomeAccounts, setIncomeAccounts] = useState([]);
   const [cashAccounts, setCashAccounts] = useState([]);
-  const [accountId, setAccountId] = useState('');
+  const [accountId, setAccountId] = useState(() => (
+    urlAccountToken.startsWith('acc-') ? urlAccountToken : ''
+  ));
   // QuickBooks Begin-Reconciliation service-charge / interest date + posting account.
   const [scDate, setScDate] = useState('');
   const [scAccountId, setScAccountId] = useState('');
@@ -439,10 +446,9 @@ export default function QBDReconcile() {
   const paymentDateTouchedRef = useRef(false);
   const paymentDueSyncTimerRef = useRef(null);
   const paymentDueHydrateKeyRef = useRef('');
-  const [stmtDate, setStmtDate] = useState(() => {
-    const d = searchParams.get('date') || searchParams.get('asOf');
-    return d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : todayISO();
-  });
+  const [stmtDate, setStmtDate] = useState(() => (
+    urlResolvedDate || todayISO()
+  ));
   const [beginBal, setBeginBal] = useState('');
   const [endBal, setEndBal] = useState('');
   const [prepareMsg, setPrepareMsg] = useState('');
@@ -491,7 +497,7 @@ export default function QBDReconcile() {
   const dateInputFocusedRef = useRef(false);
   // True once the user (or a URL param / uploaded statement) has chosen an explicit
   // statement date, so we stop auto-suggesting the next period after that.
-  const userPickedDateRef = useRef(!!(searchParams.get('date') || searchParams.get('asOf')));
+  const userPickedDateRef = useRef(!!urlResolvedDate);
   const statementFileRef = useRef(null);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [dateDraft, setDateDraft] = useState(stmtDate);
@@ -755,15 +761,9 @@ export default function QBDReconcile() {
 
       if (list.length) {
         setAccounts(list);
-        setAccountId((prev) => {
-          const want = accountFromSearchParams(searchParams);
-          const match = want
-            ? list.find((a) => a.id === want || a.account_number === want)
-            : null;
-          if (match) return match.id;
-          if (prev && list.some((a) => a.id === prev)) return prev;
-          return '';
-        });
+        const want = accountFromSearchParams(searchParams);
+        const resolved = resolveAccountId(list, want);
+        if (resolved) setAccountId(resolved);
       } else {
         showToast && showToast('Could not load bank accounts for reconciliation');
       }
@@ -772,6 +772,20 @@ export default function QBDReconcile() {
     loadReconcileAccounts();
     return () => { cancelled = true; };
   }, [entityId, searchParams]);
+
+  // Keep account + statement date aligned when Monthly Books changes the URL.
+  useEffect(() => {
+    if (!accounts.length) return;
+    const want = accountFromSearchParams(searchParams);
+    const resolved = resolveAccountId(accounts, want);
+    if (resolved && resolved !== accountId) setAccountId(resolved);
+    const deepDate = resolveDeepLinkDate(searchParams, entityId, want);
+    if (deepDate && deepDate !== stmtDate) {
+      userPickedDateRef.current = true;
+      setStmtDate(deepDate);
+      setDateDraft(deepDate);
+    }
+  }, [searchParams, accounts, entityId, accountId, stmtDate]);
 
   const onAccountChange = useCallback((id) => {
     const urlDate = searchParams.get('date') || searchParams.get('asOf');
@@ -1080,11 +1094,12 @@ export default function QBDReconcile() {
   const autoResumedRef = useRef(false);
   useEffect(() => {
     if (autoResumedRef.current || started) return;
-    if (searchParams.get('go') === '1' && accountId && stmtDate) {
-      autoResumedRef.current = true;
-      loadWorksheet();
-    }
-  }, [searchParams, accountId, stmtDate, started, loadWorksheet]);
+    if (!autoOpenRequested || !accountId || !stmtDate) return;
+    autoResumedRef.current = true;
+    loadWorksheet().catch(() => {
+      autoResumedRef.current = false;
+    });
+  }, [autoOpenRequested, accountId, stmtDate, started, loadWorksheet]);
 
   // Resume across FULL navigations, not just browser Back. The draft-review
   // round trip (worksheet → review drafts → approve → Banking → Reconcile)
@@ -1106,14 +1121,14 @@ export default function QBDReconcile() {
     setSearchParams({ account: String(saved.account), date: saved.date, go: '1' }, { replace: true });
   }, [entityId, started, accountId, searchParams, setSearchParams]);
 
-  // Deep link from Monthly Books: ?account=…&date=…&go=1 — sync statement date once.
+  // Deep link from Monthly Books — keep statement date in sync with URL.
   useEffect(() => {
-    const urlDate = searchParams.get('date') || searchParams.get('asOf');
-    if (!urlDate || !/^\d{4}-\d{2}-\d{2}$/.test(urlDate)) return;
+    const deepDate = resolveDeepLinkDate(searchParams, entityId, accountFromSearchParams(searchParams));
+    if (!deepDate) return;
     userPickedDateRef.current = true;
-    setStmtDate(urlDate);
-    setDateDraft(urlDate);
-  }, [searchParams]);
+    setStmtDate(deepDate);
+    setDateDraft(deepDate);
+  }, [searchParams, entityId]);
 
   const toggle = (id) => {
     setChecked((c) => ({ ...c, [id]: !c[id] }));
@@ -1498,13 +1513,11 @@ export default function QBDReconcile() {
     </>
   );
 
-  const deepLinkPending = searchParams.get('go') === '1'
-    && !!accountFromSearchParams(searchParams)
-    && !!(searchParams.get('date') || searchParams.get('asOf'));
+  const deepLinkPending = autoOpenRequested && !started;
 
   if (!started && deepLinkPending) {
     const acct = accounts.find((a) => a.id === accountId);
-    const urlDate = searchParams.get('date') || searchParams.get('asOf') || '';
+    const urlDate = resolveDeepLinkDate(searchParams, entityId, accountFromSearchParams(searchParams)) || stmtDate;
     return (
       <>
         <div className="qbd-form qbd-recon-begin">
