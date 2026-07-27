@@ -6,6 +6,7 @@ import { entityAccessMiddleware, requireRole } from '../middleware/auth.js';
 import { assertNotPlugJournal } from '../lib/period-integrity.js';
 import { postJournalEntryToGl } from '../lib/post-journal.js';
 import { reverseJournalEntry } from '../lib/reverse-journal.js';
+import { reclassPostedOffsetLine } from '../lib/reclass-posted-offset.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -321,6 +322,39 @@ router.post('/:id/post', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTA
     if (error.message.includes('closed period')) return res.status(409).json({ error: error.message });
     if (error.code === 'PLUG_ENTRY_BLOCKED') {
       return res.status(403).json({ error: error.message, code: error.code });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/entities/:entityId/journals/:id/reclass-offset
+// Append-only reclass for a posted JE offset line (e.g. from reconcile drill-down).
+// Body: { lineId, accountId, learnRule?, bankAccountIds? }
+router.post('/:id/reclass-offset', [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')], async (req, res) => {
+  try {
+    const { lineId, accountId, learnRule, bankAccountIds } = req.body || {};
+    if (!lineId || !accountId) {
+      return res.status(400).json({ error: 'lineId and accountId are required' });
+    }
+    const db = await getDatabase();
+    const result = await reclassPostedOffsetLine(db, {
+      journalId: req.params.id,
+      entityId: req.entityId,
+      lineId,
+      toAccountId: accountId,
+      userId: req.user.id,
+      learnRule: learnRule !== false,
+      bankAccountIds: Array.isArray(bankAccountIds) ? bankAccountIds : [],
+    });
+    res.json({
+      message: result.alreadyApplied
+        ? 'Reclass was already applied'
+        : `Reclassified to ${result.toAccountNumber} · ${result.toAccountName || ''}`.trim(),
+      ...result,
+    });
+  } catch (error) {
+    if (/not found|Cannot reclass|Only posted|already classified|zero amount/i.test(error.message)) {
+      return res.status(409).json({ error: error.message });
     }
     res.status(500).json({ error: error.message });
   }

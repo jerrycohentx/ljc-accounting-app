@@ -234,19 +234,86 @@ function useSplitResize(splitRef, setSplitPct, minPct = 18, maxPct = 82) {
   }, []);
 }
 
-/** Drill-down: shows the full double-entry behind a register line. */
-function TxnDetailModal({ entry, entityId, onClose }) {
+/** Drill-down: shows the full double-entry behind a register line; allows reclass + reverse during recon. */
+function TxnDetailModal({
+  entry,
+  entityId,
+  reconcileAccountId,
+  accounts = [],
+  onClose,
+  onUpdated,
+  showToast,
+}) {
   const lines = entry.lines || [];
+  const [busy, setBusy] = useState(false);
+  const [reclassLineId, setReclassLineId] = useState(null);
+  const [reclassAccountId, setReclassAccountId] = useState('');
+  const canReverse = entry.status === 'POSTED' && !entry.reversed_by_je_id && !entry.reverses_je_id;
+  const canEditDraft = entry.status === 'DRAFT';
   let td = 0;
   let tc = 0;
+
+  const refreshEntry = () => journalAPI.get(entityId, entry.id)
+    .then((res) => {
+      onUpdated && onUpdated(res.data);
+      return res.data;
+    });
+
+  const doReverse = () => {
+    if (!window.confirm(`Reverse ${entry.je_number}? This creates an offsetting posted entry.`)) return;
+    setBusy(true);
+    journalAPI.reverse(entityId, entry.id)
+      .then((r) => {
+        showToast && showToast(`Reversed — ${r.data?.reversalJeNumber || 'done'}`);
+        return refreshEntry();
+      })
+      .catch((e) => window.alert(e.response?.data?.error || e.message))
+      .finally(() => setBusy(false));
+  };
+
+  const startReclass = (line) => {
+    setReclassLineId(line.id);
+    setReclassAccountId('');
+  };
+
+  const applyReclass = () => {
+    if (!reclassLineId || !reclassAccountId) {
+      showToast && showToast('Pick the account to reclass to');
+      return;
+    }
+    const target = accounts.find((a) => a.id === reclassAccountId);
+    const line = lines.find((l) => l.id === reclassLineId);
+    const fromLabel = line ? `${line.account_number} · ${(line.account_name || '').split(':').pop()}` : 'this line';
+    const toNum = target?.account_number || target?.number || '';
+    const toName = (target?.account_name || target?.name || '').split(':').pop();
+    const toLabel = target ? `${toNum} · ${toName}` : 'the new account';
+    if (!window.confirm(`Reclass ${fromLabel} → ${toLabel}? A balancing entry will post and future similar imports will learn this account.`)) return;
+    setBusy(true);
+    journalAPI.reclassOffset(entityId, entry.id, {
+      lineId: reclassLineId,
+      accountId: reclassAccountId,
+      learnRule: true,
+      bankAccountIds: reconcileAccountId ? [reconcileAccountId] : [],
+    })
+      .then((r) => {
+        showToast && showToast(r.data?.message || 'Reclassified');
+        setReclassLineId(null);
+        setReclassAccountId('');
+        return refreshEntry();
+      })
+      .catch((e) => window.alert(e.response?.data?.error || e.message))
+      .finally(() => setBusy(false));
+  };
+
   return (
     <div className="qbd-modal-backdrop" onClick={onClose}>
-      <div className="qbd-window" style={{ width: 680, maxHeight: '80vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
+      <div className="qbd-window" style={{ width: 720, maxHeight: '85vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
         <div className="qbd-wtitle">🧾 Transaction Detail — {entry.je_number} <span className="x" onClick={onClose}>✕</span></div>
         <div className="qbd-tools">
           <span className="qbd-muted">Date</span><b>{fmtReconDate(entry.posting_date)}</b>
           <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{entry.description || ''}</span>
           <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {entry.status}</span>
+          {entry.reversed_by_je_id && <span className="qbd-muted" style={{ marginLeft: 8 }}>(reversed)</span>}
           {entry.sourceDocument?.hasFile && (
             <button
               type="button"
@@ -261,19 +328,44 @@ function TxnDetailModal({ entry, entityId, onClose }) {
               View source document
             </button>
           )}
+          {canEditDraft && (
+            <a className="qbd-btn" style={{ marginLeft: 12, textDecoration: 'none' }} href={`/journal?je=${entry.id}`}>Edit draft</a>
+          )}
+          {canReverse && (
+            <button type="button" className="qbd-btn" disabled={busy} onClick={doReverse} style={{ marginLeft: 12 }}>Reverse entry</button>
+          )}
         </div>
         <div className="qbd-wbody">
+          <p className="qbd-muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
+            {entry.status === 'POSTED' && !entry.reversed_by_je_id
+              ? 'Click Reclass on the offset line to move it to another GL account (e.g. Due To - GM for intercompany wires).'
+              : null}
+          </p>
           <table className="qbd-reg">
-            <thead><tr><th>ACCOUNT</th><th className="qbd-amt">DEBIT</th><th className="qbd-amt">CREDIT</th></tr></thead>
+            <thead><tr><th>ACCOUNT</th><th className="qbd-amt">DEBIT</th><th className="qbd-amt">CREDIT</th><th style={{ width: 88 }} /></tr></thead>
             <tbody>
               {lines.map((l) => {
                 td += +l.debit || 0;
                 tc += +l.credit || 0;
+                const isBankLine = reconcileAccountId && String(l.account_id) === String(reconcileAccountId);
+                const canReclassLine = entry.status === 'POSTED' && !entry.reversed_by_je_id && !isBankLine;
                 return (
                   <tr key={l.id}>
                     <td>{l.account_number} · {(l.account_name || '').split(':').pop()}</td>
                     <td className="qbd-amt">{(+l.debit) ? fmt(+l.debit) : ''}</td>
                     <td className="qbd-amt">{(+l.credit) ? fmt(+l.credit) : ''}</td>
+                    <td>
+                      {canReclassLine && (
+                        <button
+                          type="button"
+                          className="qbd-btn qbd-pane-btn"
+                          disabled={busy}
+                          onClick={() => startReclass(l)}
+                        >
+                          Reclass
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -281,9 +373,30 @@ function TxnDetailModal({ entry, entityId, onClose }) {
                 <td>TOTAL</td>
                 <td className="qbd-amt">{fmt(td)}</td>
                 <td className="qbd-amt">{fmt(tc)}</td>
+                <td />
               </tr>
             </tbody>
           </table>
+          {reclassLineId && (
+            <div className="qbd-form" style={{ marginTop: 12, padding: 10, border: '1px solid #c5d4e8' }}>
+              <div className="fhd">Reclass offset line</div>
+              <div className="frow">
+                <label>New account</label>
+                <AccountCombobox
+                  accounts={accounts}
+                  value={reclassAccountId}
+                  onChange={setReclassAccountId}
+                  placeholder="Search GL account…"
+                  style={{ minWidth: 320 }}
+                />
+              </div>
+              <div className="qbd-botbar">
+                <button type="button" className="qbd-btn" disabled={busy} onClick={() => { setReclassLineId(null); setReclassAccountId(''); }}>Cancel</button>
+                <span className="sp" />
+                <button type="button" className="qbd-btn qbd-primary" disabled={busy || !reclassAccountId} onClick={applyReclass}>Apply reclass</button>
+              </div>
+            </div>
+          )}
         </div>
         <div className="qbd-foot">
           <span className="sp" />
@@ -300,6 +413,7 @@ export default function QBDReconcile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
+  const [allAccounts, setAllAccounts] = useState([]);
   const [expenseAccounts, setExpenseAccounts] = useState([]);
   const [incomeAccounts, setIncomeAccounts] = useState([]);
   const [cashAccounts, setCashAccounts] = useState([]);
@@ -615,6 +729,7 @@ export default function QBDReconcile() {
       );
 
       if (all.length) {
+        setAllAccounts(all);
         const bankNums = reconcilableNumbersForEntity(entityId);
         const cashOnly = all.filter((a) => {
           const name = String(a.account_name || '');
@@ -1920,7 +2035,18 @@ export default function QBDReconcile() {
         <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={() => finish(true)} title="Reconcile this statement and roll straight into the next month (beginning balance carries automatically)" style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dfeaf7,#bcd4ef)' : undefined }}>Close &amp; Advance →</button>
       </div>
       {drillEntry && (
-        <TxnDetailModal entry={drillEntry} entityId={entityId} onClose={() => setDrillEntry(null)} />
+        <TxnDetailModal
+          entry={drillEntry}
+          entityId={entityId}
+          reconcileAccountId={accountId}
+          accounts={allAccounts}
+          showToast={showToast}
+          onClose={() => setDrillEntry(null)}
+          onUpdated={(updated) => {
+            setDrillEntry(updated);
+            loadWorksheet();
+          }}
+        />
       )}
       {reportOverlay}
     </div>

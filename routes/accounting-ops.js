@@ -21,6 +21,7 @@ import { reclassPostedByLearnedRules } from '../lib/reclass-posted-by-rules.js';
 import { learnCategorizationFromHistory } from '../lib/learn-categorization-from-history.js';
 import { categorizeDumpForApproval } from '../lib/categorize-dump-for-approval.js';
 import { buildCategorizationReview } from '../lib/categorization-review.js';
+import { auditSurgicalReclass } from '../lib/audit-surgical-reclass.js';
 import { learnFromUserCategory } from '../lib/category-learn.js';
 import {
   upsertVendorCategoryRule,
@@ -910,6 +911,36 @@ router.post(
  * Reopens closed months as needed and recloses when canClose.
  * Body: { confirm: "RECLASS-RULES-<entityId>", dryRun?, startDate?, endDate?, sourceAccounts?, reclose? }
  */
+
+/**
+ * GET /api/entities/:entityId/accounting/surgical-reclass-audit
+ * Count posted bank imports whose offset disagrees with current rules / intercompany guards.
+ */
+router.get(
+  '/surgical-reclass-audit',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const db = await getDatabase();
+      const result = await auditSurgicalReclass(db, {
+        entityId: req.entityId,
+        startDate: req.query.startDate || '2026-01-01',
+        endDate: req.query.endDate || '2026-12-31',
+      });
+      const high = result.issues.filter((i) =>
+        ['graceful_intercompany', 'revenue_on_outbound', 'graceful_receipt'].includes(i.code)
+      );
+      res.json({
+        ...result,
+        highPriorityCount: high.length,
+        highPriority: high.slice(0, 50),
+        issues: result.issues.slice(0, 200),
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 /**
  * GET /api/entities/:entityId/accounting/categorization-review

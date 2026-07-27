@@ -76,6 +76,7 @@ export const journalAPI = {
   approve: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/approve`),
   post: (entityId, id) => client.post(`/api/entities/${entityId}/journals/${id}/post`),
   reverse: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/reverse`, data),
+  reclassOffset: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/reclass-offset`, data),
   attachDocument: (entityId, id, data) => client.post(`/api/entities/${entityId}/journals/${id}/document`, data),
   async viewDocument(entityId, id) {
     const url = await this.getDocumentObjectUrl(entityId, id);

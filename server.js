@@ -6,6 +6,7 @@ import fs from 'fs';
 import https from 'https';
 import { fileURLToPath } from 'url';
 import { getDatabase, closeDatabase, isPostgres } from './config/database.js';
+import { AUTO_POST_ENABLED } from './lib/auto-post-policy.js';
 import authRoutes from './routes/auth.js';
 import accountRoutes from './routes/accounts.js';
 import journalRoutes from './routes/journals.js';
@@ -264,6 +265,9 @@ async function start() {
   ).listen(PORT, '0.0.0.0', () => {
     console.log(`✓ Server running on ${useHttps ? 'https' : 'http'}://localhost:${PORT}`);
     console.log(`✓ Database target: ${isPostgres() ? 'PostgreSQL (cloud)' : './db/accounting.db'}`);
+    console.log(AUTO_POST_ENABLED
+      ? '⚠ Bank import AUTO-POST is ON (ALLOW_AUTO_POST=1)'
+      : '✓ Bank import auto-post is OFF — review in Bank Feeds before adding to register');
     console.log('✓ API Endpoints ready');
   });
 
