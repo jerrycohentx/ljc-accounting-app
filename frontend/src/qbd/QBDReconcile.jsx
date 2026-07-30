@@ -37,8 +37,38 @@ const STMT_SHOW_STORAGE_KEY = 'qbd-recon-stmt-show';
 // browser Back; this survives FULL round trips — review drafts, approve, come
 // back via Banking → Reconcile — which land on a bare /reconcile.
 const RECON_IN_PROGRESS_KEY = 'qbd-recon-in-progress';
+/** Cleared checkmarks for an in-progress worksheet — survive category fixes + reloads. */
+const RECON_CHECKED_PREFIX = 'qbd-recon-checked:';
 const DEFAULT_STMT_SPLIT = 38; // statement pane width, % of the split
 const DEFAULT_STMT_ZOOM = 100; // percent; 0 means "fit width"
+
+function reconCheckedStorageKey(entityId, accountId, statementDate) {
+  return `${RECON_CHECKED_PREFIX}${entityId || ''}:${accountId || ''}:${statementDate || ''}`;
+}
+
+function readSavedCheckedIds(entityId, accountId, statementDate) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(reconCheckedStorageKey(entityId, accountId, statementDate)) || 'null');
+    return Array.isArray(raw) ? raw.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSavedCheckedIds(entityId, accountId, statementDate, checkedMap) {
+  try {
+    const key = reconCheckedStorageKey(entityId, accountId, statementDate);
+    const ids = Object.keys(checkedMap || {}).filter((id) => checkedMap[id]);
+    if (!ids.length) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(ids));
+  } catch { /* storage full/blocked */ }
+}
+
+function clearSavedCheckedIds(entityId, accountId, statementDate) {
+  try {
+    localStorage.removeItem(reconCheckedStorageKey(entityId, accountId, statementDate));
+  } catch { /* ignore */ }
+}
 
 /** Turn a base64 payload from the API into an object URL for an <iframe>. */
 function base64ToObjectUrl(b64, mime = 'application/pdf') {
@@ -1100,21 +1130,43 @@ export default function QBDReconcile() {
     else reader.readAsText(file);
   }, [entityId, accountId, showToast, runPrepare]);
 
-  const applyAutoChecked = useCallback((worksheet) => {
-    const ids = worksheet?.suggestedCheckedGlIds || [];
-    const next = {};
-    ids.forEach((id) => { next[id] = true; });
-    // Always pre-check lines already reconciled in this period so a closed/reopened
-    // reconciliation loads balanced ($0.00) with its cleared items checked (QBD behavior).
-    (worksheet?.entries || []).forEach((e) => {
-      if (e.alreadyReconciled || e.clearState === 'reconciled' || e.reconciliation_status === 'RECONCILED') {
-        next[e.id] = true;
+  const applyAutoChecked = useCallback((worksheet, { preserveChecked = true } = {}) => {
+    const dateKey = isoDateOnly(worksheet?.statementDate || stmtDate);
+    const entryIds = new Set((worksheet?.entries || []).map((e) => String(e.id)));
+    setChecked((prev) => {
+      const next = {};
+      // 1) Server auto-match suggestions (statement ↔ register)
+      (worksheet?.suggestedCheckedGlIds || []).forEach((id) => { next[String(id)] = true; });
+      // 2) Lines already locked in a closed/reopened recon for this period
+      (worksheet?.entries || []).forEach((e) => {
+        if (e.alreadyReconciled || e.clearState === 'reconciled' || e.reconciliation_status === 'RECONCILED') {
+          next[String(e.id)] = true;
+        }
+      });
+      // 3) Keep marks the user already checked in this session (Fix category used
+      //    to reload the worksheet and wipe these — that forced a full re-match)
+      if (preserveChecked) {
+        Object.keys(prev || {}).forEach((id) => {
+          if (prev[id]) next[String(id)] = true;
+        });
+        readSavedCheckedIds(entityId, accountId, dateKey).forEach((id) => {
+          next[String(id)] = true;
+        });
       }
+      // Drop ids that are no longer on the worksheet
+      Object.keys(next).forEach((id) => {
+        if (!entryIds.has(id)) delete next[id];
+      });
+      writeSavedCheckedIds(entityId, accountId, dateKey, next);
+      return next;
     });
-    setChecked(next);
-  }, []);
+  }, [entityId, accountId, stmtDate]);
 
-  const loadWorksheet = useCallback((dateOverride) => {
+  const persistChecked = useCallback((nextMap) => {
+    writeSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate), nextMap);
+  }, [entityId, accountId, stmtDate]);
+
+  const loadWorksheet = useCallback((dateOverride, opts = {}) => {
     if (!accountId) return Promise.resolve();
     const dateForLoad = isoDateOnly(dateOverride) || stmtDate;
     if (!dateForLoad) return Promise.resolve();
@@ -1122,7 +1174,7 @@ export default function QBDReconcile() {
     return bankReconAPI.worksheet(entityId, accountId, dateForLoad, { autoMatch: true })
       .then((r) => {
         setData(r.data);
-        applyAutoChecked(r.data);
+        applyAutoChecked(r.data, { preserveChecked: opts.preserveChecked !== false });
         setHighlightGlId(null);
         setStarted(true);
         // Never keep a stale Modify-panel override across worksheet loads — that
@@ -1226,17 +1278,23 @@ export default function QBDReconcile() {
   }, [searchParams, entityId]);
 
   const toggle = (id) => {
-    setChecked((c) => ({ ...c, [id]: !c[id] }));
+    setChecked((c) => {
+      const next = { ...c, [id]: !c[id] };
+      persistChecked(next);
+      return next;
+    });
   };
 
   const markAll = () => {
     const next = {};
     entries.forEach((e) => { next[e.id] = true; });
     setChecked(next);
+    persistChecked(next);
   };
 
   const unmarkAll = () => {
     setChecked({});
+    clearSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate));
   };
 
   /** Clear cleared checkmarks for one register side only (checks or deposits). */
@@ -1246,6 +1304,7 @@ export default function QBDReconcile() {
       entries.forEach((e) => {
         if (entrySide(e, account) === side) delete next[e.id];
       });
+      persistChecked(next);
       return next;
     });
   };
@@ -1256,6 +1315,7 @@ export default function QBDReconcile() {
     setChecked((c) => {
       const next = { ...c };
       ids.forEach((id) => { next[id] = true; });
+      persistChecked(next);
       return next;
     });
     showToast && showToast(`Matched ${ids.length} transaction(s) to the statement`);
@@ -1478,6 +1538,8 @@ export default function QBDReconcile() {
         // visit starts fresh instead of reopening a closed period. ("Leave"
         // intentionally KEEPS it: progress-saved means we come back to it.)
         try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
+        clearSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate));
+        setChecked({});
         // Close & Advance: roll straight into the next month. The beginning
         // balance auto-carries from this close; we just bump the statement date.
         if (advance) {
@@ -2185,7 +2247,8 @@ export default function QBDReconcile() {
           onClose={() => setDrillEntry(null)}
           onUpdated={(updated) => {
             setDrillEntry(updated);
-            loadWorksheet();
+            // Soft reload — keep every cleared checkmark the user already marked.
+            loadWorksheet(undefined, { preserveChecked: true });
           }}
         />
       )}
