@@ -42,32 +42,60 @@ const RECON_CHECKED_PREFIX = 'qbd-recon-checked:';
 const DEFAULT_STMT_SPLIT = 38; // statement pane width, % of the split
 const DEFAULT_STMT_ZOOM = 100; // percent; 0 means "fit width"
 
-function reconCheckedStorageKey(entityId, accountId, statementDate) {
-  return `${RECON_CHECKED_PREFIX}${entityId || ''}:${accountId || ''}:${statementDate || ''}`;
+function reconCheckedStorageKey(entityId, accountToken, periodKey) {
+  return `${RECON_CHECKED_PREFIX}${entityId || ''}:${accountToken || ''}:${periodKey || ''}`;
 }
 
-function readSavedCheckedIds(entityId, accountId, statementDate) {
-  try {
-    const raw = JSON.parse(localStorage.getItem(reconCheckedStorageKey(entityId, accountId, statementDate)) || 'null');
-    return Array.isArray(raw) ? raw.map(String) : [];
-  } catch {
-    return [];
+/** Stabilize across statement-date drift (e.g. 2026-02-01 vs month-end). */
+function reconPeriodKey(statementDate) {
+  const d = isoDateOnly(statementDate) || String(statementDate || '').slice(0, 10);
+  return d ? d.slice(0, 7) : '';
+}
+
+function readSavedCheckedIds(entityId, accountId, statementDate, accountNumber = '') {
+  const period = reconPeriodKey(statementDate);
+  const day = isoDateOnly(statementDate);
+  const tokens = [accountId, accountNumber].filter(Boolean);
+  const periods = [period, day].filter(Boolean);
+  const ids = new Set();
+  for (const token of tokens) {
+    for (const p of periods) {
+      try {
+        const raw = JSON.parse(localStorage.getItem(reconCheckedStorageKey(entityId, token, p)) || 'null');
+        if (Array.isArray(raw)) raw.forEach((id) => ids.add(String(id)));
+      } catch { /* ignore */ }
+    }
+  }
+  return [...ids];
+}
+
+function writeSavedCheckedIds(entityId, accountId, statementDate, checkedMap, accountNumber = '') {
+  const period = reconPeriodKey(statementDate);
+  const day = isoDateOnly(statementDate);
+  const ids = Object.keys(checkedMap || {}).filter((id) => checkedMap[id]).map(String);
+  const tokens = [accountId, accountNumber].filter(Boolean);
+  const periods = [period, day].filter(Boolean);
+  for (const token of tokens) {
+    for (const p of periods) {
+      const key = reconCheckedStorageKey(entityId, token, p);
+      try {
+        if (!ids.length) localStorage.removeItem(key);
+        else localStorage.setItem(key, JSON.stringify(ids));
+      } catch { /* storage full/blocked */ }
+    }
   }
 }
 
-function writeSavedCheckedIds(entityId, accountId, statementDate, checkedMap) {
-  try {
-    const key = reconCheckedStorageKey(entityId, accountId, statementDate);
-    const ids = Object.keys(checkedMap || {}).filter((id) => checkedMap[id]);
-    if (!ids.length) localStorage.removeItem(key);
-    else localStorage.setItem(key, JSON.stringify(ids));
-  } catch { /* storage full/blocked */ }
-}
-
-function clearSavedCheckedIds(entityId, accountId, statementDate) {
-  try {
-    localStorage.removeItem(reconCheckedStorageKey(entityId, accountId, statementDate));
-  } catch { /* ignore */ }
+function clearSavedCheckedIds(entityId, accountId, statementDate, accountNumber = '') {
+  const period = reconPeriodKey(statementDate);
+  const day = isoDateOnly(statementDate);
+  const tokens = [accountId, accountNumber].filter(Boolean);
+  const periods = [period, day].filter(Boolean);
+  for (const token of tokens) {
+    for (const p of periods) {
+      try { localStorage.removeItem(reconCheckedStorageKey(entityId, token, p)); } catch { /* ignore */ }
+    }
+  }
 }
 
 /** Turn a base64 payload from the API into an object URL for an <iframe>. */
@@ -159,39 +187,96 @@ function txnType(side, isCard) {
  * Every posted line for the account is shown. A check mark means the line has
  * been matched/cleared. Single-click selects + toggles the check mark;
  * double-click (or Go To) drills into the underlying transaction.
+ * Column headers are sortable (date, payee, type, amount).
  */
 function RegisterTable({
   entries, account, labels, checked, matchedSet, highlightGlId, selectedId, highlightMarked,
   showNum, showType, showDate = true, showPayee = true, onToggle, onSelect, onHover, onDrill, compact, amountSide,
 }) {
-  if (!entries.length) {
-    return <div className="qbd-empty">{compact ? 'None' : 'No transactions for this account.'}</div>;
-  }
+  const [sortKey, setSortKey] = useState('date');
+  const [sortDir, setSortDir] = useState('asc');
+
   const isCard = isCreditCardAccount(account);
   const compactAmtLabel = amountSide === 'deposit'
     ? (isCard ? 'Charge' : 'Deposit')
     : 'Payment';
+
+  const toggleSort = (key) => {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else {
+      setSortKey(key);
+      setSortDir(key === 'date' ? 'asc' : 'asc');
+    }
+  };
+
+  const sortMark = (key) => (sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '');
+
+  const sortedEntries = useMemo(() => {
+    const rows = [...(entries || [])];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    rows.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'date') {
+        cmp = String(a.posting_date || '').localeCompare(String(b.posting_date || ''));
+      } else if (sortKey === 'payee') {
+        cmp = String(a.je_description || a.description || '')
+          .localeCompare(String(b.je_description || b.description || ''), undefined, { sensitivity: 'base' });
+      } else if (sortKey === 'type') {
+        const ta = txnType(entrySide(a, account), isCard);
+        const tb = txnType(entrySide(b, account), isCard);
+        cmp = ta.localeCompare(tb);
+      } else if (sortKey === 'num') {
+        cmp = String(a.je_number || '').localeCompare(String(b.je_number || ''), undefined, { numeric: true });
+      } else if (sortKey === 'amount') {
+        const aa = Math.abs(Number(reconRegisterAmount(a, account)) || 0);
+        const bb = Math.abs(Number(reconRegisterAmount(b, account)) || 0);
+        cmp = aa - bb;
+      }
+      if (cmp === 0) {
+        cmp = String(a.posting_date || '').localeCompare(String(b.posting_date || ''))
+          || String(a.id).localeCompare(String(b.id));
+      }
+      return cmp * dir;
+    });
+    return rows;
+  }, [entries, sortKey, sortDir, account, isCard]);
+
+  const SortTh = ({ colKey, className, children, style }) => (
+    <th
+      className={className}
+      style={{ ...style, cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+      onClick={() => toggleSort(colKey)}
+      title={`Sort by ${children}`}
+    >
+      {children}{sortMark(colKey)}
+    </th>
+  );
+
+  if (!entries.length) {
+    return <div className="qbd-empty">{compact ? 'None' : 'No transactions for this account.'}</div>;
+  }
+
   return (
     <table className="qbd-reg qbd-recon-reg">
       <thead>
         <tr>
           <th style={{ width: 26 }}>✓</th>
-          {showDate && <th className="qbd-d">DATE</th>}
-          {showNum && <th className="qbd-je">CHK #</th>}
-          {showPayee && <th>PAYEE</th>}
-          {showType && <th className="qbd-type">TYPE</th>}
+          {showDate && <SortTh colKey="date" className="qbd-d">DATE</SortTh>}
+          {showNum && <SortTh colKey="num" className="qbd-je">CHK #</SortTh>}
+          {showPayee && <SortTh colKey="payee">PAYEE</SortTh>}
+          {showType && <SortTh colKey="type" className="qbd-type">TYPE</SortTh>}
           {compact ? (
-            <th className="qbd-amt qbd-recon-amt">{compactAmtLabel}</th>
+            <SortTh colKey="amount" className="qbd-amt qbd-recon-amt">{compactAmtLabel}</SortTh>
           ) : (
             <>
-              <th className="qbd-amt qbd-recon-amt">{labels.col2}</th>
-              <th className="qbd-amt qbd-recon-amt">{labels.col1}</th>
+              <SortTh colKey="amount" className="qbd-amt qbd-recon-amt">{labels.col2}</SortTh>
+              <SortTh colKey="amount" className="qbd-amt qbd-recon-amt">{labels.col1}</SortTh>
             </>
           )}
         </tr>
       </thead>
       <tbody>
-        {entries.map((e) => {
+        {sortedEntries.map((e) => {
           const isChecked = !!checked[e.id];
           const isMatched = matchedSet.has(e.id);
           const hl = highlightGlId === e.id;
@@ -586,6 +671,9 @@ export default function QBDReconcile() {
   const [pendingDrafts, setPendingDrafts] = useState(0);
   const [data, setData] = useState(null);
   const [checked, setChecked] = useState({});
+  // Mirror of checked — survives stale closures when Fix category / worksheet reload runs.
+  const checkedRef = useRef({});
+  useEffect(() => { checkedRef.current = checked; }, [checked]);
   const [serviceCharge, setServiceCharge] = useState('0');
   const [interestEarned, setInterestEarned] = useState('0');
   // Note shown when interest / service charge was read off the statement and
@@ -1130,8 +1218,19 @@ export default function QBDReconcile() {
     else reader.readAsText(file);
   }, [entityId, accountId, showToast, runPrepare]);
 
+  const accountNumberForChecked = useMemo(() => {
+    const fromAccounts = accounts.find((a) => a.id === accountId)?.account_number;
+    const fromData = data?.account?.account_number;
+    return String(fromAccounts || fromData || '');
+  }, [accounts, accountId, data?.account?.account_number]);
+
   const applyAutoChecked = useCallback((worksheet, { preserveChecked = true } = {}) => {
     const dateKey = isoDateOnly(worksheet?.statementDate || stmtDate);
+    const acctNo = String(
+      worksheet?.account?.account_number
+      || accounts.find((a) => a.id === accountId)?.account_number
+      || ''
+    );
     const entryIds = new Set((worksheet?.entries || []).map((e) => String(e.id)));
     setChecked((prev) => {
       const next = {};
@@ -1143,28 +1242,40 @@ export default function QBDReconcile() {
           next[String(e.id)] = true;
         }
       });
-      // 3) Keep marks the user already checked in this session (Fix category used
-      //    to reload the worksheet and wipe these — that forced a full re-match)
+      // 3) Keep marks the user already checked — from React state, ref, and disk.
+      //    Fix category must never wipe these.
       if (preserveChecked) {
-        Object.keys(prev || {}).forEach((id) => {
-          if (prev[id]) next[String(id)] = true;
-        });
-        readSavedCheckedIds(entityId, accountId, dateKey).forEach((id) => {
+        const fromPrev = prev || {};
+        const fromRef = checkedRef.current || {};
+        Object.keys(fromPrev).forEach((id) => { if (fromPrev[id]) next[String(id)] = true; });
+        Object.keys(fromRef).forEach((id) => { if (fromRef[id]) next[String(id)] = true; });
+        readSavedCheckedIds(entityId, accountId, dateKey, acctNo).forEach((id) => {
           next[String(id)] = true;
         });
+        // Also try current stmtDate period in case worksheet date drifted
+        if (stmtDate && isoDateOnly(stmtDate) !== dateKey) {
+          readSavedCheckedIds(entityId, accountId, stmtDate, acctNo).forEach((id) => {
+            next[String(id)] = true;
+          });
+        }
       }
       // Drop ids that are no longer on the worksheet
       Object.keys(next).forEach((id) => {
         if (!entryIds.has(id)) delete next[id];
       });
-      writeSavedCheckedIds(entityId, accountId, dateKey, next);
+      checkedRef.current = next;
+      writeSavedCheckedIds(entityId, accountId, dateKey, next, acctNo);
+      if (stmtDate && isoDateOnly(stmtDate) !== dateKey) {
+        writeSavedCheckedIds(entityId, accountId, stmtDate, next, acctNo);
+      }
       return next;
     });
-  }, [entityId, accountId, stmtDate]);
+  }, [entityId, accountId, stmtDate, accounts]);
 
   const persistChecked = useCallback((nextMap) => {
-    writeSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate), nextMap);
-  }, [entityId, accountId, stmtDate]);
+    checkedRef.current = nextMap;
+    writeSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate), nextMap, accountNumberForChecked);
+  }, [entityId, accountId, stmtDate, accountNumberForChecked]);
 
   const loadWorksheet = useCallback((dateOverride, opts = {}) => {
     if (!accountId) return Promise.resolve();
@@ -1294,7 +1405,8 @@ export default function QBDReconcile() {
 
   const unmarkAll = () => {
     setChecked({});
-    clearSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate));
+    checkedRef.current = {};
+    clearSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate), accountNumberForChecked);
   };
 
   /** Clear cleared checkmarks for one register side only (checks or deposits). */
@@ -1538,8 +1650,9 @@ export default function QBDReconcile() {
         // visit starts fresh instead of reopening a closed period. ("Leave"
         // intentionally KEEPS it: progress-saved means we come back to it.)
         try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
-        clearSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate));
+        clearSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate), accountNumberForChecked);
         setChecked({});
+        checkedRef.current = {};
         // Close & Advance: roll straight into the next month. The beginning
         // balance auto-carries from this close; we just bump the statement date.
         if (advance) {
@@ -2246,9 +2359,11 @@ export default function QBDReconcile() {
           showToast={showToast}
           onClose={() => setDrillEntry(null)}
           onUpdated={(updated) => {
+            // Category fix must NOT reload the worksheet — that was wiping every
+            // cleared checkmark. Only refresh the open transaction detail.
             setDrillEntry(updated);
-            // Soft reload — keep every cleared checkmark the user already marked.
-            loadWorksheet(undefined, { preserveChecked: true });
+            // Keep marks saved so a later intentional reload still restores them.
+            persistChecked(checkedRef.current || checked);
           }}
         />
       )}
