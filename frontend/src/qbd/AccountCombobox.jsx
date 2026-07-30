@@ -101,7 +101,9 @@ export default function AccountCombobox({
       left: rect.left,
       top: rect.bottom + 2,
       width: rect.width,
-      zIndex: 500,
+      // Above reconcile / transaction-detail modals (backdrop is z-index 350)
+      // so picking a category is not swallowed by the modal layer.
+      zIndex: 10050,
     });
   }, []);
 

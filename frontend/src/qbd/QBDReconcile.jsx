@@ -241,6 +241,71 @@ function useSplitResize(splitRef, setSplitPct, minPct = 18, maxPct = 82) {
 }
 
 /** Drill-down: shows the full double-entry behind a register line; allows reclass + reverse during recon. */
+function applyReclassHistoryToLines(lines, reclassHistory = []) {
+  if (!Array.isArray(lines) || !lines.length) return lines || [];
+  if (!Array.isArray(reclassHistory) || !reclassHistory.length) return lines;
+
+  // Clone lines and net each reclass into the display (append-only books stay unchanged).
+  const out = lines.map((l) => ({
+    ...l,
+    debit: Number(l.debit) || 0,
+    credit: Number(l.credit) || 0,
+    _reclassed: false,
+  }));
+  const byId = new Map(out.map((l) => [String(l.id), l]));
+
+  for (const r of reclassHistory) {
+    const fromLine = byId.get(String(r.lineId));
+    if (!fromLine || !r.toAccount) continue;
+    const amt = Number(r.amount) || Math.max(fromLine.debit, fromLine.credit);
+    if (!(amt > 0)) continue;
+
+    const wasDebit = fromLine.debit > 0;
+    // Reduce / clear the original offset line
+    if (wasDebit) {
+      fromLine.debit = Math.max(0, fromLine.debit - amt);
+    } else {
+      fromLine.credit = Math.max(0, fromLine.credit - amt);
+    }
+    fromLine._reclassed = true;
+
+    // Add to an existing target line of the same side, or rewrite this line's account when emptied
+    let targetLine = out.find(
+      (l) => String(l.account_id) === String(r.toAccount.id)
+        && l !== fromLine
+        && ((wasDebit && l.debit >= 0) || (!wasDebit && l.credit >= 0))
+    );
+    if (!targetLine && fromLine.debit === 0 && fromLine.credit === 0) {
+      fromLine.account_id = r.toAccount.id;
+      fromLine.account_number = r.toAccount.account_number;
+      fromLine.account_name = r.toAccount.account_name;
+      if (wasDebit) fromLine.debit = amt;
+      else fromLine.credit = amt;
+      fromLine._reclassed = true;
+      continue;
+    }
+    if (!targetLine) {
+      targetLine = {
+        id: `effective-${r.reclassJeId || r.lineId}`,
+        account_id: r.toAccount.id,
+        account_number: r.toAccount.account_number,
+        account_name: r.toAccount.account_name,
+        debit: 0,
+        credit: 0,
+        _reclassed: true,
+        _synthetic: true,
+      };
+      out.push(targetLine);
+      byId.set(String(targetLine.id), targetLine);
+    }
+    if (wasDebit) targetLine.debit += amt;
+    else targetLine.credit += amt;
+    targetLine._reclassed = true;
+  }
+
+  return out.filter((l) => (Number(l.debit) || 0) > 0.00001 || (Number(l.credit) || 0) > 0.00001);
+}
+
 function TxnDetailModal({
   entry,
   entityId,
@@ -250,25 +315,34 @@ function TxnDetailModal({
   onUpdated,
   showToast,
 }) {
-  const lines = entry.lines || [];
+  const [liveEntry, setLiveEntry] = useState(entry);
+  useEffect(() => { setLiveEntry(entry); }, [entry]);
+
+  const rawLines = liveEntry.lines || [];
+  const reclassHistory = liveEntry.reclassHistory || [];
+  const lines = useMemo(
+    () => applyReclassHistoryToLines(rawLines, reclassHistory),
+    [rawLines, reclassHistory]
+  );
   const [busy, setBusy] = useState(false);
   const [reclassLineId, setReclassLineId] = useState(null);
   const [reclassAccountId, setReclassAccountId] = useState('');
-  const canReverse = entry.status === 'POSTED' && !entry.reversed_by_je_id && !entry.reverses_je_id;
-  const canEditDraft = entry.status === 'DRAFT';
+  const canReverse = liveEntry.status === 'POSTED' && !liveEntry.reversed_by_je_id && !liveEntry.reverses_je_id;
+  const canEditDraft = liveEntry.status === 'DRAFT';
   let td = 0;
   let tc = 0;
 
-  const refreshEntry = () => journalAPI.get(entityId, entry.id)
+  const refreshEntry = () => journalAPI.get(entityId, liveEntry.id)
     .then((res) => {
+      setLiveEntry(res.data);
       onUpdated && onUpdated(res.data);
       return res.data;
     });
 
   const doReverse = () => {
-    if (!window.confirm(`Reverse ${entry.je_number}? This creates an offsetting posted entry.`)) return;
+    if (!window.confirm(`Reverse ${liveEntry.je_number}? This creates an offsetting posted entry.`)) return;
     setBusy(true);
-    journalAPI.reverse(entityId, entry.id)
+    journalAPI.reverse(entityId, liveEntry.id)
       .then((r) => {
         showToast && showToast(`Reversed — ${r.data?.reversalJeNumber || 'done'}`);
         return refreshEntry();
@@ -278,7 +352,13 @@ function TxnDetailModal({
   };
 
   const startReclass = (line) => {
-    setReclassLineId(line.id);
+    // Map synthetic/effective line back to the original line id when possible
+    const raw = rawLines.find((l) => String(l.id) === String(line.id))
+      || rawLines.find((l) => String(l.account_id) === String(line.account_id)
+        && Math.abs((Number(l.debit) || 0) - (Number(line.debit) || 0)) < 0.005
+        && Math.abs((Number(l.credit) || 0) - (Number(line.credit) || 0)) < 0.005)
+      || rawLines.find((l) => String(l.account_id) === String(line.account_id));
+    setReclassLineId(raw?.id || line.id);
     setReclassAccountId('');
   };
 
@@ -288,14 +368,15 @@ function TxnDetailModal({
       return;
     }
     const target = accounts.find((a) => a.id === reclassAccountId);
-    const line = lines.find((l) => l.id === reclassLineId);
+    const line = rawLines.find((l) => l.id === reclassLineId)
+      || lines.find((l) => l.id === reclassLineId);
     const fromLabel = line ? `${line.account_number} · ${(line.account_name || '').split(':').pop()}` : 'this line';
     const toNum = target?.account_number || target?.number || '';
     const toName = (target?.account_name || target?.name || '').split(':').pop();
     const toLabel = target ? `${toNum} · ${toName}` : 'the new account';
     if (!window.confirm(`Change category from ${fromLabel} to ${toLabel}? Future similar items will learn this category.`)) return;
     setBusy(true);
-    journalAPI.reclassOffset(entityId, entry.id, {
+    journalAPI.reclassOffset(entityId, liveEntry.id, {
       lineId: reclassLineId,
       accountId: reclassAccountId,
       learnRule: true,
@@ -314,28 +395,28 @@ function TxnDetailModal({
   return (
     <div className="qbd-modal-backdrop" onClick={onClose}>
       <div className="qbd-window" style={{ width: 720, maxHeight: '85vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
-        <div className="qbd-wtitle">🧾 Transaction Detail — {entry.je_number} <span className="x" onClick={onClose}>✕</span></div>
+        <div className="qbd-wtitle">🧾 Transaction Detail — {liveEntry.je_number} <span className="x" onClick={onClose}>✕</span></div>
         <div className="qbd-tools">
-          <span className="qbd-muted">Date</span><b>{fmtReconDate(entry.posting_date)}</b>
-          <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{entry.description || ''}</span>
-          <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {entry.status}</span>
-          {entry.reversed_by_je_id && <span className="qbd-muted" style={{ marginLeft: 8 }}>(reversed)</span>}
-          {entry.sourceDocument?.hasFile && (
+          <span className="qbd-muted">Date</span><b>{fmtReconDate(liveEntry.posting_date)}</b>
+          <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{liveEntry.description || ''}</span>
+          <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {liveEntry.status}</span>
+          {liveEntry.reversed_by_je_id && <span className="qbd-muted" style={{ marginLeft: 8 }}>(reversed)</span>}
+          {liveEntry.sourceDocument?.hasFile && (
             <button
               type="button"
               className="qbd-btn"
               style={{ marginLeft: 12 }}
-              title={entry.sourceDocument.fileName || 'Source document'}
-              onClick={() => (entry.sourceDocument.documentId
-                ? journalAPI.viewDocument(entityId, entry.id)
-                : mgmtReportAPI.viewFile(entry.sourceDocument.mgmtReportId, entry.sourceDocument.fileName)
+              title={liveEntry.sourceDocument.fileName || 'Source document'}
+              onClick={() => (liveEntry.sourceDocument.documentId
+                ? journalAPI.viewDocument(entityId, liveEntry.id)
+                : mgmtReportAPI.viewFile(liveEntry.sourceDocument.mgmtReportId, liveEntry.sourceDocument.fileName)
               ).catch((e) => window.alert(e.message))}
             >
               View source document
             </button>
           )}
           {canEditDraft && (
-            <a className="qbd-btn" style={{ marginLeft: 12, textDecoration: 'none' }} href={`/journal?je=${entry.id}`}>Edit draft</a>
+            <a className="qbd-btn" style={{ marginLeft: 12, textDecoration: 'none' }} href={`/journal?je=${liveEntry.id}`}>Edit draft</a>
           )}
           {canReverse && (
             <button type="button" className="qbd-btn" disabled={busy} onClick={doReverse} style={{ marginLeft: 12 }}>Reverse entry</button>
@@ -343,10 +424,21 @@ function TxnDetailModal({
         </div>
         <div className="qbd-wbody">
           <p className="qbd-muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
-            {entry.status === 'POSTED' && !entry.reversed_by_je_id
-              ? 'Click Fix category on the expense line to move it to another account (e.g. Due To - GM for intercompany wires).'
+            {liveEntry.status === 'POSTED' && !liveEntry.reversed_by_je_id
+              ? 'Click Fix category on the income/expense line to move it to another account. The category on this screen updates right away.'
               : null}
           </p>
+          {reclassHistory.length > 0 && (
+            <p style={{ margin: '0 0 8px', fontSize: 12, color: '#1a5a2a' }}>
+              Category already corrected{reclassHistory.length === 1 ? '' : ` (${reclassHistory.length} fixes)`}
+              {reclassHistory.map((r) => {
+                const fromN = r.fromAccount?.account_number || '?';
+                const toN = r.toAccount?.account_number || '?';
+                return ` — ${fromN} → ${toN}`;
+              }).join('')}
+              .
+            </p>
+          )}
           <table className="qbd-reg">
             <thead><tr><th>ACCOUNT</th><th className="qbd-amt">DEBIT</th><th className="qbd-amt">CREDIT</th><th style={{ width: 88 }} /></tr></thead>
             <tbody>
@@ -354,10 +446,13 @@ function TxnDetailModal({
                 td += +l.debit || 0;
                 tc += +l.credit || 0;
                 const isBankLine = reconcileAccountId && String(l.account_id) === String(reconcileAccountId);
-                const canReclassLine = entry.status === 'POSTED' && !entry.reversed_by_je_id && !isBankLine;
+                const canReclassLine = liveEntry.status === 'POSTED' && !liveEntry.reversed_by_je_id && !isBankLine && !l._synthetic;
                 return (
-                  <tr key={l.id}>
-                    <td>{l.account_number} · {(l.account_name || '').split(':').pop()}</td>
+                  <tr key={l.id} style={l._reclassed ? { background: '#f3faf4' } : undefined}>
+                    <td>
+                      {l.account_number} · {(l.account_name || '').split(':').pop()}
+                      {l._reclassed ? <span className="qbd-muted" style={{ marginLeft: 6, fontSize: 11 }}>(updated)</span> : null}
+                    </td>
                     <td className="qbd-amt">{(+l.debit) ? fmt(+l.debit) : ''}</td>
                     <td className="qbd-amt">{(+l.credit) ? fmt(+l.credit) : ''}</td>
                     <td>
