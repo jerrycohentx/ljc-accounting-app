@@ -66,11 +66,12 @@ router.post('/ofx', async (req, res) => {
     // Validate transactions
     const validation = validateTransactions(parseResult.transactions);
 
-    // Check for duplicates in database
+    // Check for duplicates in database. Include EVERY status (even REJECTED):
+    // a fitid downloaded once must never be offered for download again.
     const db = await getDatabase();
     const existingFitids = await db.all(
-      'SELECT DISTINCT fitid FROM import_transactions WHERE entity_id = ? AND status != ?',
-      [entityId, 'REJECTED']
+      'SELECT DISTINCT fitid FROM import_transactions WHERE entity_id = ?',
+      [entityId]
     );
     const existingFitidSet = new Set(existingFitids.map(r => r.fitid));
 

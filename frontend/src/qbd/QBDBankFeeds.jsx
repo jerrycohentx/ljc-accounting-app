@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, plaidAPI, importAPI } from '../services/api';
-import { fmt, leafLabel, todayISO } from './helpers';
+import { fmt, leafLabel } from './helpers';
 import AccountCombobox, { flattenAccounts } from './AccountCombobox';
 
 // QuickBooks Desktop "Bank Feeds Center": download (date range) + review-before-post.
@@ -13,9 +13,6 @@ export default function QBDBankFeeds() {
 
   const [items, setItems] = useState([]);
   const [itemId, setItemId] = useState('');
-  const [mode, setMode] = useState('since'); // since | all | custom
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState(todayISO());
 
   const [accounts, setAccounts] = useState([]);
   const [pending, setPending] = useState([]);
@@ -54,11 +51,10 @@ export default function QBDBankFeeds() {
 
   const download = async () => {
     if (!itemId) { toast('Connect a bank first (Bank Feeds → connect).'); return; }
-    if (mode === 'custom' && (!startDate || !endDate)) { toast('Pick a start and end date.'); return; }
-    const opts = mode === 'custom' ? { startDate, endDate } : mode === 'all' ? { mode: 'all' } : {};
     setDownloading(true);
     try {
-      const sres = await plaidAPI.sync(entityId, itemId, opts);
+      // Only ever pulls transactions not downloaded before (incremental).
+      const sres = await plaidAPI.sync(entityId, itemId);
       const importId = sres.data?.importId;
       const newCount = sres.data?.summary?.newTransactions ?? 0;
       if (!importId) { toast('Download failed — no session returned.'); return; }
@@ -151,22 +147,10 @@ export default function QBDBankFeeds() {
         </div>
         <div className="frow">
           <label>Get</label>
-          <select value={mode} onChange={(e) => setMode(e.target.value)} style={{ width: 220 }}>
-            <option value="since">New since last download</option>
-            <option value="all">All available activity</option>
-            <option value="custom">Custom date range…</option>
-          </select>
-          {mode === 'custom' && (
-            <>
-              <label style={{ width: 40 }}>From</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-              <label style={{ width: 24 }}>To</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </>
-          )}
+          <span className="qbd-muted">Only new transactions you haven’t downloaded before.</span>
         </div>
         <div className="qbd-botbar">
-          <span className="qbd-muted">Downloaded transactions are held for your review — nothing posts until you add it to the register.</span>
+          <span className="qbd-muted">Download only pulls activity you’ve never downloaded before — already-downloaded and discarded transactions are skipped automatically. Everything is held for your review; nothing posts until you add it to the register.</span>
           <span className="sp" />
           <button className="qbd-btn" disabled={downloading || !itemId} onClick={download} style={{ fontWeight: 'bold' }}>
             {downloading ? 'Downloading…' : 'Download'}
