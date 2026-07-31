@@ -69,6 +69,8 @@ export default function CreateAccountModal({
   entityId,
   accounts = [],
   defaultType = 'EXPENSE',
+  defaultParentAccountId = '',
+  defaultIsSubAccount = false,
   applyLabel = 'Create & apply',
   onCreated,
 }) {
@@ -89,15 +91,20 @@ export default function CreateAccountModal({
 
   useEffect(() => {
     if (!open) return;
+    const parentId = defaultParentAccountId || '';
+    const parent = parentId ? normalized.find((a) => a.id === parentId) : null;
+    const asSub = Boolean(defaultIsSubAccount && parent);
     setForm({
       accountType: defaultType,
-      isSubAccount: false,
-      parentAccountId: '',
-      accountNumber: suggestAccountNumber(normalized, defaultType),
+      isSubAccount: asSub,
+      parentAccountId: asSub ? parent.id : '',
+      accountNumber: asSub
+        ? suggestSubAccountNumber(normalized, parent.number)
+        : suggestAccountNumber(normalized, defaultType),
       accountName: '',
       description: '',
     });
-  }, [open, defaultType, normalized]);
+  }, [open, defaultType, defaultParentAccountId, defaultIsSubAccount, normalized]);
 
   if (!open) return null;
 

@@ -694,6 +694,16 @@ function TxnDetailModal({
 }
 
 /** Record a bank/card transaction that appears on the statement but is missing from the books. */
+function newSplitRow() {
+  return { key: `split-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, accountId: '', amount: '' };
+}
+
+function moneyCents(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n * 100);
+}
+
 function RecordMissingTxnModal({
   open,
   onClose,
@@ -712,20 +722,26 @@ function RecordMissingTxnModal({
   const [side, setSide] = useState(isCard ? 'charge' : 'payment');
   const [date, setDate] = useState(defaultDate || todayISO());
   const [amount, setAmount] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const [splits, setSplits] = useState([newSplitRow()]);
   const [party, setParty] = useState('');
   const [memo, setMemo] = useState('');
   const [busy, setBusy] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [createForKey, setCreateForKey] = useState(null);
+  const [attachFile, setAttachFile] = useState(null);
+  const attachInputRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     setSide(isCard ? 'charge' : 'payment');
     setDate(defaultDate || todayISO());
     setAmount('');
-    setCategoryId('');
+    setSplits([newSplitRow()]);
     setParty('');
     setMemo('');
+    setAttachFile(null);
+    setCreateForKey(null);
+    if (attachInputRef.current) attachInputRef.current.value = '';
   }, [open, isCard, defaultDate]);
 
   if (!open || !bankAccount) return null;
@@ -742,34 +758,68 @@ function RecordMissingTxnModal({
       { value: 'deposit', label: 'Deposit / other credit (money in)' },
     ];
 
+  const totalCents = moneyCents(amount);
+  const splitCents = splits.reduce((sum, row, idx) => {
+    if (splits.length === 1 && !String(row.amount || '').trim()) return totalCents;
+    return sum + moneyCents(row.amount);
+  }, 0);
+  const remainingCents = totalCents - splitCents;
+  const splitsReady = splits.length > 0
+    && splits.every((row) => row.accountId && (splits.length === 1 || moneyCents(row.amount) > 0))
+    && totalCents > 0
+    && remainingCents === 0;
+
+  const updateSplit = (key, patch) => {
+    setSplits((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+  };
+
+  const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      resolve(dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl);
+    };
+    reader.onerror = () => reject(new Error('Could not read that file'));
+    reader.readAsDataURL(file);
+  });
+
   const submit = async () => {
-    const amt = Math.round((parseFloat(amount) || 0) * 100) / 100;
-    if (!categoryId || !(amt > 0)) {
-      showToast && showToast('Enter a positive amount and pick a category account');
+    if (!splitsReady) {
+      showToast && showToast(
+        remainingCents !== 0
+          ? `Split amounts must equal the total (off by ${fmt(Math.abs(remainingCents) / 100)})`
+          : 'Enter amount, pick each category, and fill split amounts'
+      );
       return;
     }
+    const amt = totalCents / 100;
     const bankLabel = `${bankAccount.account_number || ''} · ${leafLabel(bankAccount.account_name || '')}`.trim();
-    const cat = categoryAccounts.find((a) => a.id === categoryId);
-    const catLabel = cat
-      ? `${cat.account_number || cat.number} · ${leafLabel(cat.account_name || cat.name)}`
-      : 'category';
-    const isMoneyOut = side === 'payment' || side === 'charge';
+    const resolvedSplits = splits.map((row) => ({
+      accountId: row.accountId,
+      amount: (splits.length === 1 && !String(row.amount || '').trim() ? totalCents : moneyCents(row.amount)) / 100,
+    }));
     // Bank: payment credits cash; deposit debits cash.
     // Card: charge credits liability; payment/credit debits liability.
     const bankGetsCredit = isCard ? (side === 'charge') : (side === 'payment');
-    const lines = bankGetsCredit
-      ? [
-        { accountId: categoryId, debit: amt, credit: 0, description: party || '' },
-        { accountId: bankId, debit: 0, credit: amt, description: party || '' },
-      ]
-      : [
-        { accountId: bankId, debit: amt, credit: 0, description: party || '' },
-        { accountId: categoryId, debit: 0, credit: amt, description: party || '' },
-      ];
+    const offsetLines = resolvedSplits.map((row) => (
+      bankGetsCredit
+        ? { accountId: row.accountId, debit: row.amount, credit: 0, description: party || '' }
+        : { accountId: row.accountId, debit: 0, credit: row.amount, description: party || '' }
+    ));
+    const bankLine = bankGetsCredit
+      ? { accountId: bankId, debit: 0, credit: amt, description: party || '' }
+      : { accountId: bankId, debit: amt, credit: 0, description: party || '' };
+    const lines = [...offsetLines, bankLine];
     const kind = isCard
       ? (side === 'charge' ? 'Card charge' : 'Card payment/credit')
       : (side === 'payment' ? 'Check/payment' : 'Deposit');
     const desc = `${kind}${party ? ` — ${party}` : ''}${memo ? ` (${memo})` : ''} · ${bankLabel}`;
+    const catLabels = resolvedSplits.map((row) => {
+      const cat = categoryAccounts.find((a) => a.id === row.accountId);
+      return cat
+        ? `${cat.account_number || cat.number} · ${leafLabel(cat.account_name || cat.name)} ${fmt(row.amount)}`
+        : fmt(row.amount);
+    }).join(' + ');
     setBusy(true);
     try {
       const r = await journalAPI.create(entityId, {
@@ -789,7 +839,19 @@ function RecordMissingTxnModal({
         onClose && onClose();
         return;
       }
-      showToast && showToast(`Posted ${r.data.jeNumber || 'entry'} — ${fmt(amt)} to ${catLabel}`);
+      if (attachFile) {
+        try {
+          const fileData = await fileToBase64(attachFile);
+          await journalAPI.attachDocument(entityId, id, {
+            fileName: attachFile.name,
+            fileMime: attachFile.type || 'application/pdf',
+            fileData,
+          });
+        } catch (attachErr) {
+          showToast && showToast('Posted, but could not attach document: ' + (attachErr.response?.data?.error || attachErr.message));
+        }
+      }
+      showToast && showToast(`Posted ${r.data.jeNumber || 'entry'} — ${fmt(amt)} → ${catLabels}`);
       onClose && onClose();
       if (typeof onPosted === 'function') await onPosted({ journalEntryId: id, amount: amt, side });
     } catch (err) {
@@ -801,7 +863,7 @@ function RecordMissingTxnModal({
 
   return (
     <div className="qbd-modal-backdrop" style={{ zIndex: 400 }} onClick={() => !busy && onClose && onClose()}>
-      <div className="qbd-window" style={{ width: 520, maxHeight: '90vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
+      <div className="qbd-window" style={{ width: 620, maxHeight: '90vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
         <div className="qbd-wtitle">
           Record missing transaction
           <span className="x" onClick={() => !busy && onClose && onClose()}>✕</span>
@@ -841,18 +903,73 @@ function RecordMissingTxnModal({
               placeholder={isCard ? 'Merchant / payee' : (side === 'payment' ? 'Payee' : 'Source')}
             />
           </div>
-          <div className="frow" style={{ marginBottom: 8 }}>
-            <label style={{ width: 110 }}>Category</label>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <AccountCombobox
-                accounts={categoryAccounts}
-                value={categoryId}
-                onChange={setCategoryId}
-                placeholder="Search GL account…"
-                allowCreate
-                onCreateRequest={() => setCreateOpen(true)}
-              />
+          <div style={{ marginBottom: 8 }}>
+            <div className="frow" style={{ marginBottom: 6, alignItems: 'center' }}>
+              <label style={{ width: 110 }}>Categories</label>
+              <span className="qbd-muted" style={{ fontSize: 11, flex: 1 }}>
+                Split across more than one account when the charge covers multiple expenses
+              </span>
+              <button
+                type="button"
+                className="qbd-btn qbd-pane-btn"
+                disabled={busy}
+                onClick={() => setSplits((prev) => [...prev, newSplitRow()])}
+              >
+                + Add category
+              </button>
             </div>
+            {splits.map((row, idx) => (
+              <div key={row.key} className="frow" style={{ marginBottom: 6, gap: 8, alignItems: 'center' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <AccountCombobox
+                    accounts={categoryAccounts}
+                    value={row.accountId}
+                    onChange={(id) => updateSplit(row.key, { accountId: id })}
+                    placeholder={`Category ${idx + 1}…`}
+                    allowCreate
+                    onCreateRequest={() => {
+                      setCreateForKey(row.key);
+                      setCreateOpen(true);
+                    }}
+                  />
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={row.amount}
+                  onChange={(e) => updateSplit(row.key, { amount: e.target.value })}
+                  placeholder={splits.length === 1 ? amount || 'Amount' : 'Split amt'}
+                  style={{ width: 110, textAlign: 'right' }}
+                  title={splits.length === 1 ? 'Leave blank to use the full amount' : 'Amount for this category'}
+                />
+                {splits.length > 1 && (
+                  <button
+                    type="button"
+                    className="qbd-btn"
+                    disabled={busy}
+                    title="Remove this category line"
+                    onClick={() => setSplits((prev) => prev.filter((r) => r.key !== row.key))}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+            {totalCents > 0 && splits.length > 1 && (
+              <p
+                className="qbd-muted"
+                style={{
+                  margin: '0 0 0 110px',
+                  fontSize: 12,
+                  color: remainingCents === 0 ? '#1a5a2a' : '#b3261e',
+                }}
+              >
+                {remainingCents === 0
+                  ? `Splits total ${fmt(totalCents / 100)} — balanced`
+                  : `Remaining to assign: ${fmt(remainingCents / 100)}`}
+              </p>
+            )}
           </div>
           <div className="frow" style={{ marginBottom: 8 }}>
             <label style={{ width: 110 }}>Memo</label>
@@ -863,6 +980,27 @@ function RecordMissingTxnModal({
               placeholder="Optional"
             />
           </div>
+          <div className="frow" style={{ marginBottom: 4, alignItems: 'center' }}>
+            <label style={{ width: 110 }}>Supporting doc</label>
+            <input
+              ref={attachInputRef}
+              type="file"
+              accept="application/pdf,image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => setAttachFile((e.target.files && e.target.files[0]) || null)}
+            />
+            <button
+              type="button"
+              className="qbd-btn"
+              disabled={busy}
+              onClick={() => attachInputRef.current && attachInputRef.current.click()}
+            >
+              {attachFile ? 'Change file…' : 'Attach PDF / image…'}
+            </button>
+            <span className="qbd-muted" style={{ marginLeft: 10, fontSize: 12, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {attachFile ? attachFile.name : 'Optional — saved on the posted entry'}
+            </span>
+          </div>
         </div>
         <div className="qbd-foot">
           <button type="button" className="qbd-btn" disabled={busy} onClick={() => onClose && onClose()}>Cancel</button>
@@ -870,7 +1008,7 @@ function RecordMissingTxnModal({
           <button
             type="button"
             className="qbd-btn qbd-primary"
-            disabled={busy || !categoryId || !(parseFloat(amount) > 0)}
+            disabled={busy || !splitsReady}
             onClick={submit}
             style={{ fontWeight: 'bold' }}
           >
@@ -880,7 +1018,7 @@ function RecordMissingTxnModal({
       </div>
       <CreateAccountModal
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => { setCreateOpen(false); setCreateForKey(null); }}
         entityId={entityId}
         accounts={localAccounts}
         defaultType={side === 'deposit' ? 'REVENUE' : 'EXPENSE'}
@@ -890,8 +1028,17 @@ function RecordMissingTxnModal({
             .sort((a, b) => String(a.account_number || a.number || '').localeCompare(String(b.account_number || b.number || ''), undefined, { numeric: true }));
           setLocalAccounts(next);
           onAccountCreated && onAccountCreated(entry);
-          setCategoryId(entry.id);
+          if (createForKey) {
+            updateSplit(createForKey, { accountId: entry.id });
+          } else {
+            setSplits((prev) => {
+              if (!prev.length) return [{ ...newSplitRow(), accountId: entry.id }];
+              const [first, ...rest] = prev;
+              return [{ ...first, accountId: entry.id }, ...rest];
+            });
+          }
           setCreateOpen(false);
+          setCreateForKey(null);
           showToast && showToast(`Created ${entry.account_number || entry.number} · ${leafLabel(entry.account_name || entry.name)}`);
         }}
       />
