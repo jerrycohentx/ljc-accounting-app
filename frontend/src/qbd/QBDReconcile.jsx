@@ -429,6 +429,7 @@ function TxnDetailModal({
   accounts = [],
   onClose,
   onUpdated,
+  onReversed,
   onAccountCreated,
   showToast,
 }) {
@@ -460,11 +461,19 @@ function TxnDetailModal({
     });
 
   const doReverse = () => {
-    if (!window.confirm(`Reverse ${liveEntry.je_number}? This creates an offsetting posted entry.`)) return;
+    const label = liveEntry.je_number || 'this transaction';
+    if (!window.confirm(
+      `Delete ${label} from the books?\n\n` +
+      `This removes it from the reconcile register by posting an offsetting entry (the original stays in the audit trail).`
+    )) return;
     setBusy(true);
     journalAPI.reverse(entityId, liveEntry.id)
       .then((r) => {
-        showToast && showToast(`Reversed — ${r.data?.reversalJeNumber || 'done'}`);
+        showToast && showToast(`Deleted — ${r.data?.reversalJeNumber || 'offset posted'}`);
+        if (typeof onReversed === 'function') {
+          onReversed(r.data);
+          return null;
+        }
         return refreshEntry();
       })
       .catch((e) => window.alert(e.response?.data?.error || e.message))
@@ -555,7 +564,16 @@ function TxnDetailModal({
             <a className="qbd-btn" style={{ marginLeft: 12, textDecoration: 'none' }} href={`/journal?je=${liveEntry.id}`}>Edit draft</a>
           )}
           {canReverse && (
-            <button type="button" className="qbd-btn" disabled={busy} onClick={doReverse} style={{ marginLeft: 12 }}>Reverse entry</button>
+            <button
+              type="button"
+              className="qbd-btn"
+              disabled={busy}
+              onClick={doReverse}
+              style={{ marginLeft: 12, color: '#b3261e', fontWeight: 'bold' }}
+              title="Remove this transaction from the books (posts an offsetting entry)"
+            >
+              Delete transaction
+            </button>
           )}
         </div>
         <div className="qbd-wbody">
@@ -1751,6 +1769,46 @@ export default function QBDReconcile() {
     drillEntryOpen(entry);
   };
 
+  /** Delete (= reverse) the selected register line so flawed leftovers leave the worksheet. */
+  const deleteSelectedTransaction = () => {
+    const id = selectedId || highlightGlId;
+    const entry = entries.find((e) => e.id === id);
+    if (!entry) {
+      showToast && showToast('Click a transaction first, then Delete Transaction');
+      return;
+    }
+    const jeId = entry.journal_entry_id || entry.journalEntryId;
+    if (!jeId) {
+      showToast && showToast('This line has no journal entry to delete');
+      return;
+    }
+    const amt = reconRegisterAmount(entry, account) || 0;
+    const desc = entry.je_description || entry.description || entry.je_number || 'this transaction';
+    const short = String(desc).length > 80 ? `${String(desc).slice(0, 77)}…` : desc;
+    if (!window.confirm(
+      `Delete this transaction from the books?\n\n` +
+      `${fmtReconDate(entry.posting_date)} · ${fmt(amt)} · ${short}\n\n` +
+      `It will disappear from this reconcile screen. An offsetting entry is posted for the audit trail.`
+    )) return;
+    setBusy(true);
+    journalAPI.reverse(entityId, jeId)
+      .then((r) => {
+        showToast && showToast(`Deleted — ${r.data?.reversalJeNumber || 'offset posted'}`);
+        setSelectedId(null);
+        setHighlightGlId(null);
+        setDrillEntry(null);
+        setChecked((c) => {
+          const next = { ...c };
+          delete next[entry.id];
+          persistChecked(next);
+          return next;
+        });
+        return loadWorksheet();
+      })
+      .catch((e) => window.alert(e.response?.data?.error || e.message))
+      .finally(() => setBusy(false));
+  };
+
   const account = data?.account;
   const labels = useMemo(() => reconColumnLabels(account), [account]);
   const isCard = isCreditCardAccount(account);
@@ -2448,6 +2506,16 @@ export default function QBDReconcile() {
         >
           + Missing Transaction
         </button>
+        <button
+          type="button"
+          className="qbd-btn"
+          disabled={busy || !(selectedId || highlightGlId)}
+          onClick={deleteSelectedTransaction}
+          title="Delete the highlighted transaction (posts an offsetting entry; removes it from this register)"
+          style={{ fontWeight: 'bold', color: '#b3261e', background: 'linear-gradient(#fdecea,#f5c6c2)' }}
+        >
+          − Delete Transaction
+        </button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={goTo}>Go To</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={matched} title="Check off everything matched to the statement">Matched</button>
         <input ref={reconStmtFileRef} type="file" accept=".pdf,.ofx,.qfx" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleStatementUpload(f); }} />
@@ -2649,6 +2717,12 @@ export default function QBDReconcile() {
             setDrillEntry(updated);
             // Keep marks saved so a later intentional reload still restores them.
             persistChecked(checkedRef.current || checked);
+          }}
+          onReversed={() => {
+            setDrillEntry(null);
+            setSelectedId(null);
+            setHighlightGlId(null);
+            loadWorksheet();
           }}
         />
       )}
