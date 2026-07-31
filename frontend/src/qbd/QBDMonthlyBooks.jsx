@@ -97,7 +97,10 @@ export default function QBDMonthlyBooks() {
   }, [urlMonth]); // eslint-disable-line react-hooks/exhaustive-deps -- sync URL → picker only
 
   const load = useCallback(() => {
-    if (!entityId) return;
+    if (!entityId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setErr('');
     accountingAPI.monthlyBooks(entityId, { year, month })
@@ -112,12 +115,10 @@ export default function QBDMonthlyBooks() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    const next = new URLSearchParams(searchParams);
-    next.set('year', String(year));
-    next.set('month', String(month));
-    if (next.get('year') !== searchParams.get('year') || next.get('month') !== searchParams.get('month')) {
-      setSearchParams(next, { replace: true });
-    }
+    const y = searchParams.get('year');
+    const m = searchParams.get('month');
+    if (y === String(year) && m === String(month)) return;
+    setSearchParams({ year: String(year), month: String(month) }, { replace: true });
   }, [year, month, searchParams, setSearchParams]);
 
   const steps = data?.steps;

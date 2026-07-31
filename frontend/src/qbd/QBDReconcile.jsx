@@ -1713,7 +1713,8 @@ export default function QBDReconcile() {
         // Already closed & balanced — don't trap Jerry on an empty closed worksheet
         // (common after Save & Close / Close & Advance left ?go=1 in the URL).
         const closedBalanced = r.data?.periodSession?.status === 'CLOSED' && r.data?.periodSession?.balanced;
-        if (closedBalanced && (searchParams.get('return') === 'month' || searchParams.get('go') === '1')) {
+        // Leftover ?go=1 after Save & Close — return to the month quietly (no toast).
+        if (closedBalanced && searchParams.get('go') === '1') {
           const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountId;
           const period = workingPeriodFromContext({
             searchParams,
@@ -1724,7 +1725,6 @@ export default function QBDReconcile() {
           try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
           setStarted(false);
           setData(null);
-          showToast && showToast('This account is already reconciled for that statement — back to the month.');
           if (period) navigate(monthlyBooksPath(period.year, period.month));
           else navigate('/');
           return r.data;
