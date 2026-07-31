@@ -18,6 +18,7 @@ import {
 import { drillReconLineSource } from './reconSourceDrill';
 import { ReconHtmlPreviewModal } from './QBDReconReports';
 import AccountCombobox from './AccountCombobox';
+import CreateAccountModal from './CreateAccountModal';
 import {
   accountFromSearchParams,
   resolveAccountId,
@@ -428,6 +429,7 @@ function TxnDetailModal({
   accounts = [],
   onClose,
   onUpdated,
+  onAccountCreated,
   showToast,
 }) {
   const [liveEntry, setLiveEntry] = useState(entry);
@@ -442,6 +444,9 @@ function TxnDetailModal({
   const [busy, setBusy] = useState(false);
   const [reclassLineId, setReclassLineId] = useState(null);
   const [reclassAccountId, setReclassAccountId] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [localAccounts, setLocalAccounts] = useState(accounts);
+  useEffect(() => { setLocalAccounts(accounts); }, [accounts]);
   const canReverse = liveEntry.status === 'POSTED' && !liveEntry.reversed_by_je_id && !liveEntry.reverses_je_id;
   const canEditDraft = liveEntry.status === 'DRAFT';
   let td = 0;
@@ -477,23 +482,28 @@ function TxnDetailModal({
     setReclassAccountId('');
   };
 
-  const applyReclass = () => {
-    if (!reclassLineId || !reclassAccountId) {
+  const applyReclass = (accountIdOverride, accountsOverride) => {
+    const targetId = accountIdOverride || reclassAccountId;
+    const acctList = accountsOverride || localAccounts;
+    if (!reclassLineId || !targetId) {
       showToast && showToast('Pick the account for this category');
-      return;
+      return Promise.resolve();
     }
-    const target = accounts.find((a) => a.id === reclassAccountId);
+    const target = acctList.find((a) => a.id === targetId);
     const line = rawLines.find((l) => l.id === reclassLineId)
       || lines.find((l) => l.id === reclassLineId);
     const fromLabel = line ? `${line.account_number} · ${(line.account_name || '').split(':').pop()}` : 'this line';
     const toNum = target?.account_number || target?.number || '';
     const toName = (target?.account_name || target?.name || '').split(':').pop();
     const toLabel = target ? `${toNum} · ${toName}` : 'the new account';
-    if (!window.confirm(`Change category from ${fromLabel} to ${toLabel}? Future similar items will learn this category.`)) return;
+    const skipConfirm = !!accountIdOverride;
+    if (!skipConfirm && !window.confirm(`Change category from ${fromLabel} to ${toLabel}? Future similar items will learn this category.`)) {
+      return Promise.resolve();
+    }
     setBusy(true);
-    journalAPI.reclassOffset(entityId, liveEntry.id, {
+    return journalAPI.reclassOffset(entityId, liveEntry.id, {
       lineId: reclassLineId,
-      accountId: reclassAccountId,
+      accountId: targetId,
       learnRule: true,
       bankAccountIds: reconcileAccountId ? [reconcileAccountId] : [],
     })
@@ -505,6 +515,17 @@ function TxnDetailModal({
       })
       .catch((e) => window.alert(e.response?.data?.error || e.message))
       .finally(() => setBusy(false));
+  };
+
+  const handleCreatedAccount = async (entry) => {
+    const next = [...localAccounts.filter((a) => a.id !== entry.id), entry]
+      .sort((a, b) => String(a.account_number || a.number || '').localeCompare(String(b.account_number || b.number || ''), undefined, { numeric: true }));
+    setLocalAccounts(next);
+    onAccountCreated && onAccountCreated(entry);
+    setReclassAccountId(entry.id);
+    setCreateOpen(false);
+    showToast && showToast(`Created ${entry.account_number || entry.number} · ${leafLabel(entry.account_name || entry.name)}`);
+    await applyReclass(entry.id, next);
   };
 
   return (
@@ -599,17 +620,22 @@ function TxnDetailModal({
               <div className="frow">
                 <label>New account</label>
                 <AccountCombobox
-                  accounts={accounts}
+                  accounts={localAccounts}
                   value={reclassAccountId}
                   onChange={setReclassAccountId}
                   placeholder="Search GL account…"
                   style={{ minWidth: 320 }}
+                  allowCreate
+                  onCreateRequest={() => setCreateOpen(true)}
                 />
               </div>
+              <p className="qbd-muted" style={{ margin: '6px 0 0', fontSize: 11 }}>
+                Can&apos;t find it? Choose <strong>＋ Create new account…</strong> (income, expense, asset, liability, or equity) — it applies to this transaction right away.
+              </p>
               <div className="qbd-botbar">
                 <button type="button" className="qbd-btn" disabled={busy} onClick={() => { setReclassLineId(null); setReclassAccountId(''); }}>Cancel</button>
                 <span className="sp" />
-                <button type="button" className="qbd-btn qbd-primary" disabled={busy || !reclassAccountId} onClick={applyReclass}>Save category</button>
+                <button type="button" className="qbd-btn qbd-primary" disabled={busy || !reclassAccountId} onClick={() => applyReclass()}>Save category</button>
               </div>
             </div>
           )}
@@ -619,6 +645,221 @@ function TxnDetailModal({
           <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} onClick={onClose}>Close</button>
         </div>
       </div>
+      <CreateAccountModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        entityId={entityId}
+        accounts={localAccounts}
+        defaultType="EXPENSE"
+        applyLabel="Create & apply"
+        onCreated={handleCreatedAccount}
+      />
+    </div>
+  );
+}
+
+/** Record a bank/card transaction that appears on the statement but is missing from the books. */
+function RecordMissingTxnModal({
+  open,
+  onClose,
+  entityId,
+  bankAccount,
+  accounts = [],
+  defaultDate,
+  onAccountCreated,
+  onPosted,
+  showToast,
+}) {
+  const isCard = isCreditCardAccount(bankAccount);
+  const [localAccounts, setLocalAccounts] = useState(accounts);
+  useEffect(() => { setLocalAccounts(accounts); }, [accounts]);
+
+  const [side, setSide] = useState(isCard ? 'charge' : 'payment');
+  const [date, setDate] = useState(defaultDate || todayISO());
+  const [amount, setAmount] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [party, setParty] = useState('');
+  const [memo, setMemo] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setSide(isCard ? 'charge' : 'payment');
+    setDate(defaultDate || todayISO());
+    setAmount('');
+    setCategoryId('');
+    setParty('');
+    setMemo('');
+  }, [open, isCard, defaultDate]);
+
+  if (!open || !bankAccount) return null;
+
+  const bankId = bankAccount.id;
+  const categoryAccounts = localAccounts.filter((a) => a.id !== bankId);
+  const sideOptions = isCard
+    ? [
+      { value: 'charge', label: 'Charge / purchase (increases card balance)' },
+      { value: 'payment', label: 'Payment or credit (decreases card balance)' },
+    ]
+    : [
+      { value: 'payment', label: 'Check / payment (money out)' },
+      { value: 'deposit', label: 'Deposit / other credit (money in)' },
+    ];
+
+  const submit = async () => {
+    const amt = Math.round((parseFloat(amount) || 0) * 100) / 100;
+    if (!categoryId || !(amt > 0)) {
+      showToast && showToast('Enter a positive amount and pick a category account');
+      return;
+    }
+    const bankLabel = `${bankAccount.account_number || ''} · ${leafLabel(bankAccount.account_name || '')}`.trim();
+    const cat = categoryAccounts.find((a) => a.id === categoryId);
+    const catLabel = cat
+      ? `${cat.account_number || cat.number} · ${leafLabel(cat.account_name || cat.name)}`
+      : 'category';
+    const isMoneyOut = side === 'payment' || side === 'charge';
+    // Bank: payment credits cash; deposit debits cash.
+    // Card: charge credits liability; payment/credit debits liability.
+    const bankGetsCredit = isCard ? (side === 'charge') : (side === 'payment');
+    const lines = bankGetsCredit
+      ? [
+        { accountId: categoryId, debit: amt, credit: 0, description: party || '' },
+        { accountId: bankId, debit: 0, credit: amt, description: party || '' },
+      ]
+      : [
+        { accountId: bankId, debit: amt, credit: 0, description: party || '' },
+        { accountId: categoryId, debit: 0, credit: amt, description: party || '' },
+      ];
+    const kind = isCard
+      ? (side === 'charge' ? 'Card charge' : 'Card payment/credit')
+      : (side === 'payment' ? 'Check/payment' : 'Deposit');
+    const desc = `${kind}${party ? ` — ${party}` : ''}${memo ? ` (${memo})` : ''} · ${bankLabel}`;
+    setBusy(true);
+    try {
+      const r = await journalAPI.create(entityId, {
+        description: desc,
+        postingDate: date,
+        memo: memo || party || '',
+        lines,
+        source: 'reconcile-missing-txn',
+      });
+      const id = r.data?.id;
+      if (!id) throw new Error('No journal id returned');
+      try {
+        await journalAPI.approve(entityId, id);
+        await journalAPI.post(entityId, id);
+      } catch (postErr) {
+        showToast && showToast('Saved as draft — open Journal to approve/post, then refresh reconcile');
+        onClose && onClose();
+        return;
+      }
+      showToast && showToast(`Posted ${r.data.jeNumber || 'entry'} — ${fmt(amt)} to ${catLabel}`);
+      onClose && onClose();
+      if (typeof onPosted === 'function') await onPosted({ journalEntryId: id, amount: amt, side });
+    } catch (err) {
+      showToast && showToast('Could not record transaction: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="qbd-modal-backdrop" style={{ zIndex: 400 }} onClick={() => !busy && onClose && onClose()}>
+      <div className="qbd-window" style={{ width: 520, maxHeight: '90vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
+        <div className="qbd-wtitle">
+          Record missing transaction
+          <span className="x" onClick={() => !busy && onClose && onClose()}>✕</span>
+        </div>
+        <div className="qbd-wbody" style={{ padding: 12 }}>
+          <p className="qbd-muted" style={{ margin: '0 0 10px', fontSize: 12 }}>
+            Use this when the statement shows an item that is not in the register for{' '}
+            <strong>{bankAccount.account_number} · {leafLabel(bankAccount.account_name)}</strong>.
+          </p>
+          <div className="frow" style={{ marginBottom: 8 }}>
+            <label style={{ width: 110 }}>Type</label>
+            <select value={side} onChange={(e) => setSide(e.target.value)} style={{ flex: 1 }}>
+              {sideOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="frow" style={{ marginBottom: 8 }}>
+            <label style={{ width: 110 }}>Date</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <label style={{ width: 70, marginLeft: 12 }}>Amount</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              style={{ width: 120, textAlign: 'right' }}
+            />
+          </div>
+          <div className="frow" style={{ marginBottom: 8 }}>
+            <label style={{ width: 110 }}>{isCard ? 'Payee' : (side === 'payment' ? 'Pay to' : 'Received from')}</label>
+            <input
+              style={{ flex: 1 }}
+              value={party}
+              onChange={(e) => setParty(e.target.value)}
+              placeholder={isCard ? 'Merchant / payee' : (side === 'payment' ? 'Payee' : 'Source')}
+            />
+          </div>
+          <div className="frow" style={{ marginBottom: 8 }}>
+            <label style={{ width: 110 }}>Category</label>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <AccountCombobox
+                accounts={categoryAccounts}
+                value={categoryId}
+                onChange={setCategoryId}
+                placeholder="Search GL account…"
+                allowCreate
+                onCreateRequest={() => setCreateOpen(true)}
+              />
+            </div>
+          </div>
+          <div className="frow" style={{ marginBottom: 8 }}>
+            <label style={{ width: 110 }}>Memo</label>
+            <input
+              style={{ flex: 1 }}
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+        <div className="qbd-foot">
+          <button type="button" className="qbd-btn" disabled={busy} onClick={() => onClose && onClose()}>Cancel</button>
+          <span className="sp" />
+          <button
+            type="button"
+            className="qbd-btn qbd-primary"
+            disabled={busy || !categoryId || !(parseFloat(amount) > 0)}
+            onClick={submit}
+            style={{ fontWeight: 'bold' }}
+          >
+            {busy ? 'Posting…' : 'Save & Post'}
+          </button>
+        </div>
+      </div>
+      <CreateAccountModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        entityId={entityId}
+        accounts={localAccounts}
+        defaultType={side === 'deposit' ? 'REVENUE' : 'EXPENSE'}
+        applyLabel="Create & use"
+        onCreated={(entry) => {
+          const next = [...localAccounts.filter((a) => a.id !== entry.id), entry]
+            .sort((a, b) => String(a.account_number || a.number || '').localeCompare(String(b.account_number || b.number || ''), undefined, { numeric: true }));
+          setLocalAccounts(next);
+          onAccountCreated && onAccountCreated(entry);
+          setCategoryId(entry.id);
+          setCreateOpen(false);
+          showToast && showToast(`Created ${entry.account_number || entry.number} · ${leafLabel(entry.account_name || entry.name)}`);
+        }}
+      />
     </div>
   );
 }
@@ -722,6 +963,7 @@ export default function QBDReconcile() {
   const [reportModal, setReportModal] = useState(null);
   const [reportMode, setReportMode] = useState('select');
   const [drillEntry, setDrillEntry] = useState(null);
+  const [showMissingTxn, setShowMissingTxn] = useState(false);
   const [highlightMarked, setHighlightMarked] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [showColsMenu, setShowColsMenu] = useState(false);
@@ -1336,10 +1578,32 @@ export default function QBDReconcile() {
           notes.push(`service charge ${fmt(fee.serviceCharge.amount)}`);
         }
         setFeeNote(notes.length ? `Read from the statement (not yet in your books): ${notes.join(', ')}. Review below — it posts when you Reconcile Now.` : '');
+        return r.data;
       })
-      .catch((e) => showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message)))
+      .catch((e) => {
+        showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message));
+        return null;
+      })
       .finally(() => setBusy(false));
   }, [entityId, accountId, stmtDate, showToast, applyAutoChecked, accounts, setSearchParams]);
+
+  const handleMissingTxnPosted = useCallback(async ({ journalEntryId }) => {
+    if (!journalEntryId) return;
+    const sheet = await loadWorksheet();
+    const rows = sheet?.entries || [];
+    const ids = rows
+      .filter((e) => String(e.journal_entry_id || e.journalEntryId || '') === String(journalEntryId))
+      .map((e) => e.id)
+      .filter(Boolean);
+    if (!ids.length) return;
+    setChecked((c) => {
+      const next = { ...c };
+      ids.forEach((id) => { next[id] = true; });
+      persistChecked(next);
+      return next;
+    });
+    showToast && showToast(`Recorded and marked cleared on the register`);
+  }, [loadWorksheet, persistChecked, showToast]);
 
   const start = () => {
     if (!accountId) { showToast && showToast('Pick an account'); return; }
@@ -1432,6 +1696,16 @@ export default function QBDReconcile() {
     });
     showToast && showToast(`Matched ${ids.length} transaction(s) to the statement`);
   };
+
+  const addCreatedAccount = useCallback((entry) => {
+    if (!entry?.id) return;
+    setAllAccounts((prev) => {
+      if (prev.some((a) => a.id === entry.id)) return prev;
+      return [...prev, entry].sort((a, b) =>
+        String(a.account_number || a.number || '').localeCompare(String(b.account_number || b.number || ''), undefined, { numeric: true })
+      );
+    });
+  }, []);
 
   const drillEntryOpen = (entry) => {
     const jeId = entry?.journal_entry_id || entry?.journalEntryId;
@@ -2164,6 +2438,16 @@ export default function QBDReconcile() {
         {isCard && (
           <button type="button" className="qbd-btn" disabled={busy} onClick={unmarkAll}>Unmark All</button>
         )}
+        <button
+          type="button"
+          className="qbd-btn"
+          disabled={busy}
+          onClick={() => setShowMissingTxn(true)}
+          title="Post a payment, deposit, or charge that is on the statement but missing from this account"
+          style={{ fontWeight: 'bold', background: 'linear-gradient(#fff6e0,#ffe6a8)' }}
+        >
+          + Missing Transaction
+        </button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={goTo}>Go To</button>
         <button type="button" className="qbd-btn" disabled={busy} onClick={matched} title="Check off everything matched to the statement">Matched</button>
         <input ref={reconStmtFileRef} type="file" accept=".pdf,.ofx,.qfx" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleStatementUpload(f); }} />
@@ -2358,6 +2642,7 @@ export default function QBDReconcile() {
           accounts={allAccounts}
           showToast={showToast}
           onClose={() => setDrillEntry(null)}
+          onAccountCreated={addCreatedAccount}
           onUpdated={(updated) => {
             // Category fix must NOT reload the worksheet — that was wiping every
             // cleared checkmark. Only refresh the open transaction detail.
@@ -2367,6 +2652,17 @@ export default function QBDReconcile() {
           }}
         />
       )}
+      <RecordMissingTxnModal
+        open={showMissingTxn}
+        onClose={() => setShowMissingTxn(false)}
+        entityId={entityId}
+        bankAccount={account || accounts.find((a) => a.id === accountId)}
+        accounts={allAccounts}
+        defaultDate={stmtDate}
+        showToast={showToast}
+        onAccountCreated={addCreatedAccount}
+        onPosted={handleMissingTxnPosted}
+      />
       {reportOverlay}
     </div>
   );
