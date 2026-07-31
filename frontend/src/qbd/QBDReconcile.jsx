@@ -2096,6 +2096,7 @@ export default function QBDReconcile() {
       glIds: checkedIds,
       statementDate: stmtDate,
       statementEndingBalance: target,
+      beginningBalance: beginning,
       serviceCharge: svc,
       interestEarned: int,
       serviceChargeAccountId: scAccountId || null,
