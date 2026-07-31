@@ -361,65 +361,35 @@ function applyReclassHistoryToLines(lines, reclassHistory = []) {
   if (!Array.isArray(lines) || !lines.length) return lines || [];
   if (!Array.isArray(reclassHistory) || !reclassHistory.length) return lines;
 
-  // Clone lines and net each reclass into the display (append-only books stay unchanged).
-  const out = lines.map((l) => ({
-    ...l,
-    debit: Number(l.debit) || 0,
-    credit: Number(l.credit) || 0,
-    _reclassed: false,
-  }));
-  const byId = new Map(out.map((l) => [String(l.id), l]));
-
+  // Latest unreverted reclass per original line wins (supports chained Fix category).
+  const latestByLine = new Map();
   for (const r of reclassHistory) {
-    const fromLine = byId.get(String(r.lineId));
-    if (!fromLine || !r.toAccount) continue;
-    const amt = Number(r.amount) || Math.max(fromLine.debit, fromLine.credit);
-    if (!(amt > 0)) continue;
-
-    const wasDebit = fromLine.debit > 0;
-    // Reduce / clear the original offset line
-    if (wasDebit) {
-      fromLine.debit = Math.max(0, fromLine.debit - amt);
-    } else {
-      fromLine.credit = Math.max(0, fromLine.credit - amt);
-    }
-    fromLine._reclassed = true;
-
-    // Add to an existing target line of the same side, or rewrite this line's account when emptied
-    let targetLine = out.find(
-      (l) => String(l.account_id) === String(r.toAccount.id)
-        && l !== fromLine
-        && ((wasDebit && l.debit >= 0) || (!wasDebit && l.credit >= 0))
-    );
-    if (!targetLine && fromLine.debit === 0 && fromLine.credit === 0) {
-      fromLine.account_id = r.toAccount.id;
-      fromLine.account_number = r.toAccount.account_number;
-      fromLine.account_name = r.toAccount.account_name;
-      if (wasDebit) fromLine.debit = amt;
-      else fromLine.credit = amt;
-      fromLine._reclassed = true;
-      continue;
-    }
-    if (!targetLine) {
-      targetLine = {
-        id: `effective-${r.reclassJeId || r.lineId}`,
-        account_id: r.toAccount.id,
-        account_number: r.toAccount.account_number,
-        account_name: r.toAccount.account_name,
-        debit: 0,
-        credit: 0,
-        _reclassed: true,
-        _synthetic: true,
-      };
-      out.push(targetLine);
-      byId.set(String(targetLine.id), targetLine);
-    }
-    if (wasDebit) targetLine.debit += amt;
-    else targetLine.credit += amt;
-    targetLine._reclassed = true;
+    if (!r?.lineId || !r?.toAccount) continue;
+    latestByLine.set(String(r.lineId), r);
   }
+  if (!latestByLine.size) return lines;
 
-  return out.filter((l) => (Number(l.debit) || 0) > 0.00001 || (Number(l.credit) || 0) > 0.00001);
+  return lines.map((l) => {
+    const r = latestByLine.get(String(l.id));
+    if (!r) {
+      return {
+        ...l,
+        debit: Number(l.debit) || 0,
+        credit: Number(l.credit) || 0,
+        _reclassed: false,
+      };
+    }
+    return {
+      ...l,
+      account_id: r.toAccount.id,
+      account_number: r.toAccount.account_number,
+      account_name: r.toAccount.account_name,
+      debit: Number(l.debit) || 0,
+      credit: Number(l.credit) || 0,
+      _reclassed: true,
+      _sourceLineId: l.id,
+    };
+  }).filter((l) => (Number(l.debit) || 0) > 0.00001 || (Number(l.credit) || 0) > 0.00001);
 }
 
 function TxnDetailModal({
@@ -447,6 +417,7 @@ function TxnDetailModal({
   const [reclassAccountId, setReclassAccountId] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [localAccounts, setLocalAccounts] = useState(accounts);
+  const attachInputRef = useRef(null);
   useEffect(() => { setLocalAccounts(accounts); }, [accounts]);
   const canReverse = liveEntry.status === 'POSTED' && !liveEntry.reversed_by_je_id && !liveEntry.reverses_je_id;
   const canEditDraft = liveEntry.status === 'DRAFT';
@@ -459,6 +430,35 @@ function TxnDetailModal({
       onUpdated && onUpdated(res.data);
       return res.data;
     });
+
+  const attachSupportingDoc = (file) => {
+    if (!file) return;
+    setBusy(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      const fileData = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      journalAPI.attachDocument(entityId, liveEntry.id, {
+        fileName: file.name,
+        fileMime: file.type || 'application/pdf',
+        fileData,
+      })
+        .then(() => {
+          showToast && showToast(`Saved supporting document: ${file.name}`);
+          return refreshEntry();
+        })
+        .catch((e) => window.alert(e.response?.data?.error || e.message))
+        .finally(() => {
+          setBusy(false);
+          if (attachInputRef.current) attachInputRef.current.value = '';
+        });
+    };
+    reader.onerror = () => {
+      setBusy(false);
+      window.alert('Could not read that file');
+    };
+    reader.readAsDataURL(file);
+  };
 
   const doReverse = () => {
     const label = liveEntry.je_number || 'this transaction';
@@ -481,13 +481,14 @@ function TxnDetailModal({
   };
 
   const startReclass = (line) => {
-    // Map synthetic/effective line back to the original line id when possible
-    const raw = rawLines.find((l) => String(l.id) === String(line.id))
+    // Map display line back to the original JE line id (chained reclass keeps source id).
+    const raw = rawLines.find((l) => String(l.id) === String(line._sourceLineId || line.id))
+      || rawLines.find((l) => String(l.id) === String(line.id))
       || rawLines.find((l) => String(l.account_id) === String(line.account_id)
         && Math.abs((Number(l.debit) || 0) - (Number(line.debit) || 0)) < 0.005
         && Math.abs((Number(l.credit) || 0) - (Number(line.credit) || 0)) < 0.005)
       || rawLines.find((l) => String(l.account_id) === String(line.account_id));
-    setReclassLineId(raw?.id || line.id);
+    setReclassLineId(raw?.id || line._sourceLineId || line.id);
     setReclassAccountId('');
   };
 
@@ -560,6 +561,23 @@ function TxnDetailModal({
               View source document
             </button>
           )}
+          <input
+            ref={attachInputRef}
+            type="file"
+            accept="application/pdf,image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => attachSupportingDoc(e.target.files && e.target.files[0])}
+          />
+          <button
+            type="button"
+            className="qbd-btn"
+            style={{ marginLeft: 12 }}
+            disabled={busy}
+            title="Save a PDF or image explaining this charge for later review"
+            onClick={() => attachInputRef.current && attachInputRef.current.click()}
+          >
+            {liveEntry.sourceDocument?.hasFile ? 'Replace supporting doc' : 'Attach supporting doc'}
+          </button>
           {canEditDraft && (
             <a className="qbd-btn" style={{ marginLeft: 12, textDecoration: 'none' }} href={`/journal?je=${liveEntry.id}`}>Edit draft</a>
           )}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { reportAPI, journalAPI, mgmtReportAPI } from '../services/api';
@@ -171,42 +171,91 @@ export default function QBDRegister() {
 }
 
 function TxnDetail({ entry, entityId, onClose, onReversed }) {
-  const lines = entry.lines || [];
+  const [liveEntry, setLiveEntry] = useState(entry);
+  useEffect(() => { setLiveEntry(entry); }, [entry]);
+  const lines = liveEntry.lines || [];
   const [busy, setBusy] = useState(false);
-  const canReverse = entry.status === 'POSTED' && !entry.reversed_by_je_id && !entry.reverses_je_id;
+  const attachInputRef = useRef(null);
+  const canReverse = liveEntry.status === 'POSTED' && !liveEntry.reversed_by_je_id && !liveEntry.reverses_je_id;
+
+  const refreshEntry = () => journalAPI.get(entityId, liveEntry.id)
+    .then((res) => setLiveEntry(res.data));
 
   const doReverse = () => {
-    if (!window.confirm(`Reverse ${entry.je_number}? This creates an offsetting posted entry.`)) return;
+    if (!window.confirm(`Reverse ${liveEntry.je_number}? This creates an offsetting posted entry.`)) return;
     setBusy(true);
-    journalAPI.reverse(entityId, entry.id)
+    journalAPI.reverse(entityId, liveEntry.id)
       .then((r) => onReversed && onReversed(r.data))
       .catch((e) => window.alert(e.response?.data?.error || e.message))
       .finally(() => setBusy(false));
+  };
+
+  const attachSupportingDoc = (file) => {
+    if (!file) return;
+    setBusy(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      const fileData = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      journalAPI.attachDocument(entityId, liveEntry.id, {
+        fileName: file.name,
+        fileMime: file.type || 'application/pdf',
+        fileData,
+      })
+        .then(() => refreshEntry())
+        .catch((e) => window.alert(e.response?.data?.error || e.message))
+        .finally(() => {
+          setBusy(false);
+          if (attachInputRef.current) attachInputRef.current.value = '';
+        });
+    };
+    reader.onerror = () => {
+      setBusy(false);
+      window.alert('Could not read that file');
+    };
+    reader.readAsDataURL(file);
   };
 
   let td = 0, tc = 0;
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,40,70,.35)', zIndex: 350, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
       <div className="qbd-window" style={{ width: 680, maxHeight: '80vh', margin: 0 }} onClick={(e) => e.stopPropagation()}>
-        <div className="qbd-wtitle">🧾 Transaction Detail — {entry.je_number} <span className="x" onClick={onClose}>✕</span></div>
+        <div className="qbd-wtitle">🧾 Transaction Detail — {liveEntry.je_number} <span className="x" onClick={onClose}>✕</span></div>
         <div className="qbd-tools">
-          <span className="qbd-muted">Date</span><b>{fmtShortDate(entry.posting_date)}</b>
-          <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{entry.description || ''}</span>
-          <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {entry.status}</span>
-          {entry.reversed_by_je_id && <span className="qbd-muted" style={{ marginLeft: 8 }}>(reversed)</span>}
-          {entry.sourceDocument?.hasFile && (
+          <span className="qbd-muted">Date</span><b>{fmtShortDate(liveEntry.posting_date)}</b>
+          <span className="qbd-muted" style={{ marginLeft: 14 }}>Memo</span><span>{liveEntry.description || ''}</span>
+          <span className="qbd-muted" style={{ marginLeft: 'auto' }}>Status: {liveEntry.status}</span>
+          {liveEntry.reversed_by_je_id && <span className="qbd-muted" style={{ marginLeft: 8 }}>(reversed)</span>}
+          {liveEntry.sourceDocument?.hasFile && (
             <button
               className="qbd-btn"
               style={{ marginLeft: 12 }}
-              title={entry.sourceDocument.fileName || 'Source document'}
-              onClick={() => (entry.sourceDocument.documentId
-                ? journalAPI.viewDocument(entityId, entry.id)
-                : mgmtReportAPI.viewFile(entry.sourceDocument.mgmtReportId, entry.sourceDocument.fileName)
+              title={liveEntry.sourceDocument.fileName || 'Source document'}
+              onClick={() => (liveEntry.sourceDocument.documentId
+                ? journalAPI.viewDocument(entityId, liveEntry.id)
+                : mgmtReportAPI.viewFile(liveEntry.sourceDocument.mgmtReportId, liveEntry.sourceDocument.fileName)
               ).catch((e) => window.alert(e.message))}
             >
-              📎 {entry.sourceDocument.documentId ? 'View attachment' : 'View source report'}
+              📎 {liveEntry.sourceDocument.documentId ? 'View attachment' : 'View source report'}
             </button>
           )}
+          <input
+            ref={attachInputRef}
+            type="file"
+            accept="application/pdf,image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => attachSupportingDoc(e.target.files && e.target.files[0])}
+          />
+          <button
+            type="button"
+            className="qbd-btn"
+            style={{ marginLeft: 12 }}
+            disabled={busy}
+            title="Save a PDF or image explaining this charge for later review"
+            onClick={() => attachInputRef.current && attachInputRef.current.click()}
+          >
+            {liveEntry.sourceDocument?.hasFile ? 'Replace supporting doc' : 'Attach supporting doc'}
+          </button>
           {canReverse && (
             <button className="qbd-btn" disabled={busy} onClick={doReverse} style={{ marginLeft: 12 }}>Reverse entry</button>
           )}
