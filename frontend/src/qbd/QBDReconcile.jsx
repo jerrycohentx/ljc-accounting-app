@@ -15,7 +15,6 @@ import {
   computeReconcileTotals,
   entrySide,
 } from './helpers';
-import { drillReconLineSource } from './reconSourceDrill';
 import { ReconHtmlPreviewModal } from './QBDReconReports';
 import AccountCombobox from './AccountCombobox';
 import CreateAccountModal from './CreateAccountModal';
@@ -295,7 +294,7 @@ function RegisterTable({
               onMouseLeave={() => onHover && onHover(null)}
               onClick={() => { onSelect && onSelect(e.id); onToggle(e.id); }}
               onDoubleClick={() => onDrill && onDrill(e)}
-              title="Click to check/uncheck · double-click to open source document"
+              title="Click to check/uncheck · double-click to open transaction detail"
             >
               <td style={{ textAlign: 'center' }}>
                 <input
@@ -1744,34 +1743,30 @@ export default function QBDReconcile() {
   }, []);
 
   const drillEntryOpen = (entry) => {
+    // Always open the JE distribution (TxnDetailModal). Supporting docs are
+    // viewed from the button inside that modal — not as the double-click target.
     const jeId = entry?.journal_entry_id || entry?.journalEntryId;
     const glId = entry?.id || entry?.glId || null;
     if (!jeId && !glId) {
       showToast && showToast('No transaction detail available for this line');
       return;
     }
-    drillReconLineSource({
-      entityId,
-      journalEntryId: jeId || null,
-      glId,
-    })
-      .then((r) => {
-        if (r.opened) {
-          showToast && showToast('Opened source document.');
-          return;
+    const openJe = (id) => journalAPI.get(entityId, id)
+      .then((res) => setDrillEntry(res.data))
+      .catch((e) => showToast && showToast('Could not open transaction: ' + (e.response?.data?.error || e.message)));
+
+    if (jeId) {
+      openJe(jeId);
+      return;
+    }
+    bankReconAPI.resolveGl(entityId, glId)
+      .then((resolved) => {
+        const resolvedId = resolved.data?.journalEntryId;
+        if (!resolvedId) {
+          showToast && showToast('No transaction detail available for this line');
+          return null;
         }
-        if (r.journal) {
-          setDrillEntry(r.journal);
-          showToast && showToast('No source document attached to this entry yet.');
-          return;
-        }
-        if (jeId) {
-          return journalAPI.get(entityId, jeId).then((res) => {
-            setDrillEntry(res.data);
-            showToast && showToast('No source document attached to this entry yet.');
-          });
-        }
-        showToast && showToast('No source document on file for this line yet.');
+        return openJe(resolvedId);
       })
       .catch((e) => showToast && showToast('Could not open transaction: ' + (e.response?.data?.error || e.message)));
   };
