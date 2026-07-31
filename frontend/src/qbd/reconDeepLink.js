@@ -81,3 +81,49 @@ export function shouldAutoOpenRecon(searchParams, resolvedDate) {
   if (resolvedDate && searchParams.get('month') && searchParams.get('year')) return true;
   return false;
 }
+
+/** Calendar year/month the user is working in (Monthly Books), for return navigation. */
+export function workingPeriodFromContext({
+  searchParams,
+  entityId,
+  accountNumber,
+  statementDate,
+} = {}) {
+  const yParam = Number(searchParams?.get?.('year'));
+  const mParam = Number(searchParams?.get?.('month'));
+  if (Number.isFinite(yParam) && yParam >= 2000 && Number.isFinite(mParam) && mParam >= 1 && mParam <= 12) {
+    return { year: yParam, month: mParam };
+  }
+  const sd = String(statementDate || '').slice(0, 10);
+  const acct = String(accountNumber || '');
+  if (entityId && acct && /^\d{4}-\d{2}-\d{2}$/.test(sd)) {
+    const list = (RECON_TARGETS[entityId] || {})[acct] || [];
+    const hit = list.find((t) => String(t.statementDate).slice(0, 10) === sd);
+    const label = String(hit?.label || '');
+    const m = label.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
+    if (m) {
+      const month = MONTH_NAMES.findIndex((n) => n.toLowerCase() === m[1].toLowerCase()) + 1;
+      const year = Number(m[2]);
+      if (month >= 1 && year) return { year, month };
+    }
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(sd)) {
+    // Statement cycles that spill into the next calendar day (Simmons Jan → 02-01)
+    // still belong to the prior month when day is the 1st.
+    const [ys, ms, ds] = sd.split('-').map(Number);
+    if (ds === 1 && ms >= 1) {
+      const month = ms === 1 ? 12 : ms - 1;
+      const year = ms === 1 ? ys - 1 : ys;
+      return { year, month };
+    }
+    return { year: ys, month: ms };
+  }
+  return null;
+}
+
+export function monthlyBooksPath(year, month) {
+  const y = Number(year) || 2026;
+  const m = Number(month);
+  if (!Number.isFinite(m) || m < 1 || m > 12) return '/';
+  return `/?year=${y}&month=${m}`;
+}

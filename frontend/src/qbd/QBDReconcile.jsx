@@ -23,6 +23,8 @@ import {
   resolveAccountId,
   resolveDeepLinkDate,
   shouldAutoOpenRecon,
+  workingPeriodFromContext,
+  monthlyBooksPath,
 } from './reconDeepLink';
 
 const REGISTER_SPLIT_STORAGE_KEY = 'qbd-recon-register-split-pct';
@@ -1708,6 +1710,26 @@ export default function QBDReconcile() {
     setBusy(true);
     return bankReconAPI.worksheet(entityId, accountId, dateForLoad, { autoMatch: true })
       .then((r) => {
+        // Already closed & balanced — don't trap Jerry on an empty closed worksheet
+        // (common after Save & Close / Close & Advance left ?go=1 in the URL).
+        const closedBalanced = r.data?.periodSession?.status === 'CLOSED' && r.data?.periodSession?.balanced;
+        if (closedBalanced && (searchParams.get('return') === 'month' || searchParams.get('go') === '1')) {
+          const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountId;
+          const period = workingPeriodFromContext({
+            searchParams,
+            entityId,
+            accountNumber: acctNo,
+            statementDate: isoDateOnly(r.data.statementDate || dateForLoad),
+          });
+          try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
+          setStarted(false);
+          setData(null);
+          showToast && showToast('This account is already reconciled for that statement — back to the month.');
+          if (period) navigate(monthlyBooksPath(period.year, period.month));
+          else navigate('/');
+          return r.data;
+        }
+
         setData(r.data);
         applyAutoChecked(r.data, { preserveChecked: opts.preserveChecked !== false });
         setHighlightGlId(null);
@@ -1724,13 +1746,38 @@ export default function QBDReconcile() {
           // only in component state and navigating away destroyed them.
           const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountId;
           if (resolvedDate) {
-            setSearchParams({ account: String(acctNo), date: resolvedDate, go: '1' }, { replace: true });
+            const period = workingPeriodFromContext({
+              searchParams,
+              entityId,
+              accountNumber: acctNo,
+              statementDate: resolvedDate,
+            });
+            const nextParams = { account: String(acctNo), date: resolvedDate, go: '1' };
+            if (period) {
+              nextParams.year = String(period.year);
+              nextParams.month = String(period.month);
+              nextParams.return = 'month';
+            } else if (searchParams.get('return') === 'month') {
+              nextParams.return = 'month';
+            }
+            setSearchParams(nextParams, { replace: true });
           }
           // Also persist it: the URL only survives browser Back, not a fresh
           // visit to /reconcile after a draft-review round trip.
           try {
+            const period = workingPeriodFromContext({
+              searchParams,
+              entityId,
+              accountNumber: acctNo,
+              statementDate: resolvedDate,
+            });
             localStorage.setItem(RECON_IN_PROGRESS_KEY, JSON.stringify({
-              entity: entityId, account: String(acctNo), date: resolvedDate, at: Date.now(),
+              entity: entityId,
+              account: String(acctNo),
+              date: resolvedDate,
+              year: period?.year,
+              month: period?.month,
+              at: Date.now(),
             }));
           } catch { /* storage full/blocked — resume just won't persist */ }
         }
@@ -1759,15 +1806,20 @@ export default function QBDReconcile() {
           setServiceCharge((prev) => ((parseFloat(prev || '0') || 0) === 0 ? String(fee.serviceCharge.amount) : prev));
           notes.push(`service charge ${fmt(fee.serviceCharge.amount)}`);
         }
-        setFeeNote(notes.length ? `Read from the statement (not yet in your books): ${notes.join(', ')}. Review below — it posts when you Reconcile Now.` : '');
+        setFeeNote(notes.length ? `Read from the statement (not yet in your books): ${notes.join(', ')}. Review below — it posts when you Save & Close.` : '');
         return r.data;
       })
       .catch((e) => {
         showToast && showToast('Failed to load: ' + (e.response?.data?.error || e.message));
+        // Unstick "Opening reconciliation…" if deep-link load fails.
+        if (searchParams.get('go') === '1') {
+          try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
+          setSearchParams({}, { replace: true });
+        }
         return null;
       })
       .finally(() => setBusy(false));
-  }, [entityId, accountId, stmtDate, showToast, applyAutoChecked, accounts, setSearchParams]);
+  }, [entityId, accountId, stmtDate, showToast, applyAutoChecked, accounts, setSearchParams, searchParams, navigate]);
 
   const handleMissingTxnPosted = useCallback(async ({ journalEntryId }) => {
     if (!journalEntryId) return;
@@ -2086,7 +2138,28 @@ export default function QBDReconcile() {
     );
   };
 
-  const finish = (advance = false) => {
+  const returnToWorkingMonth = useCallback((toastMsg) => {
+    const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountNumberForChecked;
+    const period = workingPeriodFromContext({
+      searchParams,
+      entityId,
+      accountNumber: acctNo,
+      statementDate: stmtDate,
+    });
+    try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
+    setStarted(false);
+    setData(null);
+    setSearchParams({}, { replace: true });
+    if (toastMsg) showToast && showToast(toastMsg);
+    if (period) {
+      navigate(monthlyBooksPath(period.year, period.month));
+    } else {
+      navigate('/');
+    }
+  }, [accounts, accountId, accountNumberForChecked, searchParams, entityId, stmtDate, setSearchParams, showToast, navigate]);
+
+  /** @param {'month'|'advance'|'stay'} mode */
+  const finish = (mode = 'month') => {
     if (!balanced) { showToast && showToast('Difference must be $0.00 to reconcile'); return; }
     if (checkedIds.length === 0) { showToast && showToast('Mark the cleared transactions first'); return; }
     setBusy(true);
@@ -2118,6 +2191,22 @@ export default function QBDReconcile() {
         });
         const allPayments = entries.filter((e) => entrySide(e, account) === 'payment');
         const allDeposits = entries.filter((e) => entrySide(e, account) === 'deposit');
+        clearSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate), accountNumberForChecked);
+        setChecked({});
+        checkedRef.current = {};
+        setEndBal('');
+        setBeginningOverride('');
+
+        // Default: Save & Close → back to Monthly Books for this working month
+        // so other accounts can be reconciled before the month is closed.
+        if (mode === 'month' || (mode !== 'advance' && searchParams.get('return') === 'month')) {
+          const acctLabel = `${data.account.account_number} · ${leafLabel(data.account.account_name)}`;
+          returnToWorkingMonth(
+            `Saved & closed ${acctLabel} (${r.data.reconciledCount || checkedIds.length} cleared). Pick the next account for this month.`
+          );
+          return;
+        }
+
         setReportModal({
           reconciledCount: r.data.reconciledCount,
           beginningBalance: r.data.beginningBalance,
@@ -2137,18 +2226,10 @@ export default function QBDReconcile() {
         setReportMode('select');
         setStarted(false);
         setData(null);
-        setEndBal('');
-        setBeginningOverride('');
-        // This reconciliation is done — drop the resume pointer so the next
-        // visit starts fresh instead of reopening a closed period. ("Leave"
-        // intentionally KEEPS it: progress-saved means we come back to it.)
         try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
-        clearSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate), accountNumberForChecked);
-        setChecked({});
-        checkedRef.current = {};
-        // Close & Advance: roll straight into the next month. The beginning
-        // balance auto-carries from this close; we just bump the statement date.
-        if (advance) {
+
+        // Close & Advance: same account, next statement period.
+        if (mode === 'advance') {
           const next = nextStatementDate(stmtDate);
           if (next) {
             setStmtDate(next);
@@ -2850,18 +2931,49 @@ export default function QBDReconcile() {
             Enter Adjustment… (blocked)
           </button>
         )}
-        <button className="qbd-btn" disabled={busy} onClick={() => {
-          // Leaving is an explicit exit — drop the auto-resume pointer, or the
-          // next visit to /reconcile drags the user straight back into a
-          // worksheet they chose to leave (Jerry hit this loop trying to reach
-          // AMEX while a stale Lone Star pointer kept hijacking the screen).
-          try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
-          setSearchParams({}, { replace: true }); // strip ?go=1 so a refresh doesn't re-enter
-          setStarted(false);
-          showToast && showToast('Left the reconciliation — nothing posted to the ledger');
-        }}>Leave</button>
-        <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={() => finish(false)} style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dff3e2,#bfe6c8)' : undefined }}>Reconcile Now</button>
-        <button className="qbd-btn" disabled={busy || !balanced || checkedIds.length === 0} onClick={() => finish(true)} title="Reconcile this statement and roll straight into the next month (beginning balance carries automatically)" style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dfeaf7,#bcd4ef)' : undefined }}>Close &amp; Advance →</button>
+        <button
+          className="qbd-btn"
+          disabled={busy}
+          title="Leave without closing this reconciliation — checkmarks stay saved"
+          onClick={() => {
+            // Prefer return to the working month (other accounts still need reconciling).
+            const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountNumberForChecked;
+            const period = workingPeriodFromContext({
+              searchParams,
+              entityId,
+              accountNumber: acctNo,
+              statementDate: stmtDate,
+            });
+            // Keep RECON_IN_PROGRESS so Banking → Reconcile can resume this worksheet.
+            setSearchParams({}, { replace: true });
+            setStarted(false);
+            if (period || searchParams.get('return') === 'month') {
+              showToast && showToast('Back to the month — this account’s checkmarks are saved if you return.');
+              navigate(period ? monthlyBooksPath(period.year, period.month) : '/');
+            } else {
+              showToast && showToast('Left the reconciliation — nothing posted to the ledger');
+            }
+          }}
+        >
+          Back to month
+        </button>
+        <button
+          className="qbd-btn qbd-primary"
+          disabled={busy || !balanced || checkedIds.length === 0}
+          onClick={() => finish('month')}
+          title="Close this account’s reconciliation at $0.00 difference, then return to the month so you can reconcile the other accounts"
+          style={{ fontWeight: 'bold', background: balanced ? 'linear-gradient(#dff3e2,#bfe6c8)' : undefined }}
+        >
+          Save &amp; Close
+        </button>
+        <button
+          className="qbd-btn"
+          disabled={busy || !balanced || checkedIds.length === 0}
+          onClick={() => finish('advance')}
+          title="Close this statement and open the next period for the same account (skip when you still have other accounts to reconcile this month)"
+        >
+          Close &amp; Advance →
+        </button>
       </div>
       {drillEntry && (
         <TxnDetailModal

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountingAPI } from '../services/api';
 import { statementDateForMonth } from './reconDeepLink';
@@ -78,27 +78,47 @@ function StepCard({ step, number, onAction, actionLabel, children }) {
 export default function QBDMonthlyBooks() {
   const { entityId, current } = useEntity();
   const nav = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const now = new Date();
   const defaultMonth = now.getFullYear() === 2026 ? now.getMonth() + 1 : 7;
-  const [month, setMonth] = useState(defaultMonth);
+  const urlMonth = Number(searchParams.get('month'));
+  const urlYear = Number(searchParams.get('year'));
+  const initialMonth = (Number.isFinite(urlMonth) && urlMonth >= 1 && urlMonth <= 12) ? urlMonth : defaultMonth;
+  const [month, setMonth] = useState(initialMonth);
+  const [year] = useState((Number.isFinite(urlYear) && urlYear >= 2000) ? urlYear : 2026);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+
+  useEffect(() => {
+    if (Number.isFinite(urlMonth) && urlMonth >= 1 && urlMonth <= 12 && urlMonth !== month) {
+      setMonth(urlMonth);
+    }
+  }, [urlMonth]); // eslint-disable-line react-hooks/exhaustive-deps -- sync URL → picker only
 
   const load = useCallback(() => {
     if (!entityId) return;
     setLoading(true);
     setErr('');
-    accountingAPI.monthlyBooks(entityId, { year: 2026, month })
+    accountingAPI.monthlyBooks(entityId, { year, month })
       .then((r) => setData(r.data))
       .catch((e) => {
         setData(null);
         setErr((e.response && e.response.data && e.response.data.error) || e.message);
       })
       .finally(() => setLoading(false));
-  }, [entityId, month]);
+  }, [entityId, year, month]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    next.set('year', String(year));
+    next.set('month', String(month));
+    if (next.get('year') !== searchParams.get('year') || next.get('month') !== searchParams.get('month')) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [year, month, searchParams, setSearchParams]);
 
   const steps = data?.steps;
   const monthLabel = useMemo(
@@ -117,10 +137,11 @@ export default function QBDMonthlyBooks() {
       || statementDateForMonth(entityId, accountNumber, 2026, month);
     const params = new URLSearchParams();
     params.set('account', String(accountNumber));
-    params.set('year', '2026');
+    params.set('year', String(year));
     params.set('month', String(month));
     if (statementDate) params.set('date', statementDate);
     params.set('go', '1');
+    params.set('return', 'month');
     nav(`/reconcile?${params.toString()}`);
   };
 
@@ -135,7 +156,14 @@ export default function QBDMonthlyBooks() {
         </div>
         <label className="mb-month-picker">
           <span>Working on</span>
-          <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
+          <select
+            value={month}
+            onChange={(e) => {
+              const m = Number(e.target.value);
+              setMonth(m);
+              setSearchParams({ year: String(year), month: String(m) }, { replace: true });
+            }}
+          >
             {MONTHS_2026.map((m) => (
               <option key={m.value} value={m.value}>{m.label}</option>
             ))}
