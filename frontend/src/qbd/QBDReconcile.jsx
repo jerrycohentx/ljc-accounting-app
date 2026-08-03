@@ -433,13 +433,12 @@ function TxnDetailModal({
   const [busy, setBusy] = useState(false);
   const [reclassLineId, setReclassLineId] = useState(null);
   const [reclassAccountId, setReclassAccountId] = useState('');
-  const [createVendorRule, setCreateVendorRule] = useState(true);
+  /** After a category fix: offer Create rule without racing the account picker. */
+  const [ruleOffer, setRuleOffer] = useState(null); // { accountId, accountLabel, vendorHint }
   const [createOpen, setCreateOpen] = useState(false);
   const [localAccounts, setLocalAccounts] = useState(accounts);
   const attachInputRef = useRef(null);
-  const createVendorRuleRef = useRef(true);
   useEffect(() => { setLocalAccounts(accounts); }, [accounts]);
-  useEffect(() => { createVendorRuleRef.current = createVendorRule; }, [createVendorRule]);
   const canReverse = liveEntry.status === 'POSTED' && !liveEntry.reversed_by_je_id && !liveEntry.reverses_je_id;
   const canEditDraft = liveEntry.status === 'DRAFT';
   const vendorHint = useMemo(() => vendorRuleHint(liveEntry.description), [liveEntry.description]);
@@ -512,7 +511,21 @@ function TxnDetailModal({
       || rawLines.find((l) => String(l.account_id) === String(line.account_id));
     setReclassLineId(raw?.id || line._sourceLineId || line.id);
     setReclassAccountId('');
-    setCreateVendorRule(true);
+    setRuleOffer(null);
+  };
+
+  const saveVendorRule = async (accountId, accountLabel) => {
+    if (!accountId) return null;
+    const ruleRes = await accountingAPI.createVendorRule(entityId, {
+      accountId,
+      description: liveEntry.description || '',
+      label: accountLabel ? `Vendor → ${accountLabel}` : undefined,
+      applyToOpenDrafts: false,
+      postMatchingDrafts: false,
+      applyToPendingImports: true,
+      postMatchingPendingImports: false,
+    });
+    return ruleRes?.data?.rule?.pattern || ruleRes?.data?.pattern || vendorHint;
   };
 
   const applyReclass = (accountIdOverride, accountsOverride) => {
@@ -526,39 +539,24 @@ function TxnDetailModal({
     const toNum = target?.account_number || target?.number || '';
     const toName = leafLabel(target?.account_name || target?.name || '');
     const toLabel = target ? `${toNum} · ${toName}` : 'the new account';
-    const wantRule = createVendorRuleRef.current;
     setBusy(true);
     return journalAPI.reclassOffset(entityId, liveEntry.id, {
       lineId: reclassLineId,
       accountId: targetId,
-      // Lightweight learn always mirrors Fix category; durable vendor rule is opt-in below.
-      learnRule: wantRule,
+      // Do not auto-learn here — Create rule is an explicit next step after the category sticks.
+      learnRule: false,
       bankAccountIds: reconcileAccountId ? [reconcileAccountId] : [],
     })
-      .then(async (r) => {
-        let ruleNote = '';
-        if (wantRule) {
-          try {
-            const ruleRes = await accountingAPI.createVendorRule(entityId, {
-              accountId: targetId,
-              description: liveEntry.description || '',
-              label: toLabel ? `Vendor → ${toLabel}` : undefined,
-              applyToOpenDrafts: false,
-              postMatchingDrafts: false,
-              applyToPendingImports: true,
-              postMatchingPendingImports: false,
-            });
-            const pat = ruleRes?.data?.rule?.pattern || ruleRes?.data?.pattern || vendorHint;
-            ruleNote = ` · rule saved for “${pat}”`;
-          } catch (err) {
-            // Reclass already succeeded; rule is best-effort.
-            console.warn('vendor rule after reclass failed', err);
-            ruleNote = ' · category saved (rule could not be created)';
-          }
-        }
-        showToast && showToast((r.data?.message || `Category → ${toLabel}`) + ruleNote);
+      .then((r) => {
+        showToast && showToast(r.data?.message || `Category → ${toLabel}`);
         setReclassLineId(null);
         setReclassAccountId('');
+        // Keep the modal focused on Create rule so it isn't missed.
+        setRuleOffer({
+          accountId: targetId,
+          accountLabel: toLabel,
+          vendorHint,
+        });
         return refreshEntry();
       })
       .catch((e) => window.alert(e.response?.data?.error || e.message))
@@ -571,8 +569,38 @@ function TxnDetailModal({
       return;
     }
     setReclassAccountId(accountId);
-    // Selecting an account applies immediately — no separate Save click.
+    // Selecting an account applies the category immediately — no separate Save click.
     applyReclass(accountId);
+  };
+
+  const confirmCreateVendorRule = async () => {
+    if (!ruleOffer?.accountId) return;
+    setBusy(true);
+    try {
+      const pat = await saveVendorRule(ruleOffer.accountId, ruleOffer.accountLabel);
+      showToast && showToast(`Rule saved — future “${pat}” → ${ruleOffer.accountLabel}`);
+      setRuleOffer(null);
+    } catch (err) {
+      window.alert(err.response?.data?.error || err.message || 'Could not create vendor rule');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const offerRuleFromLatestReclass = () => {
+    const latest = reclassHistory[reclassHistory.length - 1];
+    const accountId = latest?.toAccount?.id || latest?.toAccountId;
+    if (!accountId) {
+      showToast && showToast('No corrected category found to build a rule from');
+      return;
+    }
+    const toNum = latest?.toAccount?.account_number || '';
+    const toName = leafLabel(latest?.toAccount?.account_name || '');
+    setRuleOffer({
+      accountId,
+      accountLabel: (toNum || toName) ? `${toNum}${toNum && toName ? ' · ' : ''}${toName}` : 'this category',
+      vendorHint,
+    });
   };
 
   const handleCreatedAccount = async (entry) => {
@@ -645,7 +673,7 @@ function TxnDetailModal({
         <div className="qbd-wbody">
           <p className="qbd-muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
             {liveEntry.status === 'POSTED' && !liveEntry.reversed_by_je_id
-              ? 'Click Fix category on the income/expense line to move it to another account. The category on this screen updates right away.'
+              ? 'Click Fix category, pick the account (applies immediately), then Create rule if this vendor should always use that category.'
               : null}
           </p>
           {reclassHistory.length > 0 && (
@@ -657,6 +685,20 @@ function TxnDetailModal({
                 return ` — ${fromN} → ${toN}`;
               }).join('')}
               .
+              {!ruleOffer && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    className="qbd-btn qbd-pane-btn"
+                    disabled={busy}
+                    onClick={offerRuleFromLatestReclass}
+                    style={{ marginLeft: 6 }}
+                  >
+                    Create rule for {vendorHint}
+                  </button>
+                </>
+              )}
             </p>
           )}
           <table className="qbd-reg">
@@ -714,25 +756,30 @@ function TxnDetailModal({
                   disabled={busy}
                 />
               </div>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10, fontSize: 12, cursor: busy ? 'default' : 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={createVendorRule}
-                  disabled={busy}
-                  onChange={(e) => setCreateVendorRule(e.target.checked)}
-                  style={{ marginTop: 2 }}
-                />
-                <span>
-                  <strong>Create rule</strong> — future transactions from <strong>{vendorHint}</strong> use this category automatically
-                </span>
-              </label>
               <p className="qbd-muted" style={{ margin: '6px 0 0', fontSize: 11 }}>
-                Pick an account and the category updates immediately (no Save). Can&apos;t find it? Choose <strong>＋ Create new account…</strong>.
+                Pick an account — category updates immediately. You&apos;ll get a Create rule step next for <strong>{vendorHint}</strong>.
               </p>
               <div className="qbd-botbar">
                 <button type="button" className="qbd-btn" disabled={busy} onClick={() => { setReclassLineId(null); setReclassAccountId(''); }}>Cancel</button>
                 <span className="sp" />
                 {busy ? <span className="qbd-muted" style={{ fontSize: 12 }}>Updating…</span> : null}
+              </div>
+            </div>
+          )}
+          {ruleOffer && (
+            <div className="qbd-form" style={{ marginTop: 12, padding: 12, border: '2px solid #1a5a2a', background: '#f3faf4' }}>
+              <div className="fhd" style={{ color: '#1a5a2a' }}>Create vendor rule?</div>
+              <p style={{ margin: '6px 0 10px', fontSize: 13, lineHeight: 1.45 }}>
+                Category is now <strong>{ruleOffer.accountLabel}</strong>.
+                Create a rule so future charges from <strong>{ruleOffer.vendorHint}</strong> use this category automatically
+                (instead of defaulting to Office &amp; Software)?
+              </p>
+              <div className="qbd-botbar">
+                <button type="button" className="qbd-btn" disabled={busy} onClick={() => setRuleOffer(null)}>Not now</button>
+                <span className="sp" />
+                <button type="button" className="qbd-btn qbd-primary" disabled={busy} onClick={confirmCreateVendorRule}>
+                  Create rule
+                </button>
               </div>
             </div>
           )}
