@@ -3134,17 +3134,25 @@ export default function QBDReconcile() {
           onAccountCreated={addCreatedAccount}
           onUpdated={(updated) => {
             // Category fix must NOT reload the worksheet — that was wiping every
-            // cleared checkmark. Refresh the open detail and patch Category in-register.
+            // cleared checkmark. Refresh the open detail and patch Category in-register
+            // from the same overlay the detail modal uses (rules + Fix category).
             setDrillEntry(updated);
             persistChecked(checkedRef.current || checked);
-            const hist = updated?.reclassHistory || [];
-            const latest = hist[hist.length - 1];
-            const to = latest?.toAccount;
-            if (!to?.account_number || !updated?.id) return;
-            const leaf = String(to.account_name || '').includes(':')
-              ? String(to.account_name).split(':').pop().trim()
-              : String(to.account_name || '').trim();
-            const label = leaf ? `${to.account_number} ${leaf}` : String(to.account_number);
+            if (!updated?.id) return;
+            const overlay = applyReclassHistoryToLines(updated.lines || [], updated.reclassHistory || []);
+            const cats = overlay.filter((l) =>
+              !l._synthetic
+              && String(l.account_id) !== String(accountId)
+              && ((Number(l.debit) || 0) > 0.005 || (Number(l.credit) || 0) > 0.005)
+            );
+            if (!cats.length) return;
+            const primary = cats[0];
+            const isSplit = cats.length > 1;
+            const leaf = String(primary.account_name || '').includes(':')
+              ? String(primary.account_name).split(':').pop().trim()
+              : String(primary.account_name || '').trim();
+            const base = leaf ? `${primary.account_number} ${leaf}` : String(primary.account_number || '');
+            const label = isSplit ? `${base} +${cats.length - 1}` : base;
             setData((prev) => {
               if (!prev?.entries) return prev;
               return {
@@ -3153,10 +3161,10 @@ export default function QBDReconcile() {
                   e.journal_entry_id === updated.id
                     ? {
                       ...e,
-                      category_account_number: to.account_number,
-                      category_account_name: to.account_name,
+                      category_account_number: primary.account_number,
+                      category_account_name: primary.account_name,
                       category_label: label,
-                      category_is_split: false,
+                      category_is_split: isSplit,
                     }
                     : e
                 )),

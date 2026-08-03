@@ -7,6 +7,7 @@ import { assertNotPlugJournal } from '../lib/period-integrity.js';
 import { postJournalEntryToGl } from '../lib/post-journal.js';
 import { reverseJournalEntry } from '../lib/reverse-journal.js';
 import { reclassPostedOffsetLine } from '../lib/reclass-posted-offset.js';
+import { getReclassHistoryForJournal } from '../lib/journal-reclass-history.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -98,51 +99,12 @@ router.get('/:id', entityAccessMiddleware, async (req, res) => {
       req.params.id
     );
 
-    // Append-only reclasses for this entry (memo: reclass-offset:<jeId>:<lineId>:<toAccountId>).
-    // The original lines never change; the UI uses this history to show the effective category.
+    // Append-only reclasses (manual Fix category + learned-rule bulk moves).
+    // Original lines never change; the UI overlays this history so detail matches
+    // the reconcile Category column.
     let reclassHistory = [];
     try {
-      const memoPrefix = `reclass-offset:${req.params.id}:`;
-      const reclassRows = await db.all(
-        `SELECT id, je_number, memo, description, posting_date, total_debit
-         FROM journal_entries
-         WHERE entity_id = ? AND status = 'POSTED' AND reversed_by_je_id IS NULL
-           AND memo LIKE ?
-         ORDER BY posting_date, je_number`,
-        [req.entityId, `${memoPrefix}%`]
-      );
-      for (const row of reclassRows) {
-        const parts = String(row.memo || '').split(':');
-        // reclass-offset : journalId : lineId : toAccountId
-        const lineId = parts[2] || null;
-        const toAccountId = parts[3] || null;
-        let toAccount = null;
-        let fromAccount = null;
-        if (toAccountId) {
-          toAccount = await db.get(
-            'SELECT id, account_number, account_name FROM accounts WHERE id = ?',
-            [toAccountId]
-          );
-        }
-        const origLine = lines.find((l) => String(l.id) === String(lineId));
-        if (origLine) {
-          fromAccount = {
-            id: origLine.account_id,
-            account_number: origLine.account_number,
-            account_name: origLine.account_name,
-          };
-        }
-        reclassHistory.push({
-          reclassJeId: row.id,
-          reclassJeNumber: row.je_number,
-          lineId,
-          amount: Number(row.total_debit) || 0,
-          postingDate: row.posting_date,
-          description: row.description,
-          fromAccount,
-          toAccount,
-        });
-      }
+      reclassHistory = await getReclassHistoryForJournal(db, req.entityId, req.params.id, lines);
     } catch {
       reclassHistory = [];
     }
