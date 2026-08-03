@@ -175,21 +175,12 @@ function nextStatementDate(statementDate) {
 }
 
 /**
- * Best-effort QuickBooks-style transaction type label (CHK / DEP / CHRG / PMT).
- * The ledger does not store a QBD transaction type, so this is derived from the
- * money direction for the account.
- */
-function txnType(side, isCard) {
-  if (isCard) return side === 'deposit' ? 'CHRG' : 'PMT';
-  return side === 'deposit' ? 'DEP' : 'CHK';
-}
-
-/**
  * QuickBooks Desktop reconcile register table.
  * Every posted line for the account is shown. A check mark means the line has
  * been matched/cleared. Single-click selects + toggles the check mark;
  * double-click (or Go To) drills into the underlying transaction.
- * Column headers are sortable (date, payee, type, amount).
+ * Column headers are sortable (date, payee, category, amount).
+ * Type is omitted — Payments/Charges (or Checks/Deposits) panes already separate sides.
  */
 function categoryLabel(entry) {
   if (!entry) return '';
@@ -203,9 +194,18 @@ function categoryLabel(entry) {
   return leaf ? `${num} ${leaf}` : String(num || '');
 }
 
+/** Strip statement-period noise from register Payee (period is already in the worksheet header). */
+function formatReconPayee(text) {
+  return String(text || '')
+    .replace(/^Amex(?:\s+stmt\s+\d{4}-\d{2}-\d{2})?:\s*/i, '')
+    .replace(/^Categorize\s+\d{4}\s*→\s*\d{4}:\s*/i, '')
+    .replace(/^OFX Import:\s*/i, '')
+    .trim();
+}
+
 function RegisterTable({
   entries, account, labels, checked, matchedSet, highlightGlId, selectedId, highlightMarked,
-  showNum, showType, showDate = true, showPayee = true, showCategory = true,
+  showNum, showDate = true, showPayee = true, showCategory = true,
   onToggle, onSelect, onHover, onDrill, compact, amountSide,
 }) {
   const [sortKey, setSortKey] = useState('date');
@@ -234,12 +234,8 @@ function RegisterTable({
       if (sortKey === 'date') {
         cmp = String(a.posting_date || '').localeCompare(String(b.posting_date || ''));
       } else if (sortKey === 'payee') {
-        cmp = String(a.je_description || a.description || '')
-          .localeCompare(String(b.je_description || b.description || ''), undefined, { sensitivity: 'base' });
-      } else if (sortKey === 'type') {
-        const ta = txnType(entrySide(a, account), isCard);
-        const tb = txnType(entrySide(b, account), isCard);
-        cmp = ta.localeCompare(tb);
+        cmp = formatReconPayee(a.je_description || a.description || '')
+          .localeCompare(formatReconPayee(b.je_description || b.description || ''), undefined, { sensitivity: 'base' });
       } else if (sortKey === 'num') {
         cmp = String(a.je_number || '').localeCompare(String(b.je_number || ''), undefined, { numeric: true });
       } else if (sortKey === 'category') {
@@ -256,7 +252,7 @@ function RegisterTable({
       return cmp * dir;
     });
     return rows;
-  }, [entries, sortKey, sortDir, account, isCard]);
+  }, [entries, sortKey, sortDir, account]);
 
   const SortTh = ({ colKey, className, children, style }) => (
     <th
@@ -282,7 +278,6 @@ function RegisterTable({
           {showNum && <SortTh colKey="num" className="qbd-je">CHK #</SortTh>}
           {showPayee && <SortTh colKey="payee">PAYEE</SortTh>}
           {showCategory && <SortTh colKey="category" className="qbd-cat">CATEGORY</SortTh>}
-          {showType && <SortTh colKey="type" className="qbd-type">TYPE</SortTh>}
           {compact ? (
             <SortTh colKey="amount" className="qbd-amt qbd-recon-amt">{compactAmtLabel}</SortTh>
           ) : (
@@ -299,10 +294,11 @@ function RegisterTable({
           const isMatched = matchedSet.has(e.id);
           const hl = highlightGlId === e.id;
           const isSelected = selectedId === e.id;
-          const side = entrySide(e, account);
           const { col1, col2 } = registerDisplayAmounts(e, account);
           const compactAmount = compact ? reconRegisterAmount(e, account) : null;
           const cat = categoryLabel(e);
+          const rawPayee = e.je_description || e.description || '';
+          const payee = formatReconPayee(rawPayee);
           return (
             <tr
               key={e.id}
@@ -326,13 +322,12 @@ function RegisterTable({
               </td>
               {showDate && <td className="qbd-d">{fmtReconDate(e.posting_date)}</td>}
               {showNum && <td className="qbd-je">{e.je_number}</td>}
-              {showPayee && <td>{e.je_description || e.description || ''}</td>}
+              {showPayee && <td title={rawPayee !== payee ? rawPayee : undefined}>{payee}</td>}
               {showCategory && (
                 <td className="qbd-cat" title={e.category_is_split ? 'Split transaction — double-click for full detail' : (e.category_account_name || cat)}>
                   {cat || <span className="qbd-muted">—</span>}
                 </td>
               )}
-              {showType && <td className="qbd-type">{txnType(side, isCard)}</td>}
               {compact ? (
                 <td className="qbd-amt qbd-recon-amt">{compactAmount ? fmt(compactAmount) : ''}</td>
               ) : (
@@ -1285,7 +1280,6 @@ export default function QBDReconcile() {
   const [reportBusy, setReportBusy] = useState(false);
   const [pdfPreview, setPdfPreview] = useState(null); // { url, mode }
   const [showNum, setShowNum] = useState(() => localStorage.getItem('qbd-recon-col-num') !== 'false');
-  const [showType, setShowType] = useState(() => localStorage.getItem('qbd-recon-col-type') !== 'false');
   const [showDate, setShowDate] = useState(() => localStorage.getItem('qbd-recon-col-date') !== 'false');
   const [showPayee, setShowPayee] = useState(() => localStorage.getItem('qbd-recon-col-payee') !== 'false');
   const [showCategory, setShowCategory] = useState(() => localStorage.getItem('qbd-recon-col-category') !== 'false');
@@ -1328,7 +1322,6 @@ export default function QBDReconcile() {
 
   // Remember which columns the user wants displayed.
   useEffect(() => { localStorage.setItem('qbd-recon-col-num', showNum ? 'true' : 'false'); }, [showNum]);
-  useEffect(() => { localStorage.setItem('qbd-recon-col-type', showType ? 'true' : 'false'); }, [showType]);
   useEffect(() => { localStorage.setItem('qbd-recon-col-date', showDate ? 'true' : 'false'); }, [showDate]);
   useEffect(() => { localStorage.setItem('qbd-recon-col-payee', showPayee ? 'true' : 'false'); }, [showPayee]);
   useEffect(() => { localStorage.setItem('qbd-recon-col-category', showCategory ? 'true' : 'false'); }, [showCategory]);
@@ -2834,7 +2827,6 @@ export default function QBDReconcile() {
                   selectedId={selectedId}
                   highlightMarked={highlightMarked}
                   showNum={showNum}
-                  showType={showType}
                   showDate={showDate}
                   showPayee={showPayee}
                   showCategory={showCategory}
@@ -2873,7 +2865,6 @@ export default function QBDReconcile() {
                   selectedId={selectedId}
                   highlightMarked={highlightMarked}
                   showNum={showNum}
-                  showType={showType}
                   showDate={showDate}
                   showPayee={showPayee}
                   showCategory={showCategory}
@@ -2937,7 +2928,6 @@ export default function QBDReconcile() {
               <label><input type="checkbox" checked={showNum} onChange={(e) => setShowNum(e.target.checked)} /> Chk # / Num</label>
               <label><input type="checkbox" checked={showPayee} onChange={(e) => setShowPayee(e.target.checked)} /> Payee / Memo</label>
               <label><input type="checkbox" checked={showCategory} onChange={(e) => setShowCategory(e.target.checked)} /> Category</label>
-              <label><input type="checkbox" checked={showType} onChange={(e) => setShowType(e.target.checked)} /> Type</label>
               <button type="button" className="qbd-btn" style={{ fontSize: 10 }} onClick={() => { setRegisterSplitPct(DEFAULT_REGISTER_SPLIT); setShowColsMenu(false); }}>Reset pane width</button>
               <button type="button" className="qbd-btn" style={{ fontSize: 10 }} onClick={() => { setStmtSplitPct(DEFAULT_STMT_SPLIT); setStmtZoom(DEFAULT_STMT_ZOOM); setShowColsMenu(false); }}>Reset statement size &amp; zoom</button>
             </div>
