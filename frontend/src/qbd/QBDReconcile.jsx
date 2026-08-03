@@ -436,6 +436,7 @@ function TxnDetailModal({
   onUpdated,
   onReversed,
   onAccountCreated,
+  onVendorRuleApplied,
   showToast,
 }) {
   const [liveEntry, setLiveEntry] = useState(entry);
@@ -541,8 +542,12 @@ function TxnDetailModal({
       postMatchingDrafts: false,
       applyToPendingImports: true,
       postMatchingPendingImports: false,
+      // Also reclass other posted charges from this vendor (e.g. 2nd Sam's Club Fuel).
+      applyToPostedJournals: true,
+      bankAccountIds: reconcileAccountId ? [reconcileAccountId] : [],
+      excludeJournalIds: liveEntry.id ? [liveEntry.id] : [],
     });
-    return ruleRes?.data?.rule?.pattern || ruleRes?.data?.pattern || vendorHint;
+    return ruleRes?.data || {};
   };
 
   const applyReclass = (accountIdOverride, accountsOverride) => {
@@ -594,9 +599,27 @@ function TxnDetailModal({
     if (!ruleOffer?.accountId) return;
     setBusy(true);
     try {
-      const pat = await saveVendorRule(ruleOffer.accountId, ruleOffer.accountLabel);
-      showToast && showToast(`Rule saved — future “${pat}” → ${ruleOffer.accountLabel}`);
+      const payload = await saveVendorRule(ruleOffer.accountId, ruleOffer.accountLabel);
+      const pat = payload?.rule?.pattern || vendorHint;
+      const posted = payload?.postedUpdate || {};
+      const n = Number(posted.reclassed) || 0;
+      const matched = Number(posted.matched) || 0;
+      showToast && showToast(
+        n > 0
+          ? `Rule saved — “${pat}” → ${ruleOffer.accountLabel}. Updated ${n} other charge${n === 1 ? '' : 's'}.`
+          : matched > 0
+            ? `Rule saved — “${pat}” → ${ruleOffer.accountLabel}. Other matches already on that category.`
+            : `Rule saved — “${pat}” → ${ruleOffer.accountLabel} (applies to matching charges going forward).`
+      );
       setRuleOffer(null);
+      if (typeof onVendorRuleApplied === 'function') {
+        onVendorRuleApplied({
+          pattern: pat,
+          accountId: ruleOffer.accountId,
+          accountLabel: ruleOffer.accountLabel,
+          postedUpdate: posted,
+        });
+      }
     } catch (err) {
       window.alert(err.response?.data?.error || err.message || 'Could not create vendor rule');
     } finally {
@@ -788,8 +811,8 @@ function TxnDetailModal({
               <div className="fhd" style={{ color: '#1a5a2a' }}>Create vendor rule?</div>
               <p style={{ margin: '6px 0 10px', fontSize: 13, lineHeight: 1.45 }}>
                 Category is now <strong>{ruleOffer.accountLabel}</strong>.
-                Create a rule so future charges from <strong>{ruleOffer.vendorHint}</strong> use this category automatically
-                (instead of defaulting to Office &amp; Software)?
+                Create a rule for <strong>{ruleOffer.vendorHint}</strong> — it will also find and update
+                other matching posted charges on the books (not only future imports).
               </p>
               <div className="qbd-botbar">
                 <button type="button" className="qbd-btn" disabled={busy} onClick={() => setRuleOffer(null)}>Not now</button>
@@ -3132,6 +3155,41 @@ export default function QBDReconcile() {
           showToast={showToast}
           onClose={() => setDrillEntry(null)}
           onAccountCreated={addCreatedAccount}
+          onVendorRuleApplied={({ accountId: catId, accountLabel, postedUpdate }) => {
+            // Patch Category on the register for every JE the rule just reclassed
+            // (plus keep cleared checkmarks).
+            persistChecked(checkedRef.current || checked);
+            const acct = allAccounts.find((a) => a.id === catId);
+            const num = acct?.account_number || acct?.number || String(accountLabel || '').split(/[·\s]/)[0] || '';
+            const name = acct?.account_name || acct?.name || String(accountLabel || '').replace(/^\d+\s*[·-]?\s*/, '');
+            const leaf = String(name || '').includes(':')
+              ? String(name).split(':').pop().trim()
+              : String(name || '').trim();
+            const label = leaf && num ? `${num} ${leaf}` : (accountLabel || num);
+            const jeIds = new Set(
+              (postedUpdate?.results || [])
+                .filter((r) => r?.journalId && !r.skipped)
+                .map((r) => r.journalId)
+            );
+            if (!jeIds.size || !num) return;
+            setData((prev) => {
+              if (!prev?.entries) return prev;
+              return {
+                ...prev,
+                entries: prev.entries.map((e) => (
+                  jeIds.has(e.journal_entry_id)
+                    ? {
+                      ...e,
+                      category_account_number: num,
+                      category_account_name: name,
+                      category_label: label,
+                      category_is_split: false,
+                    }
+                    : e
+                )),
+              };
+            });
+          }}
           onUpdated={(updated) => {
             // Category fix must NOT reload the worksheet — that was wiping every
             // cleared checkmark. Refresh the open detail and patch Category in-register

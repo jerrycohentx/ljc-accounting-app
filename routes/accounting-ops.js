@@ -31,6 +31,7 @@ import {
   postMatchingVendorDrafts,
   applyVendorRuleToPendingImports,
   postMatchingPendingImports,
+  applyVendorRuleToPostedJournals,
   deriveVendorPattern,
 } from '../lib/vendor-category-rule.js';
 import { findDuplicateCatApprDrafts } from '../lib/cat-appr-dedupe.js';
@@ -1091,7 +1092,9 @@ router.get(
 /**
  * POST /api/entities/:entityId/accounting/vendor-category-rule
  * Create/update a durable vendor rule, apply to open drafts, and (by default) post them.
- * Body: { pattern?, accountId, label?, description?, matchType?, applyToOpenDrafts?, postMatchingDrafts? }
+ * Body: { pattern?, accountId, label?, description?, matchType?,
+ *         applyToOpenDrafts?, postMatchingDrafts?, applyToPendingImports?,
+ *         applyToPostedJournals?, bankAccountIds?, excludeJournalIds? }
  */
 router.post(
   '/vendor-category-rule',
@@ -1106,6 +1109,10 @@ router.post(
       // Bank-feed pending imports (Activity Review).
       const applyToPendingImports = req.body?.applyToPendingImports !== false;
       const postMatchingPending = req.body?.postMatchingPendingImports === true;
+      // Posted Amex/bank charges already on the books (reconcile Fix category → Create rule).
+      const applyToPostedJournals = req.body?.applyToPostedJournals === true;
+      const bankAccountIds = Array.isArray(req.body?.bankAccountIds) ? req.body.bankAccountIds : [];
+      const excludeJournalIds = Array.isArray(req.body?.excludeJournalIds) ? req.body.excludeJournalIds : [];
       if (!accountId) return res.status(400).json({ error: 'accountId required' });
 
       const rule = await upsertVendorCategoryRule(db, {
@@ -1122,6 +1129,7 @@ router.post(
       let postResult = null;
       let pendingUpdate = null;
       let pendingPostResult = null;
+      let postedUpdate = null;
 
       if (applyToOpenDrafts || postMatchingDrafts) {
         draftUpdate = await applyVendorRuleToOpenDrafts(db, {
@@ -1158,6 +1166,18 @@ router.post(
         });
       }
 
+      if (applyToPostedJournals) {
+        postedUpdate = await applyVendorRuleToPostedJournals(db, {
+          entityId: req.entityId,
+          pattern: rule.pattern,
+          accountId: rule.accountId,
+          matchType: rule.matchType,
+          userId: req.user?.id || 'usr-admin',
+          bankAccountIds,
+          excludeJournalIds,
+        });
+      }
+
       res.json({
         ok: true,
         rule,
@@ -1166,10 +1186,12 @@ router.post(
         postResult,
         pendingUpdate,
         pendingPostResult,
+        postedUpdate,
         appliedToOpenDrafts: applyToOpenDrafts,
         postedMatchingDrafts: postMatchingDrafts,
         appliedToPendingImports: applyToPendingImports,
         postedMatchingPendingImports: postMatchingPending,
+        appliedToPostedJournals: applyToPostedJournals,
       });
     } catch (error) {
       const status = /required|not found|min 3/i.test(error.message) ? 400 : 500;
