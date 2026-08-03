@@ -522,7 +522,8 @@ function TxnDetailModal({
       label: accountLabel ? `Vendor → ${accountLabel}` : undefined,
       applyToOpenDrafts: false,
       postMatchingDrafts: false,
-      applyToPendingImports: true,
+      // Pending-import apply currently 500s on prod (missing it.transaction_date) — save the rule only.
+      applyToPendingImports: false,
       postMatchingPendingImports: false,
     });
     return ruleRes?.data?.rule?.pattern || ruleRes?.data?.pattern || vendorHint;
