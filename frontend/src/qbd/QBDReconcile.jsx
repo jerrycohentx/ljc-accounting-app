@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEntity } from './EntityContext';
-import { accountAPI, bankReconAPI, journalAPI, reconReportAPI, mgmtReportAPI } from '../services/api';
+import { accountAPI, accountingAPI, bankReconAPI, journalAPI, reconReportAPI, mgmtReportAPI } from '../services/api';
 import { useBackupStatus } from './QBDBackupDialog';
 import {
   fmt,
@@ -357,6 +357,23 @@ function useSplitResize(splitRef, setSplitPct, minPct = 18, maxPct = 82) {
   }, []);
 }
 
+/** Short vendor label for "Create rule" checkbox (Amex / bank memo → payee words). */
+function vendorRuleHint(description) {
+  let t = String(description || '')
+    .replace(/^Amex\s+merchant\s+credit:\s*/i, '')
+    .replace(/^Amex(?:\s+stmt\s+\d{4}-\d{2}-\d{2})?:\s*/i, '')
+    .replace(/\s*\(corrected[^)]*\)\s*$/i, '')
+    .replace(/\s+-\s+FITID:.*$/i, '')
+    .trim();
+  if (!t) return 'this vendor';
+  const words = t
+    .split(/\s+/)
+    .map((w) => w.replace(/^[^A-Za-z0-9*]+|[^A-Za-z0-9*.]+$/g, ''))
+    .filter((w) => /[A-Za-z]/.test(w) && w.length >= 2)
+    .slice(0, 4);
+  return (words.join(' ') || t).slice(0, 40);
+}
+
 /** Drill-down: shows the full double-entry behind a register line; allows reclass + reverse during recon. */
 function applyReclassHistoryToLines(lines, reclassHistory = []) {
   if (!Array.isArray(lines) || !lines.length) return lines || [];
@@ -416,12 +433,16 @@ function TxnDetailModal({
   const [busy, setBusy] = useState(false);
   const [reclassLineId, setReclassLineId] = useState(null);
   const [reclassAccountId, setReclassAccountId] = useState('');
+  const [createVendorRule, setCreateVendorRule] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [localAccounts, setLocalAccounts] = useState(accounts);
   const attachInputRef = useRef(null);
+  const createVendorRuleRef = useRef(true);
   useEffect(() => { setLocalAccounts(accounts); }, [accounts]);
+  useEffect(() => { createVendorRuleRef.current = createVendorRule; }, [createVendorRule]);
   const canReverse = liveEntry.status === 'POSTED' && !liveEntry.reversed_by_je_id && !liveEntry.reverses_je_id;
   const canEditDraft = liveEntry.status === 'DRAFT';
+  const vendorHint = useMemo(() => vendorRuleHint(liveEntry.description), [liveEntry.description]);
   let td = 0;
   let tc = 0;
 
@@ -491,6 +512,7 @@ function TxnDetailModal({
       || rawLines.find((l) => String(l.account_id) === String(line.account_id));
     setReclassLineId(raw?.id || line._sourceLineId || line.id);
     setReclassAccountId('');
+    setCreateVendorRule(true);
   };
 
   const applyReclass = (accountIdOverride, accountsOverride) => {
@@ -501,31 +523,56 @@ function TxnDetailModal({
       return Promise.resolve();
     }
     const target = acctList.find((a) => a.id === targetId);
-    const line = rawLines.find((l) => l.id === reclassLineId)
-      || lines.find((l) => l.id === reclassLineId);
-    const fromLabel = line ? `${line.account_number} · ${(line.account_name || '').split(':').pop()}` : 'this line';
     const toNum = target?.account_number || target?.number || '';
-    const toName = (target?.account_name || target?.name || '').split(':').pop();
+    const toName = leafLabel(target?.account_name || target?.name || '');
     const toLabel = target ? `${toNum} · ${toName}` : 'the new account';
-    const skipConfirm = !!accountIdOverride;
-    if (!skipConfirm && !window.confirm(`Change category from ${fromLabel} to ${toLabel}? Future similar items will learn this category.`)) {
-      return Promise.resolve();
-    }
+    const wantRule = createVendorRuleRef.current;
     setBusy(true);
     return journalAPI.reclassOffset(entityId, liveEntry.id, {
       lineId: reclassLineId,
       accountId: targetId,
-      learnRule: true,
+      // Lightweight learn always mirrors Fix category; durable vendor rule is opt-in below.
+      learnRule: wantRule,
       bankAccountIds: reconcileAccountId ? [reconcileAccountId] : [],
     })
-      .then((r) => {
-        showToast && showToast(r.data?.message || 'Category updated');
+      .then(async (r) => {
+        let ruleNote = '';
+        if (wantRule) {
+          try {
+            const ruleRes = await accountingAPI.createVendorRule(entityId, {
+              accountId: targetId,
+              description: liveEntry.description || '',
+              label: toLabel ? `Vendor → ${toLabel}` : undefined,
+              applyToOpenDrafts: false,
+              postMatchingDrafts: false,
+              applyToPendingImports: true,
+              postMatchingPendingImports: false,
+            });
+            const pat = ruleRes?.data?.rule?.pattern || ruleRes?.data?.pattern || vendorHint;
+            ruleNote = ` · rule saved for “${pat}”`;
+          } catch (err) {
+            // Reclass already succeeded; rule is best-effort.
+            console.warn('vendor rule after reclass failed', err);
+            ruleNote = ' · category saved (rule could not be created)';
+          }
+        }
+        showToast && showToast((r.data?.message || `Category → ${toLabel}`) + ruleNote);
         setReclassLineId(null);
         setReclassAccountId('');
         return refreshEntry();
       })
       .catch((e) => window.alert(e.response?.data?.error || e.message))
       .finally(() => setBusy(false));
+  };
+
+  const onPickReclassAccount = (accountId) => {
+    if (!accountId) {
+      setReclassAccountId('');
+      return;
+    }
+    setReclassAccountId(accountId);
+    // Selecting an account applies immediately — no separate Save click.
+    applyReclass(accountId);
   };
 
   const handleCreatedAccount = async (entry) => {
@@ -659,20 +706,33 @@ function TxnDetailModal({
                 <AccountCombobox
                   accounts={localAccounts}
                   value={reclassAccountId}
-                  onChange={setReclassAccountId}
-                  placeholder="Search GL account…"
+                  onChange={onPickReclassAccount}
+                  placeholder="Search GL account… (applies on select)"
                   style={{ minWidth: 320 }}
                   allowCreate
                   onCreateRequest={() => setCreateOpen(true)}
+                  disabled={busy}
                 />
               </div>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10, fontSize: 12, cursor: busy ? 'default' : 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={createVendorRule}
+                  disabled={busy}
+                  onChange={(e) => setCreateVendorRule(e.target.checked)}
+                  style={{ marginTop: 2 }}
+                />
+                <span>
+                  <strong>Create rule</strong> — future transactions from <strong>{vendorHint}</strong> use this category automatically
+                </span>
+              </label>
               <p className="qbd-muted" style={{ margin: '6px 0 0', fontSize: 11 }}>
-                Can&apos;t find it? Choose <strong>＋ Create new account…</strong> (income, expense, asset, liability, or equity) — it applies to this transaction right away.
+                Pick an account and the category updates immediately (no Save). Can&apos;t find it? Choose <strong>＋ Create new account…</strong>.
               </p>
               <div className="qbd-botbar">
                 <button type="button" className="qbd-btn" disabled={busy} onClick={() => { setReclassLineId(null); setReclassAccountId(''); }}>Cancel</button>
                 <span className="sp" />
-                <button type="button" className="qbd-btn qbd-primary" disabled={busy || !reclassAccountId} onClick={() => applyReclass()}>Save category</button>
+                {busy ? <span className="qbd-muted" style={{ fontSize: 12 }}>Updating…</span> : null}
               </div>
             </div>
           )}
