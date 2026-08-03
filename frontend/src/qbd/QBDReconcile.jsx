@@ -191,9 +191,22 @@ function txnType(side, isCard) {
  * double-click (or Go To) drills into the underlying transaction.
  * Column headers are sortable (date, payee, type, amount).
  */
+function categoryLabel(entry) {
+  if (!entry) return '';
+  if (entry.category_label) return entry.category_label;
+  const num = entry.category_account_number;
+  const name = entry.category_account_name;
+  if (!num && !name) return '';
+  const leaf = String(name || '').includes(':')
+    ? String(name).split(':').pop().trim()
+    : String(name || '').trim();
+  return leaf ? `${num} ${leaf}` : String(num || '');
+}
+
 function RegisterTable({
   entries, account, labels, checked, matchedSet, highlightGlId, selectedId, highlightMarked,
-  showNum, showType, showDate = true, showPayee = true, onToggle, onSelect, onHover, onDrill, compact, amountSide,
+  showNum, showType, showDate = true, showPayee = true, showCategory = true,
+  onToggle, onSelect, onHover, onDrill, compact, amountSide,
 }) {
   const [sortKey, setSortKey] = useState('date');
   const [sortDir, setSortDir] = useState('asc');
@@ -229,6 +242,8 @@ function RegisterTable({
         cmp = ta.localeCompare(tb);
       } else if (sortKey === 'num') {
         cmp = String(a.je_number || '').localeCompare(String(b.je_number || ''), undefined, { numeric: true });
+      } else if (sortKey === 'category') {
+        cmp = categoryLabel(a).localeCompare(categoryLabel(b), undefined, { sensitivity: 'base' });
       } else if (sortKey === 'amount') {
         const aa = Math.abs(Number(reconRegisterAmount(a, account)) || 0);
         const bb = Math.abs(Number(reconRegisterAmount(b, account)) || 0);
@@ -266,6 +281,7 @@ function RegisterTable({
           {showDate && <SortTh colKey="date" className="qbd-d">DATE</SortTh>}
           {showNum && <SortTh colKey="num" className="qbd-je">CHK #</SortTh>}
           {showPayee && <SortTh colKey="payee">PAYEE</SortTh>}
+          {showCategory && <SortTh colKey="category" className="qbd-cat">CATEGORY</SortTh>}
           {showType && <SortTh colKey="type" className="qbd-type">TYPE</SortTh>}
           {compact ? (
             <SortTh colKey="amount" className="qbd-amt qbd-recon-amt">{compactAmtLabel}</SortTh>
@@ -286,6 +302,7 @@ function RegisterTable({
           const side = entrySide(e, account);
           const { col1, col2 } = registerDisplayAmounts(e, account);
           const compactAmount = compact ? reconRegisterAmount(e, account) : null;
+          const cat = categoryLabel(e);
           return (
             <tr
               key={e.id}
@@ -310,6 +327,11 @@ function RegisterTable({
               {showDate && <td className="qbd-d">{fmtReconDate(e.posting_date)}</td>}
               {showNum && <td className="qbd-je">{e.je_number}</td>}
               {showPayee && <td>{e.je_description || e.description || ''}</td>}
+              {showCategory && (
+                <td className="qbd-cat" title={e.category_is_split ? 'Split transaction — double-click for full detail' : (e.category_account_name || cat)}>
+                  {cat || <span className="qbd-muted">—</span>}
+                </td>
+              )}
               {showType && <td className="qbd-type">{txnType(side, isCard)}</td>}
               {compact ? (
                 <td className="qbd-amt qbd-recon-amt">{compactAmount ? fmt(compactAmount) : ''}</td>
@@ -1266,6 +1288,7 @@ export default function QBDReconcile() {
   const [showType, setShowType] = useState(() => localStorage.getItem('qbd-recon-col-type') !== 'false');
   const [showDate, setShowDate] = useState(() => localStorage.getItem('qbd-recon-col-date') !== 'false');
   const [showPayee, setShowPayee] = useState(() => localStorage.getItem('qbd-recon-col-payee') !== 'false');
+  const [showCategory, setShowCategory] = useState(() => localStorage.getItem('qbd-recon-col-category') !== 'false');
   const startRegisterResize = useSplitResize(registerSplitRef, setRegisterSplitPct, 18, 82);
   const startStmtResize = useSplitResize(outerSplitRef, setStmtSplitPct, 15, 72);
 
@@ -1308,6 +1331,7 @@ export default function QBDReconcile() {
   useEffect(() => { localStorage.setItem('qbd-recon-col-type', showType ? 'true' : 'false'); }, [showType]);
   useEffect(() => { localStorage.setItem('qbd-recon-col-date', showDate ? 'true' : 'false'); }, [showDate]);
   useEffect(() => { localStorage.setItem('qbd-recon-col-payee', showPayee ? 'true' : 'false'); }, [showPayee]);
+  useEffect(() => { localStorage.setItem('qbd-recon-col-category', showCategory ? 'true' : 'false'); }, [showCategory]);
 
   // Release the object URL for the statement PDF when it changes or on unmount.
   useEffect(() => () => { if (statementPdfUrl) URL.revokeObjectURL(statementPdfUrl); }, [statementPdfUrl]);
@@ -2791,48 +2815,78 @@ export default function QBDReconcile() {
           </>
         )}
         <div className="qbd-recon-pane qbd-recon-dual" style={{ width: statementPdfUrl && showStmt ? `calc(${100 - stmtSplitPct}% - 4px)` : '100%' }}>
-          {!isCard ? (
-            <div className="qbd-recon-register-split" ref={registerSplitRef}>
-              <div className="qbd-recon-subpane" style={{ width: `calc(${registerSplitPct}% - 3px)` }}>
-                <div className="qbd-recon-panehead">
-                  Checks and Payments <span className="qbd-muted">{paymentCount} cleared · {fmt(markedPayments)}</span>
-                  <span className="sp" />
-                  <button type="button" className="qbd-btn qbd-pane-btn" disabled={busy || !paymentCount} onClick={() => unmarkSide('payment')} title="Clear all cleared checkmarks in this pane">Unmark</button>
-                </div>
-                <div className="qbd-recon-panebody" ref={regScrollRef}>
-                  <RegisterTable entries={paymentEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} showDate={showDate} showPayee={showPayee} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} compact amountSide="payment" />
-                </div>
-              </div>
-              <div
-                className="qbd-recon-gutter qbd-recon-gutter-inner"
-                role="separator"
-                aria-orientation="vertical"
-                aria-valuenow={Math.round(registerSplitPct)}
-                title="Drag to resize checks vs deposits"
-                onMouseDown={startRegisterResize}
-              />
-              <div className="qbd-recon-subpane" style={{ width: `calc(${100 - registerSplitPct}% - 3px)` }}>
-                <div className="qbd-recon-panehead">
-                  Deposits and Other Credits <span className="qbd-muted">{depositCount} cleared · {fmt(markedDeposits)}</span>
-                  <span className="sp" />
-                  <button type="button" className="qbd-btn qbd-pane-btn" disabled={busy || !depositCount} onClick={() => unmarkSide('deposit')} title="Clear all cleared checkmarks in this pane">Unmark</button>
-                </div>
-                <div className="qbd-recon-panebody">
-                  <RegisterTable entries={depositEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} showDate={showDate} showPayee={showPayee} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} compact amountSide="deposit" />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <>
+          <div className="qbd-recon-register-split" ref={registerSplitRef}>
+            <div className="qbd-recon-subpane" style={{ width: `calc(${registerSplitPct}% - 3px)` }}>
               <div className="qbd-recon-panehead">
-                Register — mark cleared
-                <span className="qbd-muted">{checkedIds.length} marked</span>
+                {isCard ? 'Payments' : 'Checks and Payments'}{' '}
+                <span className="qbd-muted">{paymentCount} cleared · {fmt(markedPayments)}</span>
+                <span className="sp" />
+                <button type="button" className="qbd-btn qbd-pane-btn" disabled={busy || !paymentCount} onClick={() => unmarkSide('payment')} title="Clear all cleared checkmarks in this pane">Unmark</button>
               </div>
               <div className="qbd-recon-panebody" ref={regScrollRef}>
-                <RegisterTable entries={visibleEntries} account={account} labels={labels} checked={checked} matchedSet={matchedGlSet} highlightGlId={highlightGlId} selectedId={selectedId} highlightMarked={highlightMarked} showNum={showNum} showType={showType} showDate={showDate} showPayee={showPayee} onToggle={toggle} onSelect={setSelectedId} onHover={setHighlightGlId} onDrill={drillEntryOpen} />
+                <RegisterTable
+                  entries={paymentEntries}
+                  account={account}
+                  labels={labels}
+                  checked={checked}
+                  matchedSet={matchedGlSet}
+                  highlightGlId={highlightGlId}
+                  selectedId={selectedId}
+                  highlightMarked={highlightMarked}
+                  showNum={showNum}
+                  showType={showType}
+                  showDate={showDate}
+                  showPayee={showPayee}
+                  showCategory={showCategory}
+                  onToggle={toggle}
+                  onSelect={setSelectedId}
+                  onHover={setHighlightGlId}
+                  onDrill={drillEntryOpen}
+                  compact
+                  amountSide="payment"
+                />
               </div>
-            </>
-          )}
+            </div>
+            <div
+              className="qbd-recon-gutter qbd-recon-gutter-inner"
+              role="separator"
+              aria-orientation="vertical"
+              aria-valuenow={Math.round(registerSplitPct)}
+              title={isCard ? 'Drag to resize payments vs charges' : 'Drag to resize checks vs deposits'}
+              onMouseDown={startRegisterResize}
+            />
+            <div className="qbd-recon-subpane" style={{ width: `calc(${100 - registerSplitPct}% - 3px)` }}>
+              <div className="qbd-recon-panehead">
+                {isCard ? 'Charges' : 'Deposits and Other Credits'}{' '}
+                <span className="qbd-muted">{depositCount} cleared · {fmt(markedDeposits)}</span>
+                <span className="sp" />
+                <button type="button" className="qbd-btn qbd-pane-btn" disabled={busy || !depositCount} onClick={() => unmarkSide('deposit')} title="Clear all cleared checkmarks in this pane">Unmark</button>
+              </div>
+              <div className="qbd-recon-panebody">
+                <RegisterTable
+                  entries={depositEntries}
+                  account={account}
+                  labels={labels}
+                  checked={checked}
+                  matchedSet={matchedGlSet}
+                  highlightGlId={highlightGlId}
+                  selectedId={selectedId}
+                  highlightMarked={highlightMarked}
+                  showNum={showNum}
+                  showType={showType}
+                  showDate={showDate}
+                  showPayee={showPayee}
+                  showCategory={showCategory}
+                  onToggle={toggle}
+                  onSelect={setSelectedId}
+                  onHover={setHighlightGlId}
+                  onDrill={drillEntryOpen}
+                  compact
+                  amountSide="deposit"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div className="qbd-recon-actionbar">
@@ -2842,9 +2896,7 @@ export default function QBDReconcile() {
         </label>
         <span className="sp" />
         <button type="button" className="qbd-btn" disabled={busy} onClick={markAll}>Mark All</button>
-        {isCard && (
-          <button type="button" className="qbd-btn" disabled={busy} onClick={unmarkAll}>Unmark All</button>
-        )}
+        <button type="button" className="qbd-btn" disabled={busy} onClick={unmarkAll}>Unmark All</button>
         <button
           type="button"
           className="qbd-btn"
@@ -2884,10 +2936,9 @@ export default function QBDReconcile() {
               <label><input type="checkbox" checked={showDate} onChange={(e) => setShowDate(e.target.checked)} /> Date</label>
               <label><input type="checkbox" checked={showNum} onChange={(e) => setShowNum(e.target.checked)} /> Chk # / Num</label>
               <label><input type="checkbox" checked={showPayee} onChange={(e) => setShowPayee(e.target.checked)} /> Payee / Memo</label>
+              <label><input type="checkbox" checked={showCategory} onChange={(e) => setShowCategory(e.target.checked)} /> Category</label>
               <label><input type="checkbox" checked={showType} onChange={(e) => setShowType(e.target.checked)} /> Type</label>
-              {!isCard && (
-                <button type="button" className="qbd-btn" style={{ fontSize: 10 }} onClick={() => { setRegisterSplitPct(DEFAULT_REGISTER_SPLIT); setShowColsMenu(false); }}>Reset column width</button>
-              )}
+              <button type="button" className="qbd-btn" style={{ fontSize: 10 }} onClick={() => { setRegisterSplitPct(DEFAULT_REGISTER_SPLIT); setShowColsMenu(false); }}>Reset pane width</button>
               <button type="button" className="qbd-btn" style={{ fontSize: 10 }} onClick={() => { setStmtSplitPct(DEFAULT_STMT_SPLIT); setStmtZoom(DEFAULT_STMT_ZOOM); setShowColsMenu(false); }}>Reset statement size &amp; zoom</button>
             </div>
           )}
@@ -3093,10 +3144,34 @@ export default function QBDReconcile() {
           onAccountCreated={addCreatedAccount}
           onUpdated={(updated) => {
             // Category fix must NOT reload the worksheet — that was wiping every
-            // cleared checkmark. Only refresh the open transaction detail.
+            // cleared checkmark. Refresh the open detail and patch Category in-register.
             setDrillEntry(updated);
-            // Keep marks saved so a later intentional reload still restores them.
             persistChecked(checkedRef.current || checked);
+            const hist = updated?.reclassHistory || [];
+            const latest = hist[hist.length - 1];
+            const to = latest?.toAccount;
+            if (!to?.account_number || !updated?.id) return;
+            const leaf = String(to.account_name || '').includes(':')
+              ? String(to.account_name).split(':').pop().trim()
+              : String(to.account_name || '').trim();
+            const label = leaf ? `${to.account_number} ${leaf}` : String(to.account_number);
+            setData((prev) => {
+              if (!prev?.entries) return prev;
+              return {
+                ...prev,
+                entries: prev.entries.map((e) => (
+                  e.journal_entry_id === updated.id
+                    ? {
+                      ...e,
+                      category_account_number: to.account_number,
+                      category_account_name: to.account_name,
+                      category_label: label,
+                      category_is_split: false,
+                    }
+                    : e
+                )),
+              };
+            });
           }}
           onReversed={() => {
             setDrillEntry(null);
