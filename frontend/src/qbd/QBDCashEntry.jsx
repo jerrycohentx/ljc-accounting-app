@@ -7,6 +7,7 @@ import AccountCombobox, { flattenAccounts } from './AccountCombobox';
 import {
   buildEzCheckCsv,
   downloadEzCheckCsv,
+  printCheckViaEzCheck,
   suggestEzCheckCompany,
   EZCHECK_DEFAULT_COMPANY,
 } from './ezCheckPrinting';
@@ -192,15 +193,43 @@ export default function QBDCashEntry({ mode = 'check' }) {
     jeId: linkedJe?.id || '',
   });
 
-  const exportRows = (rows) => {
+  const buildCsvOrToast = (rows) => {
     const csv = buildEzCheckCsv(rows);
     if (!csv.split(/\r?\n/).filter(Boolean).length || csv.split(/\r?\n/).filter(Boolean).length < 2) {
-      showToast && showToast('Nothing to export — need payee and amount');
-      return false;
+      showToast && showToast('Nothing to print — need payee and amount');
+      return null;
     }
+    return csv;
+  };
+
+  /** CSV only (no local helper). */
+  const exportRows = (rows) => {
+    const csv = buildCsvOrToast(rows);
+    if (!csv) return false;
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     downloadEzCheckCsv(`ezcheck-${stamp}.csv`, csv);
-    showToast && showToast(`Print file ready for ${ezCompany} — books unchanged`);
+    showToast && showToast(`CSV downloaded for ${ezCompany}`);
+    return true;
+  };
+
+  /** Download + open local ezCheckPrinting helper (actual check printing). */
+  const printRows = (rows) => {
+    const csv = buildCsvOrToast(rows);
+    if (!csv) return false;
+    printCheckViaEzCheck(csv);
+    showToast && showToast('Opening ezCheckPrinting — Import print_now.csv → PRINT');
+    window.setTimeout(() => {
+      window.alert(
+        'Check sent to ezCheckPrinting.\n\n'
+        + '1) Save the CSV if the browser asks (ezcheck-print-now.csv)\n'
+        + '2) In the helper popup: Import/Export → Import Checks → print_now.csv\n'
+        + '3) Select the check → PRINT\n\n'
+        + 'One-time setup if nothing opens: run\n'
+        + 'C:\\LJC-LoanTracker\\tools\\Install_ezCheck_Print_Protocol.ps1\n'
+        + 'Or double-click Launch_Print_ezCheck.vbs after the CSV downloads.\n\n'
+        + `Company: ${ezCompany}`
+      );
+    }, 900);
     return true;
   };
 
@@ -370,7 +399,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
   const submit = async () => {
     if (linked) {
       if (linkedDraft) return postLinkedDraft();
-      showToast && showToast('This entry is already posted — use Export for print');
+      showToast && showToast('This entry is already posted — use Print check');
       return;
     }
     setBusy(true);
@@ -385,13 +414,14 @@ export default function QBDCashEntry({ mode = 'check' }) {
     }
   };
 
-  const exportForPrint = () => {
+  /** Print path — never posts; opens local ezCheckPrinting. */
+  const printCurrentCheck = () => {
     const row = currentPrintRow();
     if (!row.payee || !(row.amount > 0)) {
       showToast && showToast('Payee and amount required to print');
       return;
     }
-    if (exportRows([row])) {
+    if (printRows([row])) {
       setPrintQueue((q) => [...q, {
         ...row,
         queuedAt: Date.now(),
@@ -400,9 +430,19 @@ export default function QBDCashEntry({ mode = 'check' }) {
     }
   };
 
+  /** CSV-only download (no printer helper). */
+  const exportForPrint = () => {
+    const row = currentPrintRow();
+    if (!row.payee || !(row.amount > 0)) {
+      showToast && showToast('Payee and amount required');
+      return;
+    }
+    exportRows([row]);
+  };
+
   const submitAndExport = async () => {
     if (linked) {
-      showToast && showToast('This form is linked to an existing entry — use Export for print (won’t double-post)');
+      showToast && showToast('This form is linked to an existing entry — use Print check (won’t double-post)');
       return;
     }
     const row = currentPrintRow();
@@ -448,10 +488,10 @@ export default function QBDCashEntry({ mode = 'check' }) {
       showToast && showToast('Print queue is empty');
       return;
     }
-    exportRows(printQueue);
+    printRows(printQueue);
   };
 
-  const exportFromList = async (jeSummary) => {
+  const printFromList = async (jeSummary) => {
     setBusy(true);
     try {
       const r = await journalAPI.get(entityId, jeSummary.id);
@@ -462,7 +502,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
         showToast && showToast('Could not read payee/amount from that entry');
         return;
       }
-      if (exportRows([row])) {
+      if (printRows([row])) {
         setPrintQueue((q) => [...q, {
           ...row,
           queuedAt: Date.now(),
@@ -492,10 +532,9 @@ export default function QBDCashEntry({ mode = 'check' }) {
         <div className="fhd">{isCheck ? 'Write Checks' : 'Make Deposits'}</div>
         {isCheck && (
           <div className="qbd-muted" style={{ marginBottom: 8, lineHeight: 1.45 }}>
-            Open a <b>printable check</b> below to fill this form automatically.
-            <b> Export for print</b> and attachments never create a second journal entry.
-            ezCheckPrinting company: <code>{ezCompany}</code>.
-            {' '}If you still see “Waiting for review / drafts”, hard-refresh (Ctrl+Shift+R).
+            Open a <b>printable check</b> below, then <b>Print check</b> to open ezCheckPrinting
+            (MICR printing is on your PC — the cloud app cannot drive the printer alone).
+            Attachments never create a second journal entry. Company: <code>{ezCompany}</code>.
           </div>
         )}
 
@@ -642,11 +681,20 @@ export default function QBDCashEntry({ mode = 'check' }) {
                 className="qbd-btn"
                 disabled={busy}
                 type="button"
-                onClick={exportForPrint}
+                onClick={printCurrentCheck}
                 style={{ fontWeight: 'bold' }}
-                title="Downloads CSV for ezCheckPrinting. Never posts."
+                title="Downloads check file and opens ezCheckPrinting to print on blank stock. Never posts."
               >
-                Export for print
+                Print check
+              </button>
+              <button
+                className="qbd-btn"
+                disabled={busy}
+                type="button"
+                onClick={exportForPrint}
+                title="Download CSV only — does not open the printer app."
+              >
+                Download CSV
               </button>
               {!linked && (
                 <button
@@ -718,8 +766,8 @@ export default function QBDCashEntry({ mode = 'check' }) {
                         <button type="button" className="qbd-btn" disabled={busy} onClick={() => openJournal(j)} style={{ fontWeight: 'bold' }}>
                           Open
                         </button>{' '}
-                        <button type="button" className="qbd-btn" disabled={busy} onClick={() => exportFromList(j)}>
-                          Print
+                        <button type="button" className="qbd-btn" disabled={busy} onClick={() => printFromList(j)}>
+                          Print check
                         </button>
                       </td>
                     </tr>
@@ -790,7 +838,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
               Clear queue
             </button>
             <button className="qbd-btn" type="button" disabled={!printQueue.length} onClick={exportQueue} style={{ fontWeight: 'bold' }}>
-              Export queue CSV
+              Print queue
             </button>
           </div>
         </div>
@@ -841,8 +889,8 @@ export default function QBDCashEntry({ mode = 'check' }) {
                         >
                           Open
                         </button>{' '}
-                        <button type="button" className="qbd-btn" disabled={busy} onClick={() => exportFromList(j)}>
-                          Print
+                        <button type="button" className="qbd-btn" disabled={busy} onClick={() => printFromList(j)}>
+                          Print check
                         </button>
                       </td>
                     )}

@@ -89,6 +89,27 @@ export function downloadEzCheckCsv(filename, csvText) {
   URL.revokeObjectURL(url);
 }
 
+/** Fixed download name the local Print_ezCheck.ps1 helper looks for. */
+export const EZCHECK_PRINT_NOW_FILENAME = 'ezcheck-print-now.csv';
+
+/**
+ * Download CSV for MICR printing, then hand off to the local ezCheckPrinting helper
+ * via the ljc-ezcheck:// protocol (installed by Install_ezCheck_Print_Protocol.ps1).
+ * The cloud app cannot drive the check printer directly.
+ */
+export function printCheckViaEzCheck(csvText, { openHelper = true } = {}) {
+  downloadEzCheckCsv(EZCHECK_PRINT_NOW_FILENAME, csvText);
+  if (!openHelper) return;
+  // Give the browser a moment to start the download, then open the local helper.
+  window.setTimeout(() => {
+    try {
+      window.location.href = 'ljc-ezcheck://print';
+    } catch {
+      /* protocol may not be installed yet */
+    }
+  }, 600);
+}
+
 /** Guess ezCheck company file from bank account label / number. */
 export function suggestEzCheckCompany(account) {
   const n = String(account?.account_number || account?.number || '');
