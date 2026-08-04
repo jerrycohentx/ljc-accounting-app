@@ -11,6 +11,47 @@ import {
   EZCHECK_DEFAULT_COMPANY,
 } from './ezCheckPrinting';
 
+/** Pull payee / amount / check # from an already-posted JE for print-only export. */
+function printRowFromJournal(je) {
+  const lines = je.lines || [];
+  const creditBank = lines.find((l) => Number(l.credit) > 0);
+  const debitExp = lines.find((l) => Number(l.debit) > 0);
+  const amount = Number(creditBank?.credit || debitExp?.debit || je.total_debit || 0);
+  const desc = String(je.description || '');
+  const memo = String(je.memo || '');
+  let payee = String(creditBank?.description || debitExp?.description || '').trim();
+  if (!payee) {
+    const m = desc.match(/Check(?:\s*#\S+)?\s*[—\-–:]\s*(.+?)(?:\s*\(|$)/i);
+    payee = (m?.[1] || desc).trim();
+  }
+  let checkNo = '';
+  const fromDesc = desc.match(/Check\s*#\s*([A-Za-z0-9-]+)/i);
+  const fromMemo = memo.match(/Check\s*#?\s*([A-Za-z0-9-]+)/i);
+  if (fromDesc) checkNo = fromDesc[1];
+  else if (fromMemo) checkNo = fromMemo[1];
+  let checkDate = je.posting_date || '';
+  if (checkDate.includes('T')) checkDate = checkDate.slice(0, 10);
+  return {
+    payee,
+    amount,
+    checkDate,
+    checkNo,
+    memo: memo.replace(/\s*·\s*Check\s+\S+/i, '').trim() || memo,
+    address1: '',
+    address2: '',
+    address3: '',
+    address4: '',
+    jeNumber: je.je_number || '',
+    jeId: je.id,
+  };
+}
+
+function looksLikeCheck(je) {
+  const d = String(je.description || '').toLowerCase();
+  const s = String(je.source || '').toLowerCase();
+  return d.startsWith('check') || s === 'write-check' || /\bcheck\b/.test(d);
+}
+
 // mode: 'check' = money out of a bank account; 'deposit' = money into a bank account
 export default function QBDCashEntry({ mode = 'check' }) {
   const isCheck = mode === 'check';
@@ -35,7 +76,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
 
   const loadRecent = useCallback(() => {
     if (!entityId) return;
-    journalAPI.list(entityId, { limit: 8 }).then((r) => setRecent(r.data?.data || [])).catch(() => {});
+    journalAPI.list(entityId, { limit: 20 }).then((r) => setRecent(r.data?.data || [])).catch(() => {});
   }, [entityId]);
 
   useEffect(() => {
@@ -81,7 +122,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     downloadEzCheckCsv(`ezcheck-${stamp}.csv`, csv);
-    showToast && showToast(`Downloaded CSV for ${ezCompany} — Import/Export → Import Checks in ezCheckPrinting`);
+    showToast && showToast(`Print file ready for ${ezCompany} — does not post to the books`);
     return true;
   };
 
@@ -113,6 +154,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
       description: desc,
       postingDate: date,
       memo: jeMemo,
+      source: isCheck ? 'write-check' : 'make-deposit',
       lines,
     });
     const id = r.data?.id;
@@ -141,17 +183,35 @@ export default function QBDCashEntry({ mode = 'check' }) {
     }
   };
 
+  /** Print path — never posts. */
+  const exportForPrint = () => {
+    const row = currentPrintRow();
+    if (!row.payee || !(row.amount > 0)) {
+      showToast && showToast('Payee and amount required to print');
+      return;
+    }
+    if (exportRows([row])) {
+      setPrintQueue((q) => [...q, { ...row, queuedAt: Date.now(), books: 'print-only' }]);
+    }
+  };
+
+  /** Books + print — confirm so it cannot double-post by accident. */
   const submitAndExport = async () => {
     const row = currentPrintRow();
     if (isCheck && (!row.payee || !(row.amount > 0))) {
       showToast && showToast('Payee and amount required');
       return;
     }
+    const ok = window.confirm(
+      'This will POST a new journal entry to the books, then download a print CSV.\n\n'
+      + 'If this check is already booked, click Cancel and use “Export for print” instead.'
+    );
+    if (!ok) return;
     setBusy(true);
     try {
       await postCheck();
       exportRows([row]);
-      setPrintQueue((q) => [...q, { ...row, queuedAt: Date.now() }]);
+      setPrintQueue((q) => [...q, { ...row, queuedAt: Date.now(), books: 'posted' }]);
       reset();
       loadRecent();
     } catch (err) {
@@ -167,8 +227,8 @@ export default function QBDCashEntry({ mode = 'check' }) {
       showToast && showToast('Payee and amount required');
       return;
     }
-    setPrintQueue((q) => [...q, { ...row, queuedAt: Date.now() }]);
-    showToast && showToast('Added to print queue (not posted yet)');
+    setPrintQueue((q) => [...q, { ...row, queuedAt: Date.now(), books: 'print-only' }]);
+    showToast && showToast('Queued for print only — books unchanged');
   };
 
   const exportQueue = () => {
@@ -179,8 +239,42 @@ export default function QBDCashEntry({ mode = 'check' }) {
     exportRows(printQueue);
   };
 
-  const exportCurrentOnly = () => {
-    exportRows([currentPrintRow()]);
+  const exportPostedJe = async (jeSummary) => {
+    setBusy(true);
+    try {
+      const r = await journalAPI.get(entityId, jeSummary.id);
+      const je = r.data;
+      const row = printRowFromJournal(je);
+      if (!row.payee || !(row.amount > 0)) {
+        showToast && showToast('Could not read payee/amount from that entry');
+        return;
+      }
+      if (exportRows([row])) {
+        setPrintQueue((q) => [...q, { ...row, queuedAt: Date.now(), books: 'already-posted' }]);
+      }
+    } catch (err) {
+      showToast && showToast('Failed: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const queuePostedJe = async (jeSummary) => {
+    setBusy(true);
+    try {
+      const r = await journalAPI.get(entityId, jeSummary.id);
+      const row = printRowFromJournal(r.data);
+      if (!row.payee || !(row.amount > 0)) {
+        showToast && showToast('Could not read payee/amount from that entry');
+        return;
+      }
+      setPrintQueue((q) => [...q, { ...row, queuedAt: Date.now(), books: 'already-posted' }]);
+      showToast && showToast(`Queued ${row.jeNumber || 'entry'} for print — books unchanged`);
+    } catch (err) {
+      showToast && showToast('Failed: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -188,10 +282,10 @@ export default function QBDCashEntry({ mode = 'check' }) {
       <div className="qbd-form">
         <div className="fhd">{isCheck ? 'Write Checks' : 'Make Deposits'}</div>
         {isCheck && (
-          <div className="qbd-muted" style={{ marginBottom: 8, lineHeight: 1.4 }}>
-            Print on blank stock via <b>ezCheckPrinting</b> (company: <code>{ezCompany}</code>).
-            After export: open ezCheckPrinting → <b>Import/Export → Import Checks</b> → map Payee/Amount
-            (save the map once) → select checks → <b>PRINT</b>.
+          <div className="qbd-muted" style={{ marginBottom: 8, lineHeight: 1.45 }}>
+            <b>Printing never posts.</b> Use <b>Export for print</b> (or Print on a recent entry) when the
+            check is already in the books. Use <b>Save &amp; Post</b> only for a new check that is not booked yet.
+            Then in ezCheckPrinting (<code>{ezCompany}</code>): <b>Import/Export → Import Checks → PRINT</b>.
           </div>
         )}
         <div className="frow">
@@ -270,16 +364,29 @@ export default function QBDCashEntry({ mode = 'check' }) {
               <button className="qbd-btn" disabled={busy} type="button" onClick={addToPrintQueue}>
                 Queue for print
               </button>
-              <button className="qbd-btn" disabled={busy} type="button" onClick={exportCurrentOnly}>
-                Export CSV only
+              <button
+                className="qbd-btn"
+                disabled={busy}
+                type="button"
+                onClick={exportForPrint}
+                style={{ fontWeight: 'bold' }}
+                title="Downloads CSV for ezCheckPrinting. Does not post a journal entry."
+              >
+                Export for print
               </button>
-              <button className="qbd-btn" disabled={busy} type="button" onClick={submitAndExport} style={{ fontWeight: 'bold' }}>
-                Post &amp; export to ezCheck
+              <button
+                className="qbd-btn"
+                disabled={busy}
+                type="button"
+                onClick={submitAndExport}
+                title="Posts a NEW journal entry, then exports CSV. Confirm first."
+              >
+                Post new + export…
               </button>
             </>
           )}
           <button className="qbd-btn" disabled={busy} onClick={submit} style={{ fontWeight: isCheck ? 'normal' : 'bold' }}>
-            {isCheck ? 'Save & Post Check' : 'Save & Post Deposit'}
+            {isCheck ? 'Save & Post (books only)' : 'Save & Post Deposit'}
           </button>
         </div>
       </div>
@@ -287,6 +394,9 @@ export default function QBDCashEntry({ mode = 'check' }) {
       {isCheck && (
         <div className="qbd-form">
           <div className="fhd">ezCheckPrinting queue ({printQueue.length})</div>
+          <div className="qbd-muted" style={{ marginBottom: 6 }}>
+            Queue is print-only. Exporting it never creates or duplicates book entries.
+          </div>
           <div className="qbd-wbody">
             <table className="qbd-coa">
               <thead>
@@ -295,6 +405,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
                   <th>CHECK #</th>
                   <th>PAYEE</th>
                   <th>MEMO</th>
+                  <th>BOOKS</th>
                   <th className="qbd-bal">AMOUNT</th>
                   <th />
                 </tr>
@@ -302,7 +413,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
               <tbody>
                 {printQueue.length === 0 ? (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div className="qbd-empty">
                         Queue checks here, then export one CSV for batch import into {ezCompany}.
                       </div>
@@ -315,6 +426,9 @@ export default function QBDCashEntry({ mode = 'check' }) {
                       <td>{r.checkNo || '—'}</td>
                       <td>{r.payee}</td>
                       <td>{r.memo}</td>
+                      <td className="qbd-muted">
+                        {r.books === 'already-posted' ? 'Already posted' : r.books === 'posted' ? 'Just posted' : 'Print only'}
+                      </td>
                       <td className="qbd-bal">{fmt(+r.amount)}</td>
                       <td>
                         <button
@@ -345,15 +459,63 @@ export default function QBDCashEntry({ mode = 'check' }) {
       )}
 
       <div className="qbd-form">
-        <div className="fhd">Recent Entries</div>
+        <div className="fhd">{isCheck ? 'Recent entries — print without re-posting' : 'Recent Entries'}</div>
         <div className="qbd-wbody">
           <table className="qbd-coa">
-            <thead><tr><th>DATE</th><th>ENTRY #</th><th>DESCRIPTION</th><th>STATUS</th><th className="qbd-bal">AMOUNT</th></tr></thead>
+            <thead>
+              <tr>
+                <th>DATE</th>
+                <th>ENTRY #</th>
+                <th>DESCRIPTION</th>
+                <th>STATUS</th>
+                <th className="qbd-bal">AMOUNT</th>
+                {isCheck && <th />}
+              </tr>
+            </thead>
             <tbody>
-              {recent.length === 0 ? <tr><td colSpan={5}><div className="qbd-empty">No entries yet.</div></td></tr> :
+              {recent.length === 0 ? (
+                <tr>
+                  <td colSpan={isCheck ? 6 : 5}>
+                    <div className="qbd-empty">No entries yet.</div>
+                  </td>
+                </tr>
+              ) : (
                 recent.map((j) => (
-                  <tr key={j.id}><td className="qbd-num">{fmtShortDate(j.posting_date)}</td><td>{j.je_number}</td><td>{j.description}</td><td>{j.status}</td><td className="qbd-bal">{fmt(+j.total_debit)}</td></tr>
-                ))}
+                  <tr key={j.id}>
+                    <td className="qbd-num">{fmtShortDate(j.posting_date)}</td>
+                    <td>{j.je_number}</td>
+                    <td>{j.description}</td>
+                    <td>{j.status}</td>
+                    <td className="qbd-bal">{fmt(+j.total_debit)}</td>
+                    {isCheck && (
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {j.status === 'POSTED' && looksLikeCheck(j) && (
+                          <>
+                            <button
+                              type="button"
+                              className="qbd-btn"
+                              disabled={busy}
+                              onClick={() => exportPostedJe(j)}
+                              title="Download ezCheck CSV only — does not post"
+                            >
+                              Print
+                            </button>{' '}
+                            <button
+                              type="button"
+                              className="qbd-btn"
+                              disabled={busy}
+                              onClick={() => queuePostedJe(j)}
+                              title="Add to print queue — does not post"
+                            >
+                              Queue
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
