@@ -39,8 +39,9 @@ function printRowFromJournal(je, address = {}) {
     payee = (m?.[1] || desc).trim();
   }
   let checkNo = '';
+  // Require explicit "#" so memo text like "Check payable to…" is not treated as a check #
   const fromDesc = desc.match(/Check\s*#\s*([A-Za-z0-9-]+)/i);
-  const fromMemo = memo.match(/Check\s*#?\s*([A-Za-z0-9-]+)/i);
+  const fromMemo = memo.match(/Check\s*#\s*([A-Za-z0-9-]+)/i);
   if (fromDesc) checkNo = fromDesc[1];
   else if (fromMemo) checkNo = fromMemo[1];
   let checkDate = je.posting_date || '';

@@ -17,12 +17,15 @@ export const EZCHECK_EXE =
 export const EZCHECK_DB_DIR =
   'C:\\Users\\Public\\Documents\\Halfpricesoft\\ezCheckPrinting';
 
-/** Header row matching ezCheckPrinting Import column dropdowns. */
+/**
+ * Header names aligned with ezCheckPrinting Import Checks field labels
+ * so "First Line Header" can match dropdowns (Payee Name, Amount, …).
+ */
 export const EZCHECK_CSV_HEADERS = [
-  'Payee',
+  'Payee Name',
   'Amount',
-  'CheckDate',
-  'CheckNo',
+  'Check Date',
+  'Check Number',
   'Memo',
   'Address1',
   'Address2',
@@ -31,7 +34,15 @@ export const EZCHECK_CSV_HEADERS = [
 ];
 
 function csvCell(value) {
-  const s = value == null ? '' : String(value);
+  // ASCII-safe for ezCheckPrinting parsers (avoid em-dash / ellipsis mojibake)
+  const s = value == null
+    ? ''
+    : String(value)
+      .replace(/[\u2012-\u2015]/g, '-')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/\u2026/g, '...')
+      .replace(/\u00A0/g, ' ');
   if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
