@@ -17,11 +17,56 @@ import { v4 as uuidv4 } from 'uuid';
 import Decimal from 'decimal.js';
 import { getDatabase } from '../config/database.js';
 import { parseOFX, validateTransactions, deduplicateTransactions } from '../lib/ofx-parser.js';
+import { AIAccountingCopilotService, suggestedOffsetAccountId } from '../lib/ai-copilot-service.js';
 
 const router = express.Router();
 
 // In-memory store for import sessions (in production, use database)
 const importSessions = new Map();
+
+function inClause(values) {
+  return values.map(() => '?').join(',');
+}
+
+function toUiCopilot(suggestion) {
+  if (!suggestion) return null;
+  const offset = suggestion.lines?.find((line) => line.role === 'offset') || null;
+  return {
+    confidenceScore: Number(suggestion.confidence_score ?? 0),
+    needsReview: !!suggestion.needs_review,
+    suggestedOffsetAccountId: offset?.account_id || null,
+    suggestedOffsetAccountNumber: offset?.account_number || null,
+    suggestedOffsetAccountName: offset?.account_name || null,
+    explanation: Array.isArray(suggestion.explanation) ? suggestion.explanation : [],
+    lines: (suggestion.lines || []).map((line) => ({
+      role: line.role,
+      account_id: line.account_id,
+      account_number: line.account_number,
+      account_name: line.account_name,
+      debit: Number(((Number(line.debit_cents || 0)) / 100).toFixed(2)),
+      credit: Number(((Number(line.credit_cents || 0)) / 100).toFixed(2)),
+      rationale: line.rationale,
+    })),
+  };
+}
+
+async function deriveCurrentOffsetAccountId(db, txn) {
+  if (!txn?.journal_entry_id) return null;
+  const rows = await db.all(
+    `SELECT id, account_id, debit, credit
+     FROM general_ledger
+     WHERE entity_id = ? AND journal_entry_id = ?
+     ORDER BY created_at ASC, id ASC`,
+    [txn.entity_id, txn.journal_entry_id]
+  );
+  if (!rows?.length) return null;
+  const direct = rows.find((row) => row.account_id !== txn.account_id);
+  if (direct) return direct.account_id;
+  const biggest = rows
+    .map((row) => ({ ...row, absAmount: Math.max(Math.abs(Number(row.debit || 0)), Math.abs(Number(row.credit || 0)) || 0) }))
+    .sort((a, b) => b.absAmount - a.absAmount)[0];
+  return biggest?.account_id || null;
+}
 
 /**
  * POST /api/import/ofx
@@ -359,6 +404,326 @@ router.get('/list', async (req, res) => {
   } catch (error) {
     console.error('List imports error:', error);
     return res.status(500).json({ error: 'Failed to list imports' });
+  }
+});
+
+/**
+ * GET /api/import/pending
+ * Return draft imported transactions for review, including AI copilot suggestions.
+ */
+router.get('/pending', async (req, res) => {
+  try {
+    const { entityId } = req.query;
+    if (!entityId) {
+      return res.status(400).json({ error: 'entityId query parameter required' });
+    }
+
+    const db = await getDatabase();
+    const rows = await db.all(
+      `SELECT it.id, it.fitid, it.entity_id, it.account_id, it.journal_entry_id, it.date, it.amount, it.description, it.status,
+              je.status AS journal_status
+       FROM import_transactions it
+       LEFT JOIN journal_entries je ON je.id = it.journal_entry_id
+       WHERE it.entity_id = ? AND it.status = 'DRAFT'
+       ORDER BY it.date ASC, it.id ASC`,
+      [entityId]
+    );
+
+    if (!rows?.length) {
+      return res.json({ pending: [] });
+    }
+
+    const copilot = new AIAccountingCopilotService(db, {
+      entityId,
+      userId: req.user?.id,
+    });
+    await copilot.init();
+
+    const pending = await Promise.all((rows || []).map(async (row) => {
+      const amount = Number(row.amount || 0);
+      let suggestion = null;
+      try {
+        suggestion = await copilot.suggestForImportTransaction(row, { persist: true });
+      } catch (err) {
+        console.warn(`[import/pending] Copilot suggestion failed for ${row.fitid}: ${err.message}`);
+      }
+      const currentOffsetAccountId = await deriveCurrentOffsetAccountId(db, row);
+      return {
+        id: row.id,
+        fitid: row.fitid,
+        jeId: row.journal_entry_id,
+        date: row.date,
+        description: row.description || '',
+        payment: amount < 0 ? Math.abs(amount) : 0,
+        deposit: amount > 0 ? amount : 0,
+        offsetAccountId: currentOffsetAccountId || '',
+        status: row.status,
+        copilot: toUiCopilot(suggestion),
+      };
+    }));
+
+    return res.json({ pending });
+  } catch (error) {
+    console.error('Pending import fetch error:', error);
+    return res.status(500).json({
+      error: 'Failed to load pending imported transactions',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * PATCH /api/import/pending/:fitid
+ * Update the draft offset account for a pending imported transaction.
+ */
+router.patch('/pending/:fitid', async (req, res) => {
+  try {
+    const { fitid } = req.params;
+    const { entityId, offsetAccountId } = req.body || {};
+    if (!entityId || !fitid) {
+      return res.status(400).json({ error: 'entityId and fitid are required' });
+    }
+    if (!offsetAccountId) {
+      return res.status(400).json({ error: 'offsetAccountId is required' });
+    }
+
+    const db = await getDatabase();
+    const txn = await db.get(
+      `SELECT id, fitid, entity_id, account_id, journal_entry_id, amount, description, status
+       FROM import_transactions
+       WHERE entity_id = ? AND fitid = ?`,
+      [entityId, fitid]
+    );
+    if (!txn) {
+      return res.status(404).json({ error: 'Imported transaction not found' });
+    }
+    if (txn.status !== 'DRAFT') {
+      return res.status(409).json({ error: 'Only draft imported transactions can be changed' });
+    }
+
+    const offsetAccount = await db.get(
+      `SELECT id, account_number, account_name
+       FROM accounts
+       WHERE entity_id = ? AND id = ?`,
+      [entityId, offsetAccountId]
+    );
+    if (!offsetAccount) {
+      return res.status(404).json({ error: 'Offset account not found for this entity' });
+    }
+
+    const glRows = await db.all(
+      `SELECT id, account_id
+       FROM general_ledger
+       WHERE entity_id = ? AND journal_entry_id = ?
+       ORDER BY created_at ASC, id ASC`,
+      [entityId, txn.journal_entry_id]
+    );
+    const offsetLine = (glRows || []).find((line) => line.account_id !== txn.account_id);
+    if (!offsetLine) {
+      return res.status(409).json({ error: 'No offset ledger line found for this draft transaction' });
+    }
+
+    await db.run(
+      `UPDATE general_ledger
+       SET account_id = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [offsetAccount.id, offsetLine.id]
+    );
+    await db.run(
+      `UPDATE import_transactions SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [txn.id]
+    );
+    await db.run(
+      `UPDATE journal_entries SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [txn.journal_entry_id]
+    );
+
+    const copilot = new AIAccountingCopilotService(db, {
+      entityId,
+      userId: req.user?.id,
+    });
+    await copilot.init();
+    const suggestion = await copilot.suggestForImportTransaction(txn, { persist: true });
+    const suggestedOffsetId = suggestedOffsetAccountId(suggestion);
+    if (suggestedOffsetId && suggestedOffsetId !== offsetAccount.id) {
+      await copilot.learnCorrection({
+        fitid,
+        offsetAccountRef: offsetAccount.id,
+        reason: 'Bank Feeds reviewer changed suggested offset account.',
+      });
+      await copilot.setSuggestionStatus(txn.id, 'corrected');
+    } else {
+      await copilot.setSuggestionStatus(txn.id, 'accepted');
+    }
+
+    return res.json({
+      fitid,
+      offsetAccountId: offsetAccount.id,
+      offsetAccountNumber: offsetAccount.account_number,
+      offsetAccountName: offsetAccount.account_name,
+      message: 'Draft account category updated',
+    });
+  } catch (error) {
+    console.error('Pending account update error:', error);
+    return res.status(500).json({
+      error: 'Failed to update pending transaction account',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/import/post-selected
+ * Finalize selected draft imports as posted entries.
+ */
+router.post('/post-selected', async (req, res) => {
+  try {
+    const { entityId, jeIds } = req.body || {};
+    if (!entityId || !Array.isArray(jeIds) || jeIds.length === 0) {
+      return res.status(400).json({ error: 'entityId and jeIds[] are required' });
+    }
+    const uniqueJeIds = [...new Set(jeIds.map((id) => String(id || '').trim()).filter(Boolean))];
+    if (!uniqueJeIds.length) {
+      return res.status(400).json({ error: 'No valid journal entry ids were provided' });
+    }
+
+    const db = await getDatabase();
+    const txnRows = await db.all(
+      `SELECT id, fitid, journal_entry_id
+       FROM import_transactions
+       WHERE entity_id = ? AND status = 'DRAFT'
+         AND journal_entry_id IN (${inClause(uniqueJeIds)})`,
+      [entityId, ...uniqueJeIds]
+    );
+    if (!txnRows?.length) {
+      return res.status(404).json({ error: 'No draft import transactions found for the selected journal entries' });
+    }
+
+    const jeIdsToPost = [...new Set(txnRows.map((row) => row.journal_entry_id).filter(Boolean))];
+    const balancedJeIds = [];
+    for (const jeId of jeIdsToPost) {
+      const totals = await db.get(
+        `SELECT COALESCE(SUM(debit), 0) AS total_debit, COALESCE(SUM(credit), 0) AS total_credit
+         FROM general_ledger
+         WHERE entity_id = ? AND journal_entry_id = ?`,
+        [entityId, jeId]
+      );
+      const totalDebit = Number(totals?.total_debit || 0);
+      const totalCredit = Number(totals?.total_credit || 0);
+      if (totalDebit === 0 && totalCredit === 0) {
+        return res.status(409).json({
+          error: 'Cannot post entries without ledger lines',
+          details: `Journal ${jeId} has no ledger lines to post.`,
+        });
+      }
+      if (!new Decimal(totalDebit).equals(totalCredit)) {
+        return res.status(409).json({
+          error: 'Cannot post unbalanced entries',
+          details: `Journal ${jeId} is unbalanced (debit ${totalDebit} vs credit ${totalCredit}).`,
+        });
+      }
+      balancedJeIds.push(jeId);
+    }
+
+    await db.run(
+      `UPDATE journal_entries
+       SET status = 'POSTED', posted_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       WHERE entity_id = ? AND id IN (${inClause(balancedJeIds)})`,
+      [entityId, ...balancedJeIds]
+    );
+    await db.run(
+      `UPDATE import_transactions
+       SET status = 'MATCHED', updated_at = CURRENT_TIMESTAMP
+       WHERE entity_id = ? AND journal_entry_id IN (${inClause(balancedJeIds)})`,
+      [entityId, ...balancedJeIds]
+    );
+
+    const copilot = new AIAccountingCopilotService(db, {
+      entityId,
+      userId: req.user?.id,
+    });
+    await copilot.init();
+    for (const txn of txnRows) {
+      const suggestion = await copilot.getLatestSuggestionForImportTransaction(txn.id);
+      await copilot.setSuggestionStatus(txn.id, suggestion?.needs_review ? 'flagged' : 'posted');
+    }
+
+    return res.json({
+      posted: balancedJeIds.length,
+      message: `${balancedJeIds.length} transaction(s) posted and moved to register.`,
+    });
+  } catch (error) {
+    console.error('Post selected import rows error:', error);
+    return res.status(500).json({
+      error: 'Failed to post selected imported transactions',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/import/reject
+ * Mark selected draft imports as rejected without deleting history.
+ */
+router.post('/reject', async (req, res) => {
+  try {
+    const { entityId, fitids } = req.body || {};
+    if (!entityId || !Array.isArray(fitids) || fitids.length === 0) {
+      return res.status(400).json({ error: 'entityId and fitids[] are required' });
+    }
+    const uniqueFitids = [...new Set(fitids.map((id) => String(id || '').trim()).filter(Boolean))];
+    if (!uniqueFitids.length) {
+      return res.status(400).json({ error: 'No valid fitids were provided' });
+    }
+
+    const db = await getDatabase();
+    const rows = await db.all(
+      `SELECT id, fitid, journal_entry_id
+       FROM import_transactions
+       WHERE entity_id = ? AND status = 'DRAFT'
+         AND fitid IN (${inClause(uniqueFitids)})`,
+      [entityId, ...uniqueFitids]
+    );
+    if (!rows?.length) {
+      return res.status(404).json({ error: 'No draft import rows found for the provided fitids' });
+    }
+
+    await db.run(
+      `UPDATE import_transactions
+       SET status = 'REJECTED', updated_at = CURRENT_TIMESTAMP
+       WHERE entity_id = ? AND fitid IN (${inClause(uniqueFitids)})`,
+      [entityId, ...uniqueFitids]
+    );
+
+    const jeIds = [...new Set(rows.map((row) => row.journal_entry_id).filter(Boolean))];
+    if (jeIds.length) {
+      await db.run(
+        `UPDATE journal_entries
+         SET status = 'REJECTED', updated_at = CURRENT_TIMESTAMP
+         WHERE entity_id = ? AND status != 'POSTED' AND id IN (${inClause(jeIds)})`,
+        [entityId, ...jeIds]
+      );
+    }
+
+    const copilot = new AIAccountingCopilotService(db, {
+      entityId,
+      userId: req.user?.id,
+    });
+    await copilot.init();
+    for (const row of rows) {
+      await copilot.setSuggestionStatus(row.id, 'rejected');
+    }
+
+    return res.json({
+      rejected: rows.length,
+      message: `${rows.length} transaction(s) discarded from review queue.`,
+    });
+  } catch (error) {
+    console.error('Reject import rows error:', error);
+    return res.status(500).json({
+      error: 'Failed to reject imported transactions',
+      details: error.message,
+    });
   }
 });
 

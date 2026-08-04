@@ -92,6 +92,16 @@
 .qbd-form .frow{display:flex;gap:10px;align-items:center;padding:8px 12px}
 .qbd-form label{font-size:11px;color:#42566f;width:90px}
 .qbd-form input,.qbd-form select{font-size:12px;padding:4px 6px;border:1px solid #9fb0c2;border-radius:3px}
+.qbd-copilot-cell{white-space:normal;line-height:1.25}
+.qbd-copilot-top{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.qbd-copilot-chip{display:inline-flex;align-items:center;justify-content:center;min-width:42px;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:bold}
+.qbd-copilot-chip.ok{background:#e9f6ed;color:#1f6b39;border:1px solid #b7dfc4}
+.qbd-copilot-chip.warn{background:#fff6e6;color:#8b5a0a;border:1px solid #efd4a6}
+.qbd-copilot-state{font-size:10px;color:#617084;text-transform:uppercase;letter-spacing:.4px}
+.qbd-copilot-apply{margin-left:auto;background:#f4f8fc;border:1px solid #b8c8da;border-radius:3px;padding:1px 6px;font-size:10px;color:#264f84;cursor:pointer}
+.qbd-copilot-apply:disabled{opacity:.65;cursor:default}
+.qbd-copilot-account{font-size:11px;color:#203a59;font-weight:bold}
+.qbd-copilot-why{font-size:10px;color:#6a7889;max-height:2.7em;overflow:hidden}
 .qbd-jt th{background:#eef2f7;border:1px solid #c9d6e4;padding:4px 6px;font-size:11px;text-align:left}
 .qbd-jt td{border:1px solid #e3e9f0;padding:2px 4px}
 .qbd-jt input,.qbd-jt select{width:100%;border:none;font-size:12px;padding:3px}

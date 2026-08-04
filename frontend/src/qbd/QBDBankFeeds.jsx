@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, plaidAPI, importAPI } from '../services/api';
@@ -7,6 +7,16 @@ import { fmt, leafLabel, todayISO } from './helpers';
 function flat(nodes, out) {
   (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flat(n.children, out); });
   return out;
+}
+
+function fmtMdy(value) {
+  if (!value) return '';
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${+iso[2]}/${+iso[3]}/${iso[1].slice(-2)}`;
+  const parsed = new Date(raw.includes('T') ? raw : `${raw.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return raw.slice(0, 10);
+  return `${parsed.getMonth() + 1}/${parsed.getDate()}/${String(parsed.getFullYear()).slice(-2)}`;
 }
 
 // QuickBooks Desktop "Bank Feeds Center": download (date range) + review-before-post.
@@ -26,6 +36,7 @@ export default function QBDBankFeeds() {
   const [sel, setSel] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const accountsById = useMemo(() => new Map((accounts || []).map((a) => [a.id, a])), [accounts]);
 
   const loadAccounts = useCallback(() => {
     if (!entityId) return;
@@ -75,6 +86,7 @@ export default function QBDBankFeeds() {
   };
 
   const changeAccount = async (row, offsetAccountId) => {
+    if (!offsetAccountId || offsetAccountId === row.offsetAccountId) return;
     setPending((p) => p.map((r) => (r.fitid === row.fitid ? { ...r, offsetAccountId } : r)));
     try { await importAPI.setAccount(row.fitid, entityId, offsetAccountId); }
     catch (err) { toast('Could not change account: ' + (err.response?.data?.error || err.message)); loadPending(); }
@@ -160,19 +172,55 @@ export default function QBDBankFeeds() {
                 <th>DESCRIPTION</th>
                 <th className="qbd-bal" style={{ width: 110 }}>PAYMENT</th>
                 <th className="qbd-bal" style={{ width: 110 }}>DEPOSIT</th>
+                <th style={{ width: 320 }}>AI COPILOT</th>
                 <th style={{ width: 260 }}>ACCOUNT</th>
               </tr>
             </thead>
             <tbody>
               {pending.length === 0 ? (
-                <tr><td colSpan={6}><div className="qbd-empty">No transactions waiting for review. Download from a connected bank above.</div></td></tr>
+                <tr><td colSpan={7}><div className="qbd-empty">No transactions waiting for review. Download from a connected bank above.</div></td></tr>
               ) : pending.map((r) => (
                 <tr key={r.fitid}>
                   <td><input type="checkbox" checked={sel.has(r.fitid)} onChange={() => toggle(r.fitid)} /></td>
-                  <td className="qbd-num">{r.date}</td>
+                  <td className="qbd-num">{fmtMdy(r.date)}</td>
                   <td>{r.description}</td>
                   <td className="qbd-bal">{r.payment ? fmt(+r.payment) : ''}</td>
                   <td className="qbd-bal">{r.deposit ? fmt(+r.deposit) : ''}</td>
+                  <td>
+                    {r.copilot ? (() => {
+                      const cop = r.copilot;
+                      const suggestedId = cop.suggestedOffsetAccountId;
+                      const selectedIsSuggested = !!suggestedId && suggestedId === r.offsetAccountId;
+                      const suggestedAccount = accountsById.get(suggestedId);
+                      const suggestedLabel = suggestedAccount
+                        ? `${suggestedAccount.account_number} · ${leafLabel(suggestedAccount.account_name)}`
+                        : [cop.suggestedOffsetAccountNumber, cop.suggestedOffsetAccountName].filter(Boolean).join(' · ');
+                      return (
+                        <div className="qbd-copilot-cell">
+                          <div className="qbd-copilot-top">
+                            <span className={`qbd-copilot-chip ${cop.needsReview ? 'warn' : 'ok'}`}>
+                              {Math.round((Number(cop.confidenceScore || 0)) * 100)}%
+                            </span>
+                            <span className="qbd-copilot-state">{cop.needsReview ? 'Needs review' : 'Ready'}</span>
+                            {!!suggestedId && (
+                              <button
+                                type="button"
+                                className="qbd-copilot-apply"
+                                disabled={busy || selectedIsSuggested}
+                                onClick={() => changeAccount(r, suggestedId)}
+                              >
+                                {selectedIsSuggested ? 'Applied' : 'Use suggested'}
+                              </button>
+                            )}
+                          </div>
+                          <div className="qbd-copilot-account">{suggestedLabel || 'No suggestion account'}</div>
+                          <div className="qbd-copilot-why" title={(cop.explanation || []).join(' ')}>
+                            {(cop.explanation || [])[0] || 'No explanation available.'}
+                          </div>
+                        </div>
+                      );
+                    })() : <span className="qbd-muted">No copilot suggestion</span>}
+                  </td>
                   <td>
                     <select value={r.offsetAccountId || ''} onChange={(e) => changeAccount(r, e.target.value)} style={{ width: '100%' }}>
                       <option value="">— uncategorized —</option>
