@@ -59,15 +59,44 @@ function printRowFromJournal(je, address = {}) {
   };
 }
 
-function looksLikeCheck(je) {
-  const d = String(je.description || '').toLowerCase();
+/**
+ * True only for entries meant to be cut/printed as a physical check
+ * (Write Checks → ezCheckPrinting). Excludes bank OFX deductions, wires,
+ * CC schedules, IC no-cash, warehouse advances, reversals, etc.
+ */
+function isPrintableCheck(je) {
   const s = String(je.source || '').toLowerCase();
-  return (
-    d.startsWith('check')
-    || s === 'write-check'
-    || /\bcheck\b/.test(d)
-    || /comptroller|franchise tax/i.test(d)
-  );
+  const d = String(je.description || '');
+  const dl = d.toLowerCase();
+  const m = String(je.memo || '').toLowerCase();
+  const num = String(je.je_number || '').toUpperCase();
+
+  if (s === 'write-check') return true;
+  // Canonical Write Checks description: "Check — Payee" or "Check #123 — Payee"
+  if (/^check(?:\s*#\S+)?\s*[—\-–:]/i.test(d.trim())) return true;
+
+  // Explicit non-check sources / number prefixes
+  if (
+    s === 'cc-payment-due'
+    || s.startsWith('cc-')
+    || num.startsWith('CC-PMT')
+    || num.startsWith('REV-')
+    || num.startsWith('IC-')
+    || num.startsWith('TRUEUP')
+    || num.startsWith('RECON-')
+  ) {
+    return false;
+  }
+
+  // Bank-posted / non-check cash movements (even if OFX memo says "CHECK")
+  if (
+    /bank posted|bank fees|ofx|warehouse|dloc|advance|holdback|related-party|prepaid interest|no cash|wire|title wire|phone\/in-person|e-?payment|scheduled payment|credit card|american express|reversal of|tie-out|duplicate amex|net bank fund|seller-financed|mobilization/i.test(dl)
+    || /bank-ofx|simmons-advance|wentworth-|loan-event|auto-reversal|cc-payment|amex/i.test(m)
+  ) {
+    return false;
+  }
+
+  return false;
 }
 
 function splitCheckLines(je, bankAccounts) {
@@ -447,8 +476,8 @@ export default function QBDCashEntry({ mode = 'check' }) {
     }
   };
 
-  const pendingChecks = drafts.filter(looksLikeCheck);
-  const otherDrafts = drafts.filter((j) => !looksLikeCheck(j)).slice(0, 10);
+  const pendingChecks = drafts.filter(isPrintableCheck);
+  const recentChecks = recent.filter(isPrintableCheck);
 
   const booksLabel = (b) => {
     if (b === 'already-posted') return 'Already posted';
@@ -458,7 +487,7 @@ export default function QBDCashEntry({ mode = 'check' }) {
   };
 
   return (
-    <div>
+    <div className="qbd-write-checks">
       <div className="qbd-form">
         <div className="fhd">{isCheck ? 'Write Checks' : 'Make Deposits'}</div>
         {isCheck && (
@@ -649,39 +678,42 @@ export default function QBDCashEntry({ mode = 'check' }) {
       </div>
 
       {isCheck && (
-        <div className="qbd-form">
-          <div className="fhd">Waiting for review / drafts ({pendingChecks.length})</div>
-          <div className="qbd-muted" style={{ marginBottom: 6 }}>
-            Click <b>Open</b> to fill the check form from an existing entry — no retyping, no second post.
+        <div className="qbd-form qbd-write-checks-panel">
+          <div className="fhd">Checks waiting to print ({pendingChecks.length})</div>
+          <div className="qbd-muted qbd-write-checks-hint">
+            Only entries created from <b>Write Checks</b> (or description starting with “Check —”).
+            Bank fees, wires, CC payments, warehouse advances, and IC drafts are excluded — review those under Journal.
           </div>
           <div className="qbd-wbody">
-            <table className="qbd-coa">
+            <table className="qbd-coa qbd-write-checks-table">
               <thead>
                 <tr>
-                  <th>DATE</th>
-                  <th>ENTRY #</th>
-                  <th>DESCRIPTION</th>
-                  <th>STATUS</th>
-                  <th className="qbd-bal">AMOUNT</th>
-                  <th />
+                  <th className="col-date">DATE</th>
+                  <th className="col-je">ENTRY #</th>
+                  <th className="col-desc">DESCRIPTION</th>
+                  <th className="col-status">STATUS</th>
+                  <th className="col-amt qbd-bal">AMOUNT</th>
+                  <th className="col-actions" />
                 </tr>
               </thead>
               <tbody>
                 {pendingChecks.length === 0 ? (
                   <tr>
                     <td colSpan={6}>
-                      <div className="qbd-empty">No check drafts waiting. Posted checks are in Recent below.</div>
+                      <div className="qbd-empty">
+                        No printable check drafts. Use Recent below for already-posted checks (e.g. State Comptroller), or fill the form for a new check.
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   pendingChecks.map((j) => (
                     <tr key={j.id} style={linkedJe?.id === j.id ? { background: '#eef6ff' } : undefined}>
-                      <td className="qbd-num">{fmtShortDate(j.posting_date)}</td>
-                      <td>{j.je_number}</td>
-                      <td>{j.description}</td>
-                      <td>{j.status}</td>
-                      <td className="qbd-bal">{fmt(+j.total_debit)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td className="col-date qbd-num">{fmtShortDate(j.posting_date)}</td>
+                      <td className="col-je">{j.je_number}</td>
+                      <td className="col-desc" title={j.description}>{j.description}</td>
+                      <td className="col-status">{j.status}</td>
+                      <td className="col-amt qbd-bal">{fmt(+j.total_debit)}</td>
+                      <td className="col-actions">
                         <button type="button" className="qbd-btn" disabled={busy} onClick={() => openJournal(j)} style={{ fontWeight: 'bold' }}>
                           Open
                         </button>{' '}
@@ -692,27 +724,6 @@ export default function QBDCashEntry({ mode = 'check' }) {
                     </tr>
                   ))
                 )}
-                {otherDrafts.length > 0 && (
-                  <tr>
-                    <td colSpan={6} className="qbd-muted" style={{ paddingTop: 10 }}>
-                      Other drafts (not labeled as checks) — Open if this is the payment you prepared:
-                    </td>
-                  </tr>
-                )}
-                {otherDrafts.map((j) => (
-                  <tr key={j.id}>
-                    <td className="qbd-num">{fmtShortDate(j.posting_date)}</td>
-                    <td>{j.je_number}</td>
-                    <td>{j.description}</td>
-                    <td>{j.status}</td>
-                    <td className="qbd-bal">{fmt(+j.total_debit)}</td>
-                    <td>
-                      <button type="button" className="qbd-btn" disabled={busy} onClick={() => openJournal(j)}>
-                        Open
-                      </button>
-                    </td>
-                  </tr>
-                ))}
               </tbody>
             </table>
           </div>
@@ -720,22 +731,22 @@ export default function QBDCashEntry({ mode = 'check' }) {
       )}
 
       {isCheck && (
-        <div className="qbd-form">
+        <div className="qbd-form qbd-write-checks-panel">
           <div className="fhd">ezCheckPrinting queue ({printQueue.length})</div>
-          <div className="qbd-muted" style={{ marginBottom: 6 }}>
+          <div className="qbd-muted qbd-write-checks-hint">
             Print queue never posts or duplicates books.
           </div>
           <div className="qbd-wbody">
-            <table className="qbd-coa">
+            <table className="qbd-coa qbd-write-checks-table">
               <thead>
                 <tr>
-                  <th>DATE</th>
-                  <th>CHECK #</th>
-                  <th>PAYEE</th>
-                  <th>MEMO</th>
-                  <th>BOOKS</th>
-                  <th className="qbd-bal">AMOUNT</th>
-                  <th />
+                  <th className="col-date">DATE</th>
+                  <th className="col-check">CHECK #</th>
+                  <th className="col-payee">PAYEE</th>
+                  <th className="col-desc">MEMO</th>
+                  <th className="col-books">BOOKS</th>
+                  <th className="col-amt qbd-bal">AMOUNT</th>
+                  <th className="col-actions" />
                 </tr>
               </thead>
               <tbody>
@@ -750,13 +761,13 @@ export default function QBDCashEntry({ mode = 'check' }) {
                 ) : (
                   printQueue.map((r, i) => (
                     <tr key={`${r.queuedAt}-${i}`}>
-                      <td className="qbd-num">{r.checkDate}</td>
-                      <td>{r.checkNo || '—'}</td>
-                      <td>{r.payee}</td>
-                      <td>{r.memo}</td>
-                      <td className="qbd-muted">{booksLabel(r.books)}</td>
-                      <td className="qbd-bal">{fmt(+r.amount)}</td>
-                      <td>
+                      <td className="col-date qbd-num">{r.checkDate}</td>
+                      <td className="col-check">{r.checkNo || '—'}</td>
+                      <td className="col-payee" title={r.payee}>{r.payee}</td>
+                      <td className="col-desc" title={r.memo}>{r.memo}</td>
+                      <td className="col-books qbd-muted">{booksLabel(r.books)}</td>
+                      <td className="col-amt qbd-bal">{fmt(+r.amount)}</td>
+                      <td className="col-actions">
                         <button
                           type="button"
                           className="qbd-btn"
@@ -784,53 +795,54 @@ export default function QBDCashEntry({ mode = 'check' }) {
         </div>
       )}
 
-      <div className="qbd-form">
-        <div className="fhd">{isCheck ? 'Recent entries' : 'Recent Entries'}</div>
+      <div className="qbd-form qbd-write-checks-panel">
+        <div className="fhd">{isCheck ? `Recent printable checks (${recentChecks.length})` : 'Recent Entries'}</div>
+        {isCheck && (
+          <div className="qbd-muted qbd-write-checks-hint">
+            Posted Write Checks only — Open / Print without re-posting. Other journals stay on the Journal screen.
+          </div>
+        )}
         <div className="qbd-wbody">
-          <table className="qbd-coa">
+          <table className="qbd-coa qbd-write-checks-table">
             <thead>
               <tr>
-                <th>DATE</th>
-                <th>ENTRY #</th>
-                <th>DESCRIPTION</th>
-                <th>STATUS</th>
-                <th className="qbd-bal">AMOUNT</th>
-                {isCheck && <th />}
+                <th className="col-date">DATE</th>
+                <th className="col-je">ENTRY #</th>
+                <th className="col-desc">DESCRIPTION</th>
+                <th className="col-status">STATUS</th>
+                <th className="col-amt qbd-bal">AMOUNT</th>
+                {isCheck && <th className="col-actions" />}
               </tr>
             </thead>
             <tbody>
-              {recent.length === 0 ? (
+              {(isCheck ? recentChecks : recent).length === 0 ? (
                 <tr>
                   <td colSpan={isCheck ? 6 : 5}>
-                    <div className="qbd-empty">No entries yet.</div>
+                    <div className="qbd-empty">{isCheck ? 'No printable checks in recent entries yet.' : 'No entries yet.'}</div>
                   </td>
                 </tr>
               ) : (
-                recent.map((j) => (
+                (isCheck ? recentChecks : recent).map((j) => (
                   <tr key={j.id} style={linkedJe?.id === j.id ? { background: '#eef6ff' } : undefined}>
-                    <td className="qbd-num">{fmtShortDate(j.posting_date)}</td>
-                    <td>{j.je_number}</td>
-                    <td>{j.description}</td>
-                    <td>{j.status}</td>
-                    <td className="qbd-bal">{fmt(+j.total_debit)}</td>
+                    <td className="col-date qbd-num">{fmtShortDate(j.posting_date)}</td>
+                    <td className="col-je">{j.je_number}</td>
+                    <td className="col-desc" title={j.description}>{j.description}</td>
+                    <td className="col-status">{j.status}</td>
+                    <td className="col-amt qbd-bal">{fmt(+j.total_debit)}</td>
                     {isCheck && (
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {(looksLikeCheck(j) || j.status === 'DRAFT') && (
-                          <>
-                            <button
-                              type="button"
-                              className="qbd-btn"
-                              disabled={busy}
-                              onClick={() => openJournal(j)}
-                              style={{ fontWeight: 'bold' }}
-                            >
-                              Open
-                            </button>{' '}
-                            <button type="button" className="qbd-btn" disabled={busy} onClick={() => exportFromList(j)}>
-                              Print
-                            </button>
-                          </>
-                        )}
+                      <td className="col-actions">
+                        <button
+                          type="button"
+                          className="qbd-btn"
+                          disabled={busy}
+                          onClick={() => openJournal(j)}
+                          style={{ fontWeight: 'bold' }}
+                        >
+                          Open
+                        </button>{' '}
+                        <button type="button" className="qbd-btn" disabled={busy} onClick={() => exportFromList(j)}>
+                          Print
+                        </button>
                       </td>
                     )}
                   </tr>

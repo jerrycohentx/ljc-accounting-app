@@ -230,6 +230,30 @@
 .qbd-placeholder{background:#fff;border:1px dashed #aebccd;border-radius:5px;padding:40px;text-align:center;color:#6a7889;margin:10px}
 /* Begin Reconciliation — QuickBooks-style contained dialog, not a full-width form */
 .qbd-form{background:#eef1f5;margin:16px auto;max-width:700px;border:1px solid #6f8197;border-radius:5px;padding:0 0 2px;box-shadow:0 8px 26px rgba(20,40,70,.24);overflow:hidden}
+/* Write Checks: fit viewport width — no horizontal page scroll; truncate long text */
+.qbd-write-checks{max-width:100%;overflow-x:hidden;box-sizing:border-box}
+.qbd-write-checks .qbd-form,
+.qbd-write-checks .qbd-write-checks-panel{
+  max-width:min(960px, calc(100vw - 32px));
+  width:100%;
+  box-sizing:border-box;
+}
+.qbd-write-checks-hint{margin:0 14px 8px;line-height:1.4}
+.qbd-write-checks .qbd-wbody{overflow-x:hidden;max-width:100%}
+.qbd-write-checks-table{width:100%;table-layout:fixed}
+.qbd-write-checks-table th,
+.qbd-write-checks-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.qbd-write-checks-table .col-date{width:72px}
+.qbd-write-checks-table .col-je{width:150px}
+.qbd-write-checks-table .col-check{width:88px}
+.qbd-write-checks-table .col-payee{width:140px}
+.qbd-write-checks-table .col-status{width:72px}
+.qbd-write-checks-table .col-books{width:100px}
+.qbd-write-checks-table .col-amt{width:88px}
+.qbd-write-checks-table .col-actions{width:128px;white-space:nowrap;text-overflow:clip}
+.qbd-write-checks-table .col-desc{width:auto}
+.qbd-write-checks .qbd-botbar{flex-wrap:wrap;gap:6px;max-width:100%}
+.qbd-write-checks .frow{max-width:100%;box-sizing:border-box}
 /* Begin Reconciliation: let account picker menus extend outside the dialog frame. */
 .qbd-form.qbd-recon-begin{overflow:visible}
 /* Wider, user-resizable window: drag the bottom-right corner. For screens whose
