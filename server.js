@@ -235,7 +235,10 @@ if (serveBuiltFrontend) {
       }
     },
   }));
+  // SPA fallback — never cache index.html or browsers keep pointing at old JS bundles.
   app.get('*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
     res.sendFile(frontendIndexPath);
   });
   console.log('Serving frontend from frontend/dist');

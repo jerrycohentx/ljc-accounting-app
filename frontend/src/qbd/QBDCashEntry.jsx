@@ -492,9 +492,10 @@ export default function QBDCashEntry({ mode = 'check' }) {
         <div className="fhd">{isCheck ? 'Write Checks' : 'Make Deposits'}</div>
         {isCheck && (
           <div className="qbd-muted" style={{ marginBottom: 8, lineHeight: 1.45 }}>
-            Open a <b>draft / posted entry</b> below to fill this form automatically.
+            Open a <b>printable check</b> below to fill this form automatically.
             <b> Export for print</b> and attachments never create a second journal entry.
             ezCheckPrinting company: <code>{ezCompany}</code>.
+            {' '}If you still see “Waiting for review / drafts”, hard-refresh (Ctrl+Shift+R).
           </div>
         )}
 
