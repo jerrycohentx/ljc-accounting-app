@@ -2861,7 +2861,7 @@ export default function QBDReconcile() {
           }}
         >
           Review vendor default categories (editable per transaction in Fix category):{' '}
-          <Link to={`/vendor-defaults?month=${String(data.statementDate).slice(0, 7)}`}>
+          <Link to={`/vendor-defaults?month=${String(data.statementDate).slice(0, 7)}&account=cc`}>
             Vendor default categories…
           </Link>
         </div>

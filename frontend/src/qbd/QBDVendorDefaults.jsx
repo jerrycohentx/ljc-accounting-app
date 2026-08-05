@@ -23,6 +23,7 @@ export default function QBDVendorDefaults() {
   const nav = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const month = searchParams.get('month') || '2026-01';
+  const accountScope = searchParams.get('account') || 'cc';
 
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +49,7 @@ export default function QBDVendorDefaults() {
     try {
       const [coa, vd] = await Promise.all([
         accountAPI.list(entityId),
-        accountingAPI.vendorDefaults(entityId, { month }),
+        accountingAPI.vendorDefaults(entityId, { month, account: accountScope }),
       ]);
       setAccounts(Array.isArray(coa.data) ? coa.data : (coa.data?.data || coa.data?.accounts || []));
       setMeta(vd.data);
@@ -64,7 +65,7 @@ export default function QBDVendorDefaults() {
     } finally {
       setLoading(false);
     }
-  }, [entityId, month]);
+  }, [entityId, month, accountScope]);
 
   useEffect(() => {
     load();
@@ -72,7 +73,16 @@ export default function QBDVendorDefaults() {
 
   const onMonthChange = (e) => {
     const v = e.target.value;
-    setSearchParams(v === '2026-01' ? {} : { month: v });
+    const params = { account: accountScope };
+    if (v !== '2026-01') params.month = v;
+    setSearchParams(params);
+  };
+
+  const onAccountScopeChange = (e) => {
+    const v = e.target.value;
+    const params = { account: v };
+    if (month !== '2026-01') params.month = month;
+    setSearchParams(params);
   };
 
   const setRowAccount = (pattern, accountId) => {
@@ -145,7 +155,18 @@ export default function QBDVendorDefaults() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>Vendor default categories</h2>
         <span style={{ color: '#546e7a', fontSize: 13 }}>{current?.name}</span>
+        {meta?.scopeLabel && (
+          <span style={{ color: '#1b5e20', fontSize: 12, fontWeight: 600 }}>{meta.scopeLabel}</span>
+        )}
         <span style={{ flex: 1 }} />
+        <label style={{ fontSize: 13 }}>
+          Source{' '}
+          <select value={accountScope} onChange={onAccountScopeChange} className="qbd-select">
+            <option value="cc">Credit card (Chase …6508)</option>
+            <option value="bank">Bank checking</option>
+            <option value="all">Bank + card</option>
+          </select>
+        </label>
         <label style={{ fontSize: 13 }}>
           Month{' '}
           <select value={month} onChange={onMonthChange} className="qbd-select">
@@ -181,9 +202,9 @@ export default function QBDVendorDefaults() {
           lineHeight: 1.45,
         }}
       >
-        <strong>How this works:</strong> Pick a default expense account for each vendor (from Chase / bank activity).
-        Saving creates a durable rule — future imports auto-suggest that category.
-        For a one-off charge, use <strong>Fix category</strong> in Reconcile instead; that still teaches the app when you choose <strong>Create rule</strong>.
+        <strong>How this works:</strong> This list shows <strong>real merchants</strong> from the Chase card statement
+        (not bank memos like DDA debit, interest paid, draws, or transfers). Pick a default expense account for each;
+        saving creates a durable rule for future imports. One-offs: use <strong>Fix category</strong> in Reconcile.
       </div>
 
       {error && (
@@ -193,7 +214,14 @@ export default function QBDVendorDefaults() {
         <div style={{ color: '#1b5e20', marginBottom: 10, fontSize: 13 }}>{toast}</div>
       )}
 
-      {meta?.statementPaths?.length > 0 && (
+      {meta?.statementSeed?.vendorCount > 0 && (
+        <div style={{ fontSize: 12, color: '#546e7a', marginBottom: 8 }}>
+          Statement: Chase …6508 ending {meta.statementSeed.vendorCount} merchants from Jan 2026 PDF
+          {meta.statementPaths?.[0]?.path ? ` (${String(meta.statementPaths[0].path).split('!').pop()})` : ''}
+        </div>
+      )}
+
+      {meta?.statementPaths?.length > 0 && !meta?.statementSeed?.vendorCount && (
         <div style={{ fontSize: 12, color: '#546e7a', marginBottom: 8 }}>
           Statement sources:{' '}
           {meta.statementPaths.map((s, i) => (

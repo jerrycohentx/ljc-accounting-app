@@ -1220,7 +1220,8 @@ router.get(
     try {
       const db = await getDatabase();
       const month = String(req.query?.month || '2026-01').slice(0, 7);
-      const payload = await buildVendorDefaultsList(db, { entityId: req.entityId, month });
+      const accountScope = String(req.query?.account || req.query?.accountScope || 'auto');
+      const payload = await buildVendorDefaultsList(db, { entityId: req.entityId, month, accountScope });
       res.json(payload);
     } catch (error) {
       res.status(500).json({ error: error.message });

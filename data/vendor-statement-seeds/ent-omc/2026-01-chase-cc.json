@@ -1,0 +1,57 @@
+{
+  "entityId": "ent-omc",
+  "month": "2026-01",
+  "statementSource": "C:\\Users\\jerry\\OneDrive\\Desktop\\Downloads-Jerry OneDrive\\OMC CC.zip!20260118-statements-6508-.pdf",
+  "statementEnding": "2026-01-18",
+  "cardLast4": "6508",
+  "vendors": [
+    {
+      "pattern": "WELLINGTON RISK INSURA",
+      "sampleDescription": "WELLINGTON RISK INSURA 800-8800474",
+      "transactionCount": 2,
+      "totalAmount": 938.66
+    },
+    {
+      "pattern": "WRIGHT NATL FLOOD",
+      "sampleDescription": "WRIGHT NATL FLOOD INS 800-820-3242",
+      "transactionCount": 1,
+      "totalAmount": 886.9
+    },
+    {
+      "pattern": "PROGRESSIVE INS",
+      "sampleDescription": "PROGRESSIVE INS 800-776-4737",
+      "transactionCount": 1,
+      "totalAmount": 792.53
+    },
+    {
+      "pattern": "ASSURE INSURANCE CHICAGO",
+      "sampleDescription": "US Assure Insurance Se Chicago",
+      "transactionCount": 1,
+      "totalAmount": 214.34
+    },
+    {
+      "pattern": "STREAM ENERGY",
+      "sampleDescription": "STREAM ENERGY 888-685-7693",
+      "transactionCount": 1,
+      "totalAmount": 192.33
+    },
+    {
+      "pattern": "TRANSVERSE SPECIALTY",
+      "sampleDescription": "TRANSVERSE SPECIALTY 800-8800474",
+      "transactionCount": 1,
+      "totalAmount": 179.52
+    },
+    {
+      "pattern": "HCTRA TAG REBILL",
+      "sampleDescription": "HCTRA EZ TAG REBILL 281-875-3279",
+      "transactionCount": 1,
+      "totalAmount": 100
+    },
+    {
+      "pattern": "WWW.TEXAS.AAA",
+      "sampleDescription": "AAA TX MBR RENEWAL - R WWW.TEXAS.AAA",
+      "transactionCount": 1,
+      "totalAmount": 27
+    }
+  ]
+}
