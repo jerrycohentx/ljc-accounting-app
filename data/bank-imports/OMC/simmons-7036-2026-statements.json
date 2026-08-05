@@ -1,0 +1,122 @@
+{
+  "generatedAt": "2026-08-05T04:23:08.545Z",
+  "entityId": "ent-omc",
+  "accountLast4": "7036",
+  "statements": [
+    {
+      "file": "OMC ckg 7036-STATEMENT-01-30-2026-37cb5a09-53fd-4103-a1d1-ac4a2e4ac0bb.pdf",
+      "meta": {
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-02-01",
+        "previousBalance": 1463.62,
+        "currentBalance": 1983.97,
+        "accountLast4": "7036",
+        "bankName": "Simmons Bank"
+      },
+      "transactionCount": 14,
+      "netChange": 520.35,
+      "transactions": [
+        {
+          "date": "2026-01-06",
+          "amount": 20000,
+          "description": "Wire Transfer Credit",
+          "fitid": "pdf-f7e2e1cd3d29d7d88cce1640",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-07",
+          "amount": 1070.62,
+          "description": "Deposit",
+          "fitid": "pdf-3fa9a72718bde6d077dab08b",
+          "isCredit": true
+        },
+        {
+          "date": "2026-01-05",
+          "amount": -58.52,
+          "description": "Account Analysis Charge",
+          "fitid": "pdf-8dc3f4ea98aa4509b5f10268",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-14",
+          "amount": -2756.87,
+          "description": "Phone/In-Person Transfer PER",
+          "fitid": "pdf-cea90d85c4e7ea6989bdafd0",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-14",
+          "amount": -63.52,
+          "description": "ENT ACH DR CPENERGY ENTEX",
+          "fitid": "pdf-134ca94c933a9610ebf87209",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-14",
+          "amount": -85.77,
+          "description": "ENT ACH DR CPENERGY ENTEX",
+          "fitid": "pdf-0668b9b356b564f0b18829a6",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-15",
+          "amount": -15000,
+          "description": "Transfer CH x7036 to",
+          "fitid": "pdf-9bac92d63562d58738708755",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-15",
+          "amount": -310.64,
+          "description": "0621D Stream SPE, LTD",
+          "fitid": "pdf-84ec5c460ff59dcde4a5cdca",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-15",
+          "amount": -375.43,
+          "description": "0621D Stream SPE, LTD",
+          "fitid": "pdf-b584d3ea1cb22be03e1df3fb",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-15",
+          "amount": -392.99,
+          "description": "DEBITS WFB COMM. LOAN",
+          "fitid": "pdf-01afc997330a640bed0bc67c",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-15",
+          "amount": -832.73,
+          "description": "DEBITS WFB COMM. LOAN",
+          "fitid": "pdf-62db69c73c8716cf99f10508",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-16",
+          "amount": -35,
+          "description": "AUTOPAYBUS CHASE CREDIT CRD",
+          "fitid": "pdf-689b6648b71b1cb04cfb950e",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-21",
+          "amount": -364.05,
+          "description": "8004489307 HONDA PMT",
+          "fitid": "pdf-f2230de7e4269f231d382f1e",
+          "isCredit": false
+        },
+        {
+          "date": "2026-01-22",
+          "amount": -274.75,
+          "description": "PCS SVC T-MOBILE",
+          "fitid": "pdf-b6698efe65085149e4b1d4c6",
+          "isCredit": false
+        }
+      ],
+      "expectedNet": 520.35,
+      "netVariance": 0
+    }
+  ]
+}

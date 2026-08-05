@@ -1954,7 +1954,12 @@ export default function QBDReconcile() {
           setEndBal(String(r.data.endingBalance));
         }
         {
-          const beginSrc = r.data.periodSession?.beginningBalance ?? r.data.displayBeginning ?? r.data.beginningBalance;
+          // OPEN sessions may still carry a stale beginning (wrong entity). Prefer
+          // worksheet displayBeginning / statement previousBalance; CLOSED locks session.
+          const sessClosed = r.data.periodSession?.status === 'CLOSED';
+          const beginSrc = sessClosed
+            ? (r.data.periodSession?.beginningBalance ?? r.data.displayBeginning ?? r.data.beginningBalance)
+            : (r.data.displayBeginning ?? r.data.beginningBalance ?? r.data.periodSession?.beginningBalance);
           if (beginSrc != null) setBeginBal(String(beginSrc));
         }
         // Pull interest / service charge off the statement — but ONLY when the
@@ -2229,7 +2234,9 @@ export default function QBDReconcile() {
   const matchedGlSet = useMemo(() => new Set(data?.suggestedCheckedGlIds || []), [data?.suggestedCheckedGlIds]);
   const beginning = +(beginningOverride !== ''
     ? beginningOverride
-    : (data?.periodSession?.beginningBalance ?? data?.displayBeginning ?? data?.beginningBalance ?? beginBal ?? 0));
+    : (data?.periodSession?.status === 'CLOSED'
+      ? (data?.periodSession?.beginningBalance ?? data?.displayBeginning ?? data?.beginningBalance ?? beginBal ?? 0)
+      : (data?.displayBeginning ?? data?.beginningBalance ?? data?.periodSession?.beginningBalance ?? beginBal ?? 0)));
   const svc = parseFloat(serviceCharge || '0') || 0;
   const int = parseFloat(interestEarned || '0') || 0;
   let markedDeposits = 0;

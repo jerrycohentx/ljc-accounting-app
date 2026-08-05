@@ -17,7 +17,7 @@ export const BANK_ACCOUNTS = {
     { accountNumber: '2010', name: 'American Express 88007', ofxAccountId: '88007' },
   ],
   'ent-justin': [{ accountNumber: '1000', name: 'Primary checking' }],
-  'ent-omc': [{ accountNumber: '1000', name: 'Primary checking' }],
+  'ent-omc': [{ accountNumber: '1000', name: 'Simmons Bank ckg-7036', ofxAccountId: '7036' }],
   'ent-gm': [{ accountNumber: '1000', name: 'Primary checking' }],
   'ent-4jl': [{ accountNumber: '1000', name: 'Primary checking' }],
   'ent-qof': [{ accountNumber: '1000', name: 'Primary checking' }],
@@ -53,10 +53,10 @@ export const RECONCILIATION_TARGETS = {
       { statementDate: '2026-06-08', endingBalance: 83162.65, label: 'June 2026 (88007)' },
     ],
   },
-  // OMC Simmons …7036 — statement ending from existing OPEN recon session / PDF file name.
+  // OMC Simmons …7036 — PDF Previous/Current (not LJC …0260; not combined b1 rollup).
   'ent-omc': {
     '1000': [
-      { statementDate: '2026-01-31', endingBalance: 2023.18, label: 'January 2026' },
+      { statementDate: '2026-01-31', endingBalance: 1983.97, label: 'January 2026' },
     ],
   },
 };

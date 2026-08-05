@@ -79,13 +79,14 @@ export default function QBDMonthlyBooks() {
   const { entityId, current } = useEntity();
   const nav = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const now = new Date();
-  const defaultMonth = now.getFullYear() === 2026 ? now.getMonth() + 1 : 7;
   const urlMonth = Number(searchParams.get('month'));
   const urlYear = Number(searchParams.get('year'));
-  const initialMonth = (Number.isFinite(urlMonth) && urlMonth >= 1 && urlMonth <= 12) ? urlMonth : defaultMonth;
-  const [month, setMonth] = useState(initialMonth);
+  const hasUrlMonth = Number.isFinite(urlMonth) && urlMonth >= 1 && urlMonth <= 12;
+  // Do not default to calendar "today" (e.g. August) — wait for server suggested
+  // earliest OPEN / incomplete month when the URL has no month.
+  const [month, setMonth] = useState(hasUrlMonth ? urlMonth : 1);
   const [year] = useState((Number.isFinite(urlYear) && urlYear >= 2000) ? urlYear : 2026);
+  const [monthResolved, setMonthResolved] = useState(hasUrlMonth);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -93,6 +94,7 @@ export default function QBDMonthlyBooks() {
   useEffect(() => {
     if (Number.isFinite(urlMonth) && urlMonth >= 1 && urlMonth <= 12 && urlMonth !== month) {
       setMonth(urlMonth);
+      setMonthResolved(true);
     }
   }, [urlMonth]); // eslint-disable-line react-hooks/exhaustive-deps -- sync URL → picker only
 
@@ -104,22 +106,39 @@ export default function QBDMonthlyBooks() {
     setLoading(true);
     setErr('');
     accountingAPI.monthlyBooks(entityId, { year, month })
-      .then((r) => setData(r.data))
+      .then((r) => {
+        const payload = r.data || {};
+        setData(payload);
+        if (payload.error && !payload.steps) {
+          setErr(payload.error);
+        }
+        // First load without ?month= → jump to earliest OPEN / incomplete month.
+        if (!hasUrlMonth && !monthResolved) {
+          const sug = Number(payload.suggestedWorkingMonth);
+          if (Number.isFinite(sug) && sug >= 1 && sug <= 12 && sug !== month) {
+            setMonth(sug);
+            setSearchParams({ year: String(year), month: String(sug) }, { replace: true });
+          }
+          setMonthResolved(true);
+        }
+      })
       .catch((e) => {
         setData(null);
         setErr((e.response && e.response.data && e.response.data.error) || e.message);
+        if (!monthResolved) setMonthResolved(true);
       })
       .finally(() => setLoading(false));
-  }, [entityId, year, month]);
+  }, [entityId, year, month, hasUrlMonth, monthResolved, setSearchParams]);
 
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
+    if (!monthResolved) return;
     const y = searchParams.get('year');
     const m = searchParams.get('month');
     if (y === String(year) && m === String(month)) return;
     setSearchParams({ year: String(year), month: String(month) }, { replace: true });
-  }, [year, month, searchParams, setSearchParams]);
+  }, [year, month, searchParams, setSearchParams, monthResolved]);
 
   const steps = data?.steps;
   const monthLabel = useMemo(

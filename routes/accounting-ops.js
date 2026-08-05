@@ -966,7 +966,15 @@ router.get(
       });
       res.json(result);
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      // Empty / future months must not 502 the Home screen — return a soft error.
+      console.error('monthly-books error:', error);
+      res.status(200).json({
+        entityId: req.entityId,
+        year: Number(req.query.year) || new Date().getFullYear(),
+        month: Number(req.query.month) || (new Date().getMonth() + 1),
+        error: error.message || 'Monthly books status unavailable',
+        steps: null,
+      });
     }
   }
 );
