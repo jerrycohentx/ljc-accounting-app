@@ -1905,7 +1905,11 @@ export default function QBDReconcile() {
         // can flip Beginning negative and hide a balanced close behind a fake difference.
         setBeginningOverride('');
         {
-          const resolvedDate = isoDateOnly(r.data.statementDate || dateForLoad);
+          // Prefer the OPEN session date / requested date — never jump the URL to
+          // statement periodEnd (Simmons thru 2/01) or begin folds to equal end.
+          const resolvedDate = isoDateOnly(r.data.periodSession?.statementDate)
+            || isoDateOnly(dateForLoad)
+            || isoDateOnly(r.data.statementDate);
           if (resolvedDate) setStmtDate(resolvedDate);
           // Reflect the running reconciliation in the URL so browser Back (e.g.
           // returning from the draft-review screen) lands on THIS reconciliation,
