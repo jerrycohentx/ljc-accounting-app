@@ -10,6 +10,7 @@ const MENUS = ['File', 'Edit', 'View', 'Lists', 'Favorites', 'Company', 'Custome
 const TOOLS = [
   ['🏠', 'Home', '/'],
   ['✓', 'Check Categories', '/check-categories'],
+  ['🏷', 'Vendor Defaults', '/vendor-defaults'],
   ['🏦', 'Reconcile', '/reconcile'],
   ['📊', 'Reports', '/reports'],
 ];
@@ -118,14 +119,14 @@ export default function QBDLayout() {
           ['View Backups…', () => setBackupOpen(true)],
           ['Close Company', closeCompany], '-', ['Exit', closeCompany]];
       case 'Edit': return [['Find…', t('Find — live app')], ['Preferences…', t('Preferences — live app')]];
-      case 'View': return [['Home Page', () => nav('/')], ['Monthly Books (2026)', () => nav('/')], ['Check Categories', () => nav('/check-categories')], ['Multi-Entity Dashboard', () => nav('/dashboard')], ['Classic Home', () => nav('/home-classic')], ['Open Window List', t('Live app')]];
+      case 'View': return [['Home Page', () => nav('/')], ['Monthly Books (2026)', () => nav('/')], ['Check Categories', () => nav('/check-categories')], ['Vendor default categories', () => nav('/vendor-defaults')], ['Multi-Entity Dashboard', () => nav('/dashboard')], ['Classic Home', () => nav('/home-classic')], ['Open Window List', t('Live app')]];
       case 'Lists': return [['Chart of Accounts', () => nav('/accounts')], ['Item List', t('Item List — live app')], ['Class List', t('Live app')]];
       case 'Favorites': return [['Customize Favorites…', t('Live app')]];
       case 'Company': return [['Home Page', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')], '-', ['Make General Journal Entries…', () => nav('/journal')], ['Check Categories…', () => nav('/check-categories')], ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Set Closing Date…', () => nav('/period-close')], ['Company Information…', t('Live app')]];
       case 'Customers': return [['Customer Center', t('Live app')], '-', ['Create Invoices', t('Live app')], ['Receive Payments', t('Live app')], ['Create Sales Receipts', t('Live app')]];
-      case 'Vendors': return [['Vendor Center', t('Live app')], '-', ['Enter Bills', t('Live app')], ['Pay Bills', t('Live app')]];
+      case 'Vendors': return [['Vendor Center — default categories', () => nav('/vendor-defaults')], ['Default categories…', () => nav('/vendor-defaults')], '-', ['Enter Bills', t('Enter Bills — live app')], ['Pay Bills', t('Pay Bills — live app')]];
       case 'Employees': return [['Employee Center', t('Live app')], '-', ['Enter Time', t('Live app')]];
-      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], ['Reconciliation Reports…', () => nav('/reconciliation-reports')], '-', ['Check Categories…', () => nav('/check-categories')], ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Connect bank email…', () => setEmailOpen(true)], ['Bank Feeds', () => nav('/bank-feeds')], ['Connect Ramp card…', () => nav('/ramp')], ['Bank Import (Plaid/OFX)…', () => nav('/bank-import')], ['Mgmt Report Import…', () => nav('/mgmt-reports')]];
+      case 'Banking': return [['Write Checks', () => nav('/write-checks')], ['Make Deposits', () => nav('/make-deposits')], ['Use Register…', useRegisterFor], ['Reconcile…', () => nav('/reconcile')], ['Vendor default categories…', () => nav('/vendor-defaults')], ['Reconciliation Reports…', () => nav('/reconciliation-reports')], '-', ['Check Categories…', () => nav('/check-categories')], ['Import ACH interest JE…', () => nav('/ach-interest-import')], ['Connect bank email…', () => setEmailOpen(true)], ['Bank Feeds', () => nav('/bank-feeds')], ['Connect Ramp card…', () => nav('/ramp')], ['Bank Import (Plaid/OFX)…', () => nav('/bank-import')], ['Mgmt Report Import…', () => nav('/mgmt-reports')]];
       case 'Reports': return [['Report Center', () => nav('/reports')], ['Tax Year Financials…', () => nav('/tax-financials')], '-', ['H', 'Company & Financial'], ['Balance Sheet', () => nav('/reports?r=bs')], ['Profit & Loss', () => nav('/reports?r=pl')], ['Reconciliation Reports…', () => nav('/reconciliation-reports')], '-', ['H', 'Accountant & Lists'], ['Account Listing', () => nav('/accounts')], ['Journal', () => nav('/journal')]];
       case 'Window': return [['Home', () => nav('/')], ['Chart of Accounts', () => nav('/accounts')]];
       case 'Help': return [['About…', showAbout]];

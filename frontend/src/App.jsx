@@ -22,6 +22,7 @@ import QBDBankFeeds from './qbd/QBDBankFeeds';
 import QBDRampConnect from './qbd/QBDRampConnect';
 import QBDEntityDashboard from './qbd/QBDEntityDashboard';
 import QBDPeriodClose from './qbd/QBDPeriodClose';
+import QBDVendorDefaults from './qbd/QBDVendorDefaults';
 import QBDTaxFinancials from './qbd/QBDTaxFinancials';
 import Receipts from './pages/Receipts';
 import MgmtReports from './pages/MgmtReports';
@@ -65,6 +66,7 @@ function App() {
             <Route path="write-checks" element={<QBDCashEntry mode="check" />} />
             <Route path="make-deposits" element={<QBDCashEntry mode="deposit" />} />
             <Route path="reconcile" element={<QBDReconcile />} />
+            <Route path="vendor-defaults" element={<QBDVendorDefaults />} />
             <Route path="reconciliation-reports" element={<QBDReconReports />} />
             <Route path="bank-feeds" element={<QBDBankFeeds />} />
             <Route path="ramp" element={<QBDRampConnect />} />

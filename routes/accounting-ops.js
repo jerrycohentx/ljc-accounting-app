@@ -34,6 +34,7 @@ import {
   applyVendorRuleToPostedJournals,
   deriveVendorPattern,
 } from '../lib/vendor-category-rule.js';
+import { buildVendorDefaultsList, saveVendorDefaults } from '../lib/vendor-defaults-list.js';
 import { findDuplicateCatApprDrafts } from '../lib/cat-appr-dedupe.js';
 import {
   applyWentworthTenantUtilityTreatment,
@@ -1201,6 +1202,49 @@ router.post(
         postedMatchingPendingImports: postMatchingPending,
         appliedToPostedJournals: applyToPostedJournals,
       });
+    } catch (error) {
+      const status = /required|not found|min 3/i.test(error.message) ? 400 : 500;
+      res.status(status).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * GET /api/entities/:entityId/accounting/vendor-defaults?month=YYYY-MM
+ * Vendors from Chase/CC statements + posted books + saved rules — for default category review.
+ */
+router.get(
+  '/vendor-defaults',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const db = await getDatabase();
+      const month = String(req.query?.month || '2026-01').slice(0, 7);
+      const payload = await buildVendorDefaultsList(db, { entityId: req.entityId, month });
+      res.json(payload);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/entities/:entityId/accounting/vendor-defaults
+ * Save Jerry-reviewed default categories (durable vendor rules; does not bulk-reclass posted JEs).
+ * Body: { vendors: [{ pattern, accountId, label?, sampleDescription?, matchType? }] }
+ */
+router.post(
+  '/vendor-defaults',
+  [entityAccessMiddleware, requireRole('ADMIN', 'ACCOUNTANT')],
+  async (req, res) => {
+    try {
+      const db = await getDatabase();
+      const vendors = Array.isArray(req.body?.vendors) ? req.body.vendors : [];
+      if (!vendors.length) {
+        return res.status(400).json({ error: 'vendors array required' });
+      }
+      const result = await saveVendorDefaults(db, { entityId: req.entityId, vendors });
+      res.json({ ok: true, ...result });
     } catch (error) {
       const status = /required|not found|min 3/i.test(error.message) ? 400 : 500;
       res.status(status).json({ error: error.message });

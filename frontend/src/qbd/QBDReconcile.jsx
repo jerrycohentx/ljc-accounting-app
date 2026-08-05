@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
+import { useOutletContext, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useEntity } from './EntityContext';
 import { accountAPI, accountingAPI, bankReconAPI, journalAPI, reconReportAPI, mgmtReportAPI } from '../services/api';
 import { useBackupStatus } from './QBDBackupDialog';
@@ -2850,6 +2850,22 @@ export default function QBDReconcile() {
         }}>✕</span>
       </div>
       {sessionBanner}
+      {data?.statementDate && (
+        <div
+          style={{
+            background: '#e3f2fd',
+            padding: '6px 12px',
+            fontSize: 12,
+            borderBottom: '1px solid #90caf9',
+            color: '#0d47a1',
+          }}
+        >
+          Review vendor default categories (editable per transaction in Fix category):{' '}
+          <Link to={`/vendor-defaults?month=${String(data.statementDate).slice(0, 7)}`}>
+            Vendor default categories…
+          </Link>
+        </div>
+      )}
       <div className="qbd-recon-period">
         <span className="qbd-recon-period-lbl">For period: <b>{data.statementDate || stmtDate}</b></span>
         <span className="qbd-muted">{data.account.account_number} · {leafLabel(data.account.account_name)}</span>
