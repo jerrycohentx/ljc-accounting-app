@@ -130,12 +130,21 @@ export default function QBDMonthlyBooks() {
   const goCategories = () => nav('/check-categories');
   const goReconcile = (acct) => {
     if (!acct?.accountId && !acct?.accountNumber) {
+      // Open first actionable account for this month, or bare Reconcile
+      // (server resume-open will pick the earliest OPEN for this entity).
+      const first = steps?.reconcile?.accounts?.find((a) =>
+        a.status === 'in_progress' || a.status === 'needs_fix' || a.status === 'not_started'
+      );
+      if (first) {
+        goReconcile(first);
+        return;
+      }
       nav('/reconcile');
       return;
     }
     const accountNumber = acct.accountNumber || acct.accountId;
     const statementDate = acct.statementDate
-      || statementDateForMonth(entityId, accountNumber, 2026, month);
+      || statementDateForMonth(entityId, accountNumber, year, month);
     const params = new URLSearchParams();
     params.set('account', String(accountNumber));
     params.set('year', String(year));

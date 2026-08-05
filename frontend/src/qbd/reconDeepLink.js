@@ -28,6 +28,11 @@ const RECON_TARGETS = {
       { statementDate: '2026-06-08', label: 'June 2026 (88007)' },
     ],
   },
+  'ent-omc': {
+    '1000': [
+      { statementDate: '2026-01-31', label: 'January 2026' },
+    ],
+  },
 };
 
 const MONTH_NAMES = [

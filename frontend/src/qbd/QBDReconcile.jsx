@@ -1464,6 +1464,26 @@ export default function QBDReconcile() {
         else setBeginBal('');
         setPrepareMsg(p.message || '');
         if (nextDate) attachStoredStatement(nextDate);
+        // Entity-agnostic: if this account already has an OPEN recon, skip Begin
+        // and open the main check-off screen immediately.
+        if (p.resumeOpen && (nextDate || p.suggestedStatementDate || p.openSession?.statementDate)) {
+          const openDate = p.openSession?.statementDate || nextDate || p.suggestedStatementDate;
+          userPickedDateRef.current = true;
+          if (openDate) {
+            setStmtDate(openDate);
+            setDateDraft(openDate);
+          }
+          // loadWorksheet is defined later — trigger via URL so the go=1 effect runs.
+          const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountId;
+          if (acctNo && openDate) {
+            setSearchParams({
+              account: String(acctNo),
+              date: openDate,
+              go: '1',
+              year: String((openDate || '').slice(0, 4) || 2026),
+            }, { replace: true });
+          }
+        }
       })
       .catch((e) => {
         if (prepareRequestRef.current !== requestId) return;
@@ -1475,7 +1495,7 @@ export default function QBDReconcile() {
       .finally(() => {
         if (prepareRequestRef.current === requestId) setPrepareBusy(false);
       });
-  }, [entityId, accountId, stmtDate, attachStoredStatement]);
+  }, [entityId, accountId, stmtDate, attachStoredStatement, accounts, setSearchParams]);
 
   useEffect(() => {
     if (!entityId) return;
@@ -2004,24 +2024,57 @@ export default function QBDReconcile() {
     });
   }, [autoOpenRequested, accountId, stmtDate, started, loadWorksheet]);
 
-  // Resume across FULL navigations, not just browser Back. The draft-review
-  // round trip (worksheet → review drafts → approve → Banking → Reconcile)
-  // lands on a bare /reconcile with no query params — Jerry hit this after
-  // approving the last 5 March drafts: the screen reset to the Begin defaults
-  // (Lone Star) instead of returning to his open Simmons 3/31 worksheet.
-  // Rehydrate the saved in-progress pointer into the URL; the account-list
-  // and go=1 effects above take it from there.
+  // Resume across FULL navigations AND any entity with an OPEN recon.
+  // Priority (entity-agnostic — LJC / OMC / GM / Justin / 4J&L / QOF):
+  //   1. URL deep link (?account=&date=&go=1)
+  //   2. Server earliest OPEN session for this entity + year
+  //   3. localStorage in-progress pointer for this entity
+  // Never leave Jerry on Begin Reconciliation when an OPEN worksheet exists.
   const storeResumedRef = useRef(false);
   useEffect(() => {
     if (storeResumedRef.current || started || accountId) return;
     if (searchParams.get('go') === '1' || accountFromSearchParams(searchParams)) return;
-    let saved = null;
-    try { saved = JSON.parse(localStorage.getItem(RECON_IN_PROGRESS_KEY) || 'null'); } catch { saved = null; }
-    if (!saved || saved.entity !== entityId || !saved.account || !/^\d{4}-\d{2}-\d{2}$/.test(String(saved.date))) return;
+    let cancelled = false;
     storeResumedRef.current = true;
-    userPickedDateRef.current = true; // stop the prepare suggestion from re-dating it
-    setStmtDate(saved.date);
-    setSearchParams({ account: String(saved.account), date: saved.date, go: '1' }, { replace: true });
+
+    const yearFromUrl = Number(searchParams.get('year'));
+    const year = (Number.isFinite(yearFromUrl) && yearFromUrl >= 2000) ? yearFromUrl : 2026;
+
+    (async () => {
+      let open = null;
+      try {
+        const r = await bankReconAPI.resumeOpen(entityId, { year });
+        open = r.data?.found ? r.data : null;
+      } catch {
+        open = null;
+      }
+      if (cancelled) return;
+
+      if (open?.accountNumber && open?.statementDate) {
+        userPickedDateRef.current = true;
+        setStmtDate(open.statementDate);
+        setDateDraft(open.statementDate);
+        setSearchParams({
+          account: String(open.accountNumber),
+          date: open.statementDate,
+          go: '1',
+          year: String(year),
+        }, { replace: true });
+        return;
+      }
+
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem(RECON_IN_PROGRESS_KEY) || 'null'); } catch { saved = null; }
+      if (!saved || saved.entity !== entityId || !saved.account || !/^\d{4}-\d{2}-\d{2}$/.test(String(saved.date))) {
+        storeResumedRef.current = false;
+        return;
+      }
+      userPickedDateRef.current = true;
+      setStmtDate(saved.date);
+      setSearchParams({ account: String(saved.account), date: saved.date, go: '1' }, { replace: true });
+    })();
+
+    return () => { cancelled = true; };
   }, [entityId, started, accountId, searchParams, setSearchParams]);
 
   // Deep link from Monthly Books — keep statement date in sync with URL.

@@ -23,6 +23,7 @@ import {
   closeBankReconciliation,
   reopenBankReconciliation,
   undoLastBankReconciliation,
+  getEarliestOpenSessionForEntity,
 } from '../lib/bank-reconcile-session.js';
 import { buildReconciliationReport, saveReconciliationReport } from '../lib/reconciliation-report.js';
 import { importStatementForReconcile } from '../lib/reconcile-statement-import.js';
@@ -32,6 +33,7 @@ import { prepareReconciliation } from '../lib/reconcile-prepare.js';
 import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/statement-auto-load.js';
 import { listReconcilableAccounts } from '../lib/ensure-reconcilable-accounts.js';
 import { ensureCreditCardPaymentDue, getCreditCardPaymentDue } from '../lib/cc-payment-due.js';
+import { normalizeIsoDate } from '../lib/bank-statement-view.js';
 
 const router = express.Router();
 
@@ -560,7 +562,7 @@ router.get('/reconcilable-accounts', async (req, res) => {
 // GET /api/reconciliation/bank/prepare — load statement from folder/JSON and suggest fields
 router.get('/prepare', async (req, res) => {
   try {
-    const { entityId, accountId, statementDate, importFromFolder } = req.query;
+    const { entityId, accountId, statementDate, importFromFolder, year } = req.query;
     if (!entityId || !accountId) {
       return res.status(400).json({ error: 'entityId and accountId required' });
     }
@@ -571,11 +573,48 @@ router.get('/prepare', async (req, res) => {
       statementDate: statementDate || null,
       userId: req.user?.id || 'usr-admin',
       importFromFolder: importFromFolder !== '0',
+      year: year != null ? Number(year) : null,
     });
     return res.json(result);
   } catch (error) {
     console.error('Reconcile prepare error:', error);
     return res.status(500).json({ error: error.message || 'Failed to prepare reconciliation' });
+  }
+});
+
+// GET /api/reconciliation/bank/resume-open — earliest OPEN recon for this entity
+// (entity-agnostic: LJC, OMC, GM, Justin, 4J&L, QOF). Frontend uses this so
+// opening the Reconcile tab skips Begin setup and loads the main worksheet.
+router.get('/resume-open', async (req, res) => {
+  try {
+    const { entityId, year } = req.query;
+    if (!entityId) return res.status(400).json({ error: 'entityId required' });
+    const db = await getDatabase();
+    const y = year != null && year !== '' ? Number(year) : 2026;
+    const session = await getEarliestOpenSessionForEntity(db, entityId, {
+      year: Number.isFinite(y) ? y : 2026,
+    });
+    if (!session) {
+      return res.json({ found: false, entityId, year: Number.isFinite(y) ? y : 2026 });
+    }
+    const statementDate = normalizeIsoDate(session.statement_date);
+    return res.json({
+      found: true,
+      entityId,
+      year: Number.isFinite(y) ? y : 2026,
+      accountId: session.account_id,
+      accountNumber: session.account_number,
+      accountName: session.account_name,
+      statementDate,
+      status: session.status,
+      difference: Number(session.difference) || 0,
+      beginningBalance: Number(session.beginning_balance),
+      endingBalance: Number(session.ending_balance),
+      sessionId: session.id,
+    });
+  } catch (error) {
+    console.error('Resume-open error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to find open reconciliation' });
   }
 });
 

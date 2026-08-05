@@ -137,8 +137,16 @@ export const bankReconAPI = {
   reconcilableAccounts: (entityId) => client.get('/api/reconciliation/bank/reconcilable-accounts', {
     params: { entityId },
   }),
-  prepare: (entityId, accountId, statementDate) => client.get('/api/reconciliation/bank/prepare', {
-    params: { entityId, accountId, statementDate },
+  prepare: (entityId, accountId, statementDate, opts = {}) => client.get('/api/reconciliation/bank/prepare', {
+    params: {
+      entityId,
+      accountId,
+      statementDate,
+      year: opts.year || undefined,
+    },
+  }),
+  resumeOpen: (entityId, opts = {}) => client.get('/api/reconciliation/bank/resume-open', {
+    params: { entityId, year: opts.year || 2026 },
   }),
   worksheet: (entityId, accountId, statementDate, opts = {}) => client.get('/api/reconciliation/bank/worksheet', {
     params: {

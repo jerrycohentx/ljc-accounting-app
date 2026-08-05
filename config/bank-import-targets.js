@@ -53,6 +53,12 @@ export const RECONCILIATION_TARGETS = {
       { statementDate: '2026-06-08', endingBalance: 83162.65, label: 'June 2026 (88007)' },
     ],
   },
+  // OMC Simmons …7036 — statement ending from existing OPEN recon session / PDF file name.
+  'ent-omc': {
+    '1000': [
+      { statementDate: '2026-01-31', endingBalance: 2023.18, label: 'January 2026' },
+    ],
+  },
 };
 
 export const IMPORT_DIR = 'data/bank-imports';
