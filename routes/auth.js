@@ -267,6 +267,38 @@ router.post('/loan-tracker-token', async (req, res) => {
   }
 });
 
+// POST /auth/support/sync-entities-access — grant ADMIN/ACCOUNTANT users all active entities
+router.post('/support/sync-entities-access', async (req, res) => {
+  try {
+    const key = req.headers['x-loan-tracker-key'] || req.headers['x-admin-key'];
+    const expected = process.env.LOAN_TRACKER_INTEGRATION_KEY;
+    if (!expected || key !== expected) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const db = await getDatabase();
+    const entities = await db.all("SELECT id FROM entities WHERE status = 'ACTIVE'");
+    const allIds = entities.map((e) => e.id);
+    const users = await db.all(
+      "SELECT id, email, role, entities_access FROM users WHERE is_active = 1 AND role IN ('ADMIN', 'ACCOUNTANT')"
+    );
+
+    const updated = [];
+    for (const u of users) {
+      await db.run(
+        'UPDATE users SET entities_access = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [JSON.stringify(allIds), u.id]
+      );
+      updated.push({ email: u.email, role: u.role, entitiesAccess: allIds });
+    }
+
+    return res.json({ ok: true, entityCount: allIds.length, updated });
+  } catch (error) {
+    console.error('Support sync-entities-access error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /auth/support/set-password — agent/support only (integration key)
 router.post('/support/set-password', async (req, res) => {
   try {

@@ -10,6 +10,7 @@ import {
   CheckCircle, Edit, Delete, PostAdd, AddLink
 } from '@mui/icons-material';
 import { entityAPI, receiptAPI } from '../services/api';
+import { useEntity } from '../qbd/EntityContext';
 
 const STATUS_COLORS = {
   PENDING_REVIEW: 'warning',
@@ -23,8 +24,9 @@ const money = (cents) =>
   (Number(cents || 0) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
 export default function Receipts() {
+  const { entityId: layoutEntityId, setEntityId: setLayoutEntityId } = useEntity() || {};
   const [entities, setEntities] = useState([]);
-  const [entityId, setEntityId] = useState('ent-ljc');
+  const [entityId, setEntityId] = useState(layoutEntityId || localStorage.getItem('entityId') || 'ent-ljc');
   const [stats, setStats] = useState(null);
   const [receipts, setReceipts] = useState([]);
   const [connections, setConnections] = useState([]);
@@ -181,7 +183,11 @@ export default function Receipts() {
         </Box>
         <FormControl size="small" sx={{ minWidth: 220 }}>
           <InputLabel>Entity</InputLabel>
-          <Select label="Entity" value={entityId} onChange={(e) => setEntityId(e.target.value)}>
+          <Select label="Entity" value={entityId} onChange={(e) => {
+            const id = e.target.value;
+            setEntityId(id);
+            if (setLayoutEntityId) setLayoutEntityId(id);
+          }}>
             {entities.map((e) => (
               <MenuItem key={e.id} value={e.id}>{e.name} ({e.code})</MenuItem>
             ))}

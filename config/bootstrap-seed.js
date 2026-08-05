@@ -26,8 +26,15 @@ async function upsertEntity(db, entity) {
 }
 
 async function upsertUser(db, { id, email, password, fullName, role, entitiesAccess, phone }) {
-  const existing = await db.get('SELECT id FROM users WHERE email = ?', email);
-  if (existing) return;
+  const existing = await db.get('SELECT id, role, entities_access FROM users WHERE email = ?', email);
+  if (existing) {
+    // Keep password as-is; refresh role + entity ACL so sister companies stay editable for admin.
+    await db.run(
+      'UPDATE users SET role = ?, entities_access = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [role, JSON.stringify(entitiesAccess), existing.id]
+    );
+    return;
+  }
   const passwordHash = await bcryptjs.hash(password, 10);
   const phoneVal = phone || null;
   try {
@@ -51,36 +58,9 @@ async function seedChartOfAccounts(db) {
     );
     if (existing) continue;
     const normalBalance = ['ASSET', 'EXPENSE'].includes(acc.type) ? 'DEBIT' : 'CREDIT';
-    let parentId = null;
-    if (acc.parent) {
-      const parent = await db.get(
-        'SELECT id FROM accounts WHERE entity_id = ? AND account_number = ?',
-        [acc.entity, acc.parent]
-      );
-      parentId = parent?.id || null;
-    }
     await db.run(
-      `INSERT INTO accounts
-       (id, entity_id, account_number, account_name, account_type, normal_balance, parent_account_id, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [`acc-${uuidv4()}`, acc.entity, acc.number, acc.name, acc.type, normalBalance, parentId, 1]
-    );
-  }
-
-  // Idempotent parent link for accounts that already existed before parent support.
-  for (const acc of FULL_CHART_OF_ACCOUNTS) {
-    if (!acc.parent) continue;
-    const parent = await db.get(
-      'SELECT id FROM accounts WHERE entity_id = ? AND account_number = ?',
-      [acc.entity, acc.parent]
-    );
-    if (!parent?.id) continue;
-    await db.run(
-      `UPDATE accounts
-       SET parent_account_id = ?
-       WHERE entity_id = ? AND account_number = ?
-         AND (parent_account_id IS NULL OR parent_account_id <> ?)`,
-      [parent.id, acc.entity, acc.number, parent.id]
+      'INSERT INTO accounts (id, entity_id, account_number, account_name, account_type, normal_balance, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [`acc-${uuidv4()}`, acc.entity, acc.number, acc.name, acc.type, normalBalance, 1]
     );
   }
 }

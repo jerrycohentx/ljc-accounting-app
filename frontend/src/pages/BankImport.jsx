@@ -24,11 +24,13 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import './BankImport.css';
 import api, { plaidAPI } from '../services/api';
+import { useEntity } from '../qbd/EntityContext';
 
 const BankImport = () => {
-  // State
-  const [selectedEntity, setSelectedEntity] = useState('ent-ljc');
-  const [entities, setEntities] = useState([]);
+  const { entityId: layoutEntityId, setEntityId: setLayoutEntityId, entities: layoutEntities } = useEntity() || {};
+  // State — default to the company selected in the QBD entity switcher (not hardcoded LJC)
+  const [selectedEntity, setSelectedEntity] = useState(layoutEntityId || localStorage.getItem('entityId') || 'ent-ljc');
+  const [entities, setEntities] = useState(layoutEntities || []);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [importSession, setImportSession] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -355,7 +357,11 @@ const BankImport = () => {
             <label>Select Entity</label>
             <select
               value={selectedEntity}
-              onChange={(e) => setSelectedEntity(e.target.value)}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSelectedEntity(id);
+                if (setLayoutEntityId) setLayoutEntityId(id);
+              }}
               disabled={loading || importSession != null}
             >
               {entities.map(entity => (
