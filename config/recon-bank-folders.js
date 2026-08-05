@@ -24,6 +24,11 @@ export const RECON_BANK_FOLDERS = {
     reconciliationsFolder: 'Reconciliations',
     shortLabel: 'American Express',
   },
+  '2011': {
+    bankFolder: 'Chase Credit Card',
+    reconciliationsFolder: 'Reconciliations',
+    shortLabel: 'Chase Credit Card',
+  },
 };
 
 export function bankFolderMeta(accountNumber) {

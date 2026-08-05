@@ -17,7 +17,10 @@ export const BANK_ACCOUNTS = {
     { accountNumber: '2010', name: 'American Express 88007', ofxAccountId: '88007' },
   ],
   'ent-justin': [{ accountNumber: '1000', name: 'Primary checking' }],
-  'ent-omc': [{ accountNumber: '1000', name: 'Simmons Bank ckg-7036', ofxAccountId: '7036' }],
+  'ent-omc': [
+    { accountNumber: '1000', name: 'Simmons Bank ckg-7036', ofxAccountId: '7036' },
+    { accountNumber: '2011', name: 'Credit Card - Chase (6508)', ofxAccountId: '6508' },
+  ],
   'ent-gm': [{ accountNumber: '1000', name: 'Primary checking' }],
   'ent-4jl': [{ accountNumber: '1000', name: 'Primary checking' }],
   'ent-qof': [{ accountNumber: '1000', name: 'Primary checking' }],
@@ -57,6 +60,9 @@ export const RECONCILIATION_TARGETS = {
   'ent-omc': {
     '1000': [
       { statementDate: '2026-01-31', endingBalance: 1983.97, label: 'January 2026' },
+    ],
+    '2011': [
+      { statementDate: '2026-01-18', endingBalance: 6530.77, label: 'January 2026 Chase …6508' },
     ],
   },
 };

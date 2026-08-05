@@ -136,6 +136,11 @@ const INTERNAL_ACCOUNT = /clearing|in transit|undeposited|holdback|due from|due 
 // instead of "Cash - Lone Star Bank".
 const RECON_ACCOUNT_NUMBERS = {
   'ent-ljc': ['1000', '1001', '1002', '2010'],
+  'ent-omc': ['1000', '2011'],
+  'ent-gm': ['1000', '2011'],
+  'ent-justin': ['1000'],
+  'ent-4jl': ['1000'],
+  'ent-qof': ['1000'],
 };
 
 function reconcilableNumbersForEntity(entityId) {
@@ -152,8 +157,8 @@ function isReconcilableAccount(a, entityId) {
 
   const name = String(a?.account_name || '');
   if (INTERNAL_ACCOUNT.test(name)) return false;
-  if (a?.account_type === 'ASSET') return /^cash\b/i.test(name);
-  if (a?.account_type === 'LIABILITY') return /^credit card\b/i.test(name);
+  if (a?.account_type === 'ASSET') return /^cash\b/i.test(name) || /^simmons|^lone star|^wells|^checking/i.test(name);
+  if (a?.account_type === 'LIABILITY') return /^credit card\b/i.test(name) || /\bchase\b.*\bcard\b/i.test(name) || /\bamex\b/i.test(name);
   return false;
 }
 
@@ -1531,13 +1536,13 @@ export default function QBDReconcile() {
         const num = String(a.account_number || '');
         if (num && allowed.has(num) && !merged.has(num)) merged.set(num, a);
       }
-      if (!merged.size) {
-        for (const a of all) {
-          if (isReconcilableAccount(a, entityId)) {
-            const num = String(a.account_number || '');
-            if (num) merged.set(num, a);
-          }
-        }
+      // Always merge COA bank/card accounts — API list alone can omit cards (e.g. OMC 2011).
+      for (const a of all) {
+        if (!isReconcilableAccount(a, entityId)) continue;
+        const num = String(a.account_number || '');
+        if (!num || a.is_active === 0 || a.is_active === false) continue;
+        if (allowed.size && !allowed.has(num)) continue;
+        if (!merged.has(num)) merged.set(num, a);
       }
 
       const list = Array.from(merged.values()).sort((a, b) =>
