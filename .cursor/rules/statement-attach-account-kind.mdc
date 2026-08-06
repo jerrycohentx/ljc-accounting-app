@@ -1,0 +1,15 @@
+---
+description: Reconcile statement PDF must match account kind (bank vs credit card) for every Cohen entity.
+alwaysApply: true
+---
+
+# Statement attach = same account kind (hard bar)
+
+When attaching a statement PDF beside Reconcile (Begin or worksheet):
+
+1. **Credit card accounts** (`2010`, `2011`, … LIABILITY) → only card issuer PDFs (Amex, Chase …6508, zip `OMC CC.zip`, etc.).
+2. **Bank checking** (`1000`, `1001`, …) → only bank checking PDFs (Simmons ckg, Lone Star, …7036 / …0260).
+3. **Never** attach a Simmons/ckg PDF to a Chase card recon or Amex to Simmons — even if filename contains "omc" or entity id.
+4. Implementation: `lib/statement-file-locate.js` → `validateStatementPdfPath()` + `ACCOUNT_STATEMENT_SPECS`.
+5. Wrong PDFs saved earlier are **purged on load** and re-discovered with correct hints.
+6. Before saying "statement attached", verify `fileName` / path matches account number + kind (6508 for OMC 2011, not 7036).
