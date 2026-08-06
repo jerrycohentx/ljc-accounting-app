@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-08-06T03:37:33.126Z",
+  "entityId": "ent-omc",
+  "statements": [
+    {
+      "file": "20260118-statements-6508-.pdf",
+      "meta": {
+        "bankName": "Chase",
+        "cardName": "Chase Credit Card",
+        "accountLast4": "6508",
+        "periodEnd": "2026-01-18",
+        "periodStart": "2025-12-19",
+        "currentBalance": 6530.77,
+        "previousBalance": 0
+      },
+      "transactionCount": 10,
+      "transactions": [
+        {
+          "date": "2026-01-15",
+          "amount": -35,
+          "description": "AUTOMATIC PAYMENT - THANK YOU",
+          "fitid": "chase-3753dca8d3cd797dd50817cc"
+        },
+        {
+          "date": "2025-12-19",
+          "amount": 179.52,
+          "description": "TRANSVERSE SPECIALTY 800-8800474",
+          "fitid": "chase-7d6b89e1a53ed5144298628f"
+        },
+        {
+          "date": "2025-12-22",
+          "amount": 886.9,
+          "description": "WRIGHT NATL FLOOD INS 800-820-3242",
+          "fitid": "chase-796307b0655882dfb0285385"
+        },
+        {
+          "date": "2025-12-23",
+          "amount": 792.53,
+          "description": "PROGRESSIVE INS 800-776-4737",
+          "fitid": "chase-ace0fe9a563769572f2047ec"
+        },
+        {
+          "date": "2025-12-29",
+          "amount": 100,
+          "description": "HCTRA EZ TAG REBILL 281-875-3279",
+          "fitid": "chase-6c53dfecd1484e1012abfe18"
+        },
+        {
+          "date": "2026-01-09",
+          "amount": 469.33,
+          "description": "WELLINGTON RISK INSURA 800-8800474",
+          "fitid": "chase-22547cf2b8f960a97a0bd4a2"
+        },
+        {
+          "date": "2026-01-09",
+          "amount": 469.33,
+          "description": "WELLINGTON RISK INSURA 800-8800474",
+          "fitid": "chase-22547cf2b8f960a97a0bd4a2"
+        },
+        {
+          "date": "2026-01-15",
+          "amount": 192.33,
+          "description": "STREAM ENERGY 888-685-7693",
+          "fitid": "chase-0f25ca2caafd0dbb3f75c03e"
+        },
+        {
+          "date": "2026-01-16",
+          "amount": 27,
+          "description": "AAA TX MBR RENEWAL - R WWW.TEXAS.AAA",
+          "fitid": "chase-8f951a2949f8404618f53ec8"
+        },
+        {
+          "date": "2026-01-17",
+          "amount": 214.34,
+          "description": "US Assure Insurance Se Chicago",
+          "fitid": "chase-afc3e1230c620871f9fa4688"
+        }
+      ]
+    }
+  ]
+}
