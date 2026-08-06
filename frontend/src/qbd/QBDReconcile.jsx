@@ -123,7 +123,10 @@ function isAfterStatementEnd(postingDate, statementEndDate) {
 }
 
 function flat(nodes, out) {
-  (nodes || []).forEach((n) => { if (n.is_active) out.push(n); if (n.children) flat(n.children, out); });
+  (nodes || []).forEach((n) => {
+    if (n.is_active || n.is_active === undefined) out.push(n);
+    if (n.children) flat(n.children, out);
+  });
   return out;
 }
 
@@ -1210,6 +1213,7 @@ export default function QBDReconcile() {
   const urlResolvedDate = resolveDeepLinkDate(searchParams, entityId, urlAccountToken);
   const autoOpenRequested = shouldAutoOpenRecon(searchParams, urlResolvedDate);
   const [accounts, setAccounts] = useState([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
   const [allAccounts, setAllAccounts] = useState([]);
   const [expenseAccounts, setExpenseAccounts] = useState([]);
   const [incomeAccounts, setIncomeAccounts] = useState([]);
@@ -1300,6 +1304,8 @@ export default function QBDReconcile() {
   const [beginningOverride, setBeginningOverride] = useState('');
   const [reportModal, setReportModal] = useState(null);
   const [postCloseChoice, setPostCloseChoice] = useState(null);
+  /** After close: navigate home or Monthly Books once report picker/preview is dismissed. */
+  const pendingNavAfterReportRef = useRef(null);
   const [reportMode, setReportMode] = useState('select');
   const [drillEntry, setDrillEntry] = useState(null);
   const [showMissingTxn, setShowMissingTxn] = useState(false);
@@ -1515,6 +1521,8 @@ export default function QBDReconcile() {
   useEffect(() => {
     if (!entityId) return;
     let cancelled = false;
+    setAccountsLoading(true);
+    setAccounts([]);
 
     async function loadReconcileAccounts() {
       let bankAccounts = [];
@@ -1525,6 +1533,19 @@ export default function QBDReconcile() {
         bankAccounts = Array.isArray(reconRes.data?.accounts) ? reconRes.data.accounts : [];
       } catch (err) {
         console.error('reconcilableAccounts failed', err);
+      }
+
+      // Populate dropdown immediately from the reconcilable-accounts API — do not
+      // wait for the full COA tree (resume-open URL updates must not cancel this).
+      if (!cancelled && bankAccounts.length) {
+        const allowedEarly = reconcilableNumbersForEntity(entityId);
+        const quick = bankAccounts
+          .filter((a) => {
+            const num = String(a.account_number || '');
+            return num && a.id != null && (!allowedEarly.size || allowedEarly.has(num));
+          })
+          .sort((a, b) => String(a.account_number).localeCompare(String(b.account_number), undefined, { numeric: true }));
+        if (quick.length) setAccounts(quick);
       }
 
       try {
@@ -1582,17 +1603,18 @@ export default function QBDReconcile() {
 
       if (list.length) {
         setAccounts(list);
-        const want = accountFromSearchParams(searchParams);
-        const resolved = resolveAccountId(list, want);
-        if (resolved) setAccountId(resolved);
-      } else {
+      } else if (!bankAccounts.length) {
         showToast && showToast('Could not load bank accounts for reconciliation');
       }
     }
 
-    loadReconcileAccounts();
+    loadReconcileAccounts()
+      .catch((err) => console.error('loadReconcileAccounts failed', err))
+      .finally(() => {
+        if (!cancelled) setAccountsLoading(false);
+      });
     return () => { cancelled = true; };
-  }, [entityId, searchParams]);
+  }, [entityId, showToast]);
 
   // Keep account + statement date aligned when Monthly Books changes the URL.
   useEffect(() => {
@@ -2429,6 +2451,27 @@ export default function QBDReconcile() {
     navigate,
   ]);
 
+  const finishReportFlow = useCallback(() => {
+    setReportModal(null);
+    setShowReportPicker(false);
+    const nav = pendingNavAfterReportRef.current;
+    pendingNavAfterReportRef.current = null;
+    if (!nav) return;
+    if (nav.kind === 'home') goHomeAfterClose(nav.leaveMode ?? false);
+    else if (nav.kind === 'month') returnToWorkingMonth(nav.toastMsg);
+  }, [goHomeAfterClose, returnToWorkingMonth]);
+
+  const dismissReportModal = useCallback(() => {
+    if (pendingNavAfterReportRef.current) finishReportFlow();
+    else setReportModal(null);
+  }, [finishReportFlow]);
+
+  const showReportThenNavigate = useCallback((reportPayload, nav) => {
+    setReportModal(reportPayload);
+    setReportMode('select');
+    pendingNavAfterReportRef.current = nav;
+  }, []);
+
   /** @param {'month'|'advance'|'stay'} mode */
   const finish = (mode = 'month') => {
     if (!balanced) { showToast && showToast('Difference must be $0.00 to reconcile'); return; }
@@ -2462,23 +2505,38 @@ export default function QBDReconcile() {
         });
         const allPayments = entries.filter((e) => entrySide(e, account) === 'payment');
         const allDeposits = entries.filter((e) => entrySide(e, account) === 'deposit');
+        const acctLabel = `${data.account.account_number} · ${leafLabel(data.account.account_name)}`;
+        const reportPayload = {
+          reconciledCount: r.data.reconciledCount || checkedIds.length,
+          beginningBalance: r.data.beginningBalance,
+          endingBalance: r.data.endingBalance,
+          serviceCharge: svc,
+          interestEarned: int,
+          clearedBalance: calc.clearedBalance,
+          statementDate: stmtDate,
+          accountLabel: acctLabel,
+          clearedDeposits: allDeposits.filter((e) => checked[e.id]).map(toRow),
+          clearedPayments: allPayments.filter((e) => checked[e.id]).map(toRow),
+          unclearedDeposits: allDeposits.filter((e) => !checked[e.id]).map(toRow),
+          unclearedPayments: allPayments.filter((e) => !checked[e.id]).map(toRow),
+          clearedDepositTotal: markedDeposits,
+          clearedPaymentTotal: markedPayments,
+        };
         clearSavedCheckedIds(entityId, accountId, isoDateOnly(stmtDate), accountNumberForChecked);
         setChecked({});
         checkedRef.current = {};
         setEndBal('');
         setBeginningOverride('');
 
-        // Default: Save & Close → back to Monthly Books for this working month
-        // so other accounts can be reconciled before the month is closed.
+        // Save & Close → report picker, then back to Monthly Books for this working month.
         if (mode === 'month' || (mode !== 'advance' && searchParams.get('return') === 'month')) {
-          const acctLabel = `${data.account.account_number} · ${leafLabel(data.account.account_name)}`;
-          returnToWorkingMonth(
-            `Saved & closed ${acctLabel} (${r.data.reconciledCount || checkedIds.length} cleared). Pick the next account for this month.`
-          );
+          showReportThenNavigate(reportPayload, {
+            kind: 'month',
+            toastMsg: `Saved & closed ${acctLabel} (${reportPayload.reconciledCount} cleared). Pick the next account for this month.`,
+          });
           return;
         }
 
-        const acctLabel = `${data.account.account_number} · ${leafLabel(data.account.account_name)}`;
         try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
         setSearchParams({}, { replace: true });
         autoResumedRef.current = false;
@@ -2490,28 +2548,13 @@ export default function QBDReconcile() {
           setPostCloseChoice({
             accountLabel: acctLabel,
             statementDate: stmtDate,
-            reconciledCount: r.data.reconciledCount || checkedIds.length,
+            reconciledCount: reportPayload.reconciledCount,
+            reportPayload,
           });
           return;
         }
 
-        setReportModal({
-          reconciledCount: r.data.reconciledCount,
-          beginningBalance: r.data.beginningBalance,
-          endingBalance: r.data.endingBalance,
-          serviceCharge: svc,
-          interestEarned: int,
-          clearedBalance: calc.clearedBalance,
-          statementDate: stmtDate,
-          accountLabel: `${data.account.account_number} · ${leafLabel(data.account.account_name)}`,
-          clearedDeposits: allDeposits.filter((e) => checked[e.id]).map(toRow),
-          clearedPayments: allPayments.filter((e) => checked[e.id]).map(toRow),
-          unclearedDeposits: allDeposits.filter((e) => !checked[e.id]).map(toRow),
-          unclearedPayments: allPayments.filter((e) => !checked[e.id]).map(toRow),
-          clearedDepositTotal: markedDeposits,
-          clearedPaymentTotal: markedPayments,
-        });
-        setReportMode('select');
+        showReportThenNavigate(reportPayload, { kind: 'home', leaveMode: false });
       })
       .catch((e) => {
         const msg = e.response?.data?.error || e.message;
@@ -2589,11 +2632,11 @@ export default function QBDReconcile() {
         </div>
       )}
       {reportModal && reportMode === 'select' && (
-        <div className="qbd-modal-backdrop" onClick={() => setReportModal(null)}>
+        <div className="qbd-modal-backdrop" onClick={() => !reportBusy && dismissReportModal()}>
           <div className="qbd-modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
             <div className="qbd-wtitle">
               Select Reconciliation Report
-              <span className="x" onClick={() => setReportModal(null)}>✕</span>
+              <span className="x" onClick={() => !reportBusy && dismissReportModal()}>✕</span>
             </div>
             <div className="qbd-modal-body" style={{ fontSize: 12, lineHeight: 1.55 }}>
               <p style={{ color: '#2f6b3a', fontWeight: 'bold' }}>✓ Congratulations! Your account is balanced.</p>
@@ -2605,7 +2648,7 @@ export default function QBDReconcile() {
               <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => openReconPdf('detail')}>Detail</button>
               <button type="button" className="qbd-btn" style={{ fontWeight: 'bold' }} disabled={reportBusy} onClick={() => openReconPdf('both')}>Both</button>
               <span className="sp" />
-              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={() => setReportModal(null)}>Cancel</button>
+              <button type="button" className="qbd-btn" disabled={reportBusy} onClick={dismissReportModal}>Cancel</button>
             </div>
           </div>
         </div>
@@ -2619,7 +2662,10 @@ export default function QBDReconcile() {
           exportBusy={reportBusy}
           entityId={entityId}
           statementPdfUrl={statementPdfUrl}
-          onClose={() => setPdfPreview(null)}
+          onClose={() => {
+            setPdfPreview(null);
+            if (pendingNavAfterReportRef.current) finishReportFlow();
+          }}
           onModeChange={(m) => setPdfPreview((p) => (p ? { ...p, mode: m } : p))}
           onExport={exportReconPdf}
           onDrillLine={(line) => drillEntryOpen({
@@ -2653,7 +2699,13 @@ export default function QBDReconcile() {
               type="button"
               className="qbd-btn qbd-primary"
               style={{ fontWeight: 'bold', minWidth: 140 }}
-              onClick={() => goHomeAfterClose(false)}
+              onClick={() => {
+                if (postCloseChoice.reportPayload) {
+                  showReportThenNavigate(postCloseChoice.reportPayload, { kind: 'home', leaveMode: false });
+                } else {
+                  goHomeAfterClose(false);
+                }
+              }}
             >
               Post and Close
             </button>
@@ -2706,7 +2758,8 @@ export default function QBDReconcile() {
               accounts={accounts}
               value={accountId}
               onChange={onAccountChange}
-              placeholder="— select bank / card account —"
+              placeholder={accountsLoading ? 'Loading accounts…' : '— select bank / card account —'}
+              disabled={accountsLoading}
             />
           </div>
         </div>
