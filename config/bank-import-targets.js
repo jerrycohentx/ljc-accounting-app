@@ -21,9 +21,11 @@ export const BANK_ACCOUNTS = {
     { accountNumber: '1000', name: 'Simmons Bank ckg-7036', ofxAccountId: '7036' },
     { accountNumber: '2011', name: 'Credit Card - Chase (6508)', ofxAccountId: '6508' },
   ],
-  'ent-gm': [{ accountNumber: '1000', name: 'Primary checking' }],
+  'ent-gm': [
+    { accountNumber: '1000', name: 'Primary checking' },
+    { accountNumber: '2011', name: 'Credit Card - VISA (5068)', ofxAccountId: '5068' },
+  ],
   'ent-4jl': [{ accountNumber: '1000', name: 'Primary checking' }],
-  'ent-qof': [{ accountNumber: '1000', name: 'Primary checking' }],
 };
 
 /** Statement date → ending balance (from bank statement, not calculated). */

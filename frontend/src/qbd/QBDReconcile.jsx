@@ -144,7 +144,6 @@ const RECON_ACCOUNT_NUMBERS = {
   'ent-gm': ['1000', '2011'],
   'ent-justin': ['1000'],
   'ent-4jl': ['1000'],
-  'ent-qof': ['1000'],
 };
 
 function reconcilableNumbersForEntity(entityId) {
