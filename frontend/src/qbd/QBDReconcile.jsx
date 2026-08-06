@@ -39,6 +39,7 @@ const STMT_SHOW_STORAGE_KEY = 'qbd-recon-stmt-show';
 // browser Back; this survives FULL round trips — review drafts, approve, come
 // back via Banking → Reconcile — which land on a bare /reconcile.
 const RECON_IN_PROGRESS_KEY = 'qbd-recon-in-progress';
+const RECON_LEAVE_HINT_KEY = 'qbd-recon-leave-hint';
 /** Cleared checkmarks for an in-progress worksheet — survive category fixes + reloads. */
 const RECON_CHECKED_PREFIX = 'qbd-recon-checked:';
 const DEFAULT_STMT_SPLIT = 38; // statement pane width, % of the split
@@ -1298,6 +1299,7 @@ export default function QBDReconcile() {
   });
   const [beginningOverride, setBeginningOverride] = useState('');
   const [reportModal, setReportModal] = useState(null);
+  const [postCloseChoice, setPostCloseChoice] = useState(null);
   const [reportMode, setReportMode] = useState('select');
   const [drillEntry, setDrillEntry] = useState(null);
   const [showMissingTxn, setShowMissingTxn] = useState(false);
@@ -2382,6 +2384,51 @@ export default function QBDReconcile() {
     }
   }, [accounts, accountId, accountNumberForChecked, searchParams, entityId, stmtDate, setSearchParams, showToast, navigate]);
 
+  const goHomeAfterClose = useCallback((leaveMode) => {
+    const choice = postCloseChoice;
+    if (!choice) return;
+    setPostCloseChoice(null);
+    const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountNumberForChecked;
+    const period = workingPeriodFromContext({
+      searchParams,
+      entityId,
+      accountNumber: acctNo,
+      statementDate: choice.statementDate,
+    });
+    if (leaveMode) {
+      try {
+        localStorage.setItem(RECON_LEAVE_HINT_KEY, JSON.stringify({
+          entity: entityId,
+          account: String(acctNo),
+          date: choice.statementDate,
+          year: period?.year,
+          month: period?.month,
+          at: Date.now(),
+        }));
+      } catch { /* ignore */ }
+    } else {
+      try { localStorage.removeItem(RECON_LEAVE_HINT_KEY); } catch { /* ignore */ }
+    }
+    try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
+    autoResumedRef.current = false;
+    setSearchParams({}, { replace: true });
+    const msg = leaveMode
+      ? `Saved your place on ${choice.accountLabel} — return from Home or Monthly Books when ready.`
+      : `Posted and closed ${choice.accountLabel} (${choice.reconciledCount} cleared).`;
+    showToast && showToast(msg);
+    navigate(period ? monthlyBooksPath(period.year, period.month) : '/');
+  }, [
+    postCloseChoice,
+    accounts,
+    accountId,
+    accountNumberForChecked,
+    searchParams,
+    entityId,
+    setSearchParams,
+    showToast,
+    navigate,
+  ]);
+
   /** @param {'month'|'advance'|'stay'} mode */
   const finish = (mode = 'month') => {
     if (!balanced) { showToast && showToast('Difference must be $0.00 to reconcile'); return; }
@@ -2431,6 +2478,23 @@ export default function QBDReconcile() {
           return;
         }
 
+        const acctLabel = `${data.account.account_number} · ${leafLabel(data.account.account_name)}`;
+        try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
+        setSearchParams({}, { replace: true });
+        autoResumedRef.current = false;
+        setStarted(false);
+        setData(null);
+        setReportModal(null);
+
+        if (mode === 'advance') {
+          setPostCloseChoice({
+            accountLabel: acctLabel,
+            statementDate: stmtDate,
+            reconciledCount: r.data.reconciledCount || checkedIds.length,
+          });
+          return;
+        }
+
         setReportModal({
           reconciledCount: r.data.reconciledCount,
           beginningBalance: r.data.beginningBalance,
@@ -2448,19 +2512,6 @@ export default function QBDReconcile() {
           clearedPaymentTotal: markedPayments,
         });
         setReportMode('select');
-        setStarted(false);
-        setData(null);
-        try { localStorage.removeItem(RECON_IN_PROGRESS_KEY); } catch { /* ignore */ }
-
-        // Close & Advance: same account, next statement period.
-        if (mode === 'advance') {
-          const next = nextStatementDate(stmtDate);
-          if (next) {
-            setStmtDate(next);
-            userPickedDateRef.current = true;
-            showToast && showToast(`Reconciled. Advanced to ${periodLabel(next)} — beginning balance carries from this close.`);
-          }
-        }
       })
       .catch((e) => {
         const msg = e.response?.data?.error || e.message;
@@ -2581,7 +2632,44 @@ export default function QBDReconcile() {
     </>
   );
 
-  const deepLinkPending = autoOpenRequested && !started;
+  const deepLinkPending = autoOpenRequested && !started && !postCloseChoice;
+
+  if (postCloseChoice) {
+    return (
+      <>
+        {reportOverlay}
+        <div className="qbd-form qbd-recon-begin" style={{ maxWidth: 480, margin: '48px auto' }}>
+          <div className="fhd">Reconciliation complete</div>
+          <div className="qbd-muted" style={{ padding: '12px 16px 20px', fontSize: 12, lineHeight: 1.55 }}>
+            <p style={{ color: '#2f6b3a', fontWeight: 'bold', margin: '0 0 10px' }}>
+              ✓ {postCloseChoice.accountLabel} — statement ending {periodLabel(postCloseChoice.statementDate)}
+            </p>
+            <p style={{ margin: 0 }}>
+              {postCloseChoice.reconciledCount} transaction(s) reconciled and posted.
+            </p>
+          </div>
+          <div className="qbd-foot" style={{ flexWrap: 'wrap', gap: 8, padding: '0 16px 16px' }}>
+            <button
+              type="button"
+              className="qbd-btn qbd-primary"
+              style={{ fontWeight: 'bold', minWidth: 140 }}
+              onClick={() => goHomeAfterClose(false)}
+            >
+              Post and Close
+            </button>
+            <button
+              type="button"
+              className="qbd-btn"
+              style={{ minWidth: 140 }}
+              onClick={() => goHomeAfterClose(true)}
+            >
+              Leave
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   if (!started && deepLinkPending) {
     const acct = accounts.find((a) => a.id === accountId);
