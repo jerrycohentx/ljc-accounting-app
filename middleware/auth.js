@@ -35,7 +35,7 @@ export async function authMiddleware(req, res, next) {
 
 export async function entityAccessMiddleware(req, res, next) {
   try {
-    const entityId = req.params.entityId || req.body.entityId;
+    const entityId = req.params.entityId || req.body.entityId || req.query.entityId;
     
     if (!entityId) {
       return res.status(400).json({ error: 'Entity ID required' });

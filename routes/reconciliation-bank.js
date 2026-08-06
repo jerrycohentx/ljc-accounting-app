@@ -34,6 +34,7 @@ import { getStatementAutoLoadStatus, runStatementAutoLoad } from '../lib/stateme
 import { listReconcilableAccounts } from '../lib/ensure-reconcilable-accounts.js';
 import { ensureCreditCardPaymentDue, getCreditCardPaymentDue } from '../lib/cc-payment-due.js';
 import { normalizeIsoDate } from '../lib/bank-statement-view.js';
+import { entityAccessMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -546,9 +547,9 @@ router.post('/auto-load/run', async (req, res) => {
 });
 
 // GET /api/reconciliation/bank/reconcilable-accounts — bank/card accounts for Begin Reconciliation
-router.get('/reconcilable-accounts', async (req, res) => {
+router.get('/reconcilable-accounts', entityAccessMiddleware, async (req, res) => {
   try {
-    const { entityId } = req.query;
+    const entityId = req.entityId || req.query.entityId;
     if (!entityId) return res.status(400).json({ error: 'entityId required' });
     const db = await getDatabase();
     const accounts = await listReconcilableAccounts(db, entityId);
