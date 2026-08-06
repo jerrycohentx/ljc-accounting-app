@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-06T03:37:33.126Z",
+  "generatedAt": "2026-08-06T03:57:41.733Z",
   "entityId": "ent-omc",
   "statements": [
     {
@@ -8,10 +8,10 @@
         "bankName": "Chase",
         "cardName": "Chase Credit Card",
         "accountLast4": "6508",
-        "periodEnd": "2026-01-18",
-        "periodStart": "2025-12-19",
+        "previousBalance": 3145.14,
         "currentBalance": 6530.77,
-        "previousBalance": 0
+        "periodEnd": "2026-01-18",
+        "periodStart": "2025-12-19"
       },
       "transactionCount": 10,
       "transactions": [
@@ -55,7 +55,7 @@
           "date": "2026-01-09",
           "amount": 469.33,
           "description": "WELLINGTON RISK INSURA 800-8800474",
-          "fitid": "chase-22547cf2b8f960a97a0bd4a2-2"
+          "fitid": "chase-22547cf2b8f960a97a0bd4a2-1"
         },
         {
           "date": "2026-01-15",

@@ -9,6 +9,7 @@ const ROOT = path.join(__dirname, '..');
 const zip = 'C:/Users/jerry/OneDrive/Desktop/Downloads-Jerry OneDrive/OMC CC.zip';
 const member = '20260118-statements-6508-.pdf';
 const outRel = 'data/bank-imports/OMC/chase-6508-2026-statements.json';
+const pdfOutDir = path.join(ROOT, 'data/bank-imports/OMC/chase');
 
 if (!fs.existsSync(zip)) {
   console.error('Zip not found:', zip);
@@ -32,5 +33,8 @@ const doc = {
 };
 const outPath = path.join(ROOT, outRel);
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
+fs.mkdirSync(pdfOutDir, { recursive: true });
+fs.writeFileSync(path.join(pdfOutDir, member), buf);
 fs.writeFileSync(outPath, JSON.stringify(doc, null, 2));
 console.log('Wrote', outRel, '—', parsed.transactions.length, 'transactions');
+console.log('Copied PDF to', path.join('data/bank-imports/OMC/chase', member));
