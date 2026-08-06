@@ -32,6 +32,9 @@ const RECON_TARGETS = {
     '1000': [
       { statementDate: '2026-01-31', label: 'January 2026' },
     ],
+    '2011': [
+      { statementDate: '2026-01-18', label: 'January 2026 Chase …6508' },
+    ],
   },
 };
 

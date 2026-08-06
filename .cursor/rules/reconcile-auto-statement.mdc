@@ -1,0 +1,39 @@
+---
+description: Reconcile tab — auto-load correct statement period when an account is selected.
+alwaysApply: true
+---
+
+# Reconcile — Auto Statement on Account Select
+
+When Jerry selects a **bank or credit card** on the Reconcile screen, the app must **not** leave him on a blank Begin screen or attach the wrong statement month.
+
+## Procedure (all Cohen entities)
+
+On account select (no manual date pick):
+
+1. **OPEN recon exists** for that account → resume that statement date; open the **main reconcile worksheet** (check-off screen), not Begin-only.
+2. **No OPEN session, last period not CLOSED** (never started) → load the **first unreconciled** configured target (e.g. January 2026).
+3. **Last period CLOSED** → advance to the **next unreconciled** statement (RECONCILIATION_TARGETS → bundled JSON → calendar month-end); skip any date that already has a CLOSED session.
+4. **Attach statement PDF** for that account **kind** (bank vs card — see `statement-attach-account-kind.mdc`); populate beginning/ending balances from statement or OPEN session.
+5. **Auto-import statement lines to the register** — parse discovered PDF, merge bundled JSON, post card charges / bank activity (`lib/reconcile-auto-statement-import.js`) so the worksheet is not empty.
+6. **Populate the reconcile window** — balances, register worksheet, side-by-side PDF.
+
+## Implementation map
+
+| Layer | File |
+|---|---|
+| Next-period logic | `lib/reconcile-prepare.js` → `resolveUnreconciledStatementDate`, `prepareReconciliation` |
+| PDF attach (account kind) | `lib/statement-file-locate.js` |
+| Ending balances | `config/bank-import-targets.js` → `RECONCILIATION_TARGETS` |
+| UI auto-open worksheet | `frontend/src/qbd/QBDReconcile.jsx` → `runPrepare` + `?go=1` |
+| Tab open with OPEN recon | `GET /api/reconciliation/bank/resume-open` |
+
+## Forbidden
+
+- Defaulting to newest bundled JSON when an OPEN session exists for a sister entity
+- Attaching Simmons bank PDF to a Chase card account (or vice versa)
+- Leaving Jerry on Begin Reconciliation when prepare has a valid next period + balances
+
+## Copilot verify
+
+After changes: select OMC **1000** and **2011** — January when open; February (or next target) after January CLOSED; worksheet loads without an extra Continue click.

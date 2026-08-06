@@ -1284,6 +1284,7 @@ export default function QBDReconcile() {
   const regScrollRef = useRef(null);
   const prepareTimerRef = useRef(null);
   const prepareRequestRef = useRef(0);
+  const autoResumedRef = useRef(false);
   const dateInputFocusedRef = useRef(false);
   // True once the user (or a URL param / uploaded statement) has chosen an explicit
   // statement date, so we stop auto-suggesting the next period after that.
@@ -1469,24 +1470,31 @@ export default function QBDReconcile() {
         else setBeginBal('');
         setPrepareMsg(p.message || '');
         if (nextDate) attachStoredStatement(nextDate);
-        // Entity-agnostic: if this account already has an OPEN recon, skip Begin
-        // and open the main check-off screen immediately.
-        if (p.resumeOpen && (nextDate || p.suggestedStatementDate || p.openSession?.statementDate)) {
+        // Procedure: selecting an account auto-opens the main reconcile screen for
+        // the OPEN session or the next unreconciled statement (not Begin-only).
+        if (!userPickedDateRef.current && (nextDate || p.suggestedStatementDate)) {
           const openDate = p.openSession?.statementDate || nextDate || p.suggestedStatementDate;
-          userPickedDateRef.current = true;
-          if (openDate) {
-            setStmtDate(openDate);
-            setDateDraft(openDate);
-          }
-          // loadWorksheet is defined later — trigger via URL so the go=1 effect runs.
           const acctNo = accounts.find((a) => a.id === accountId)?.account_number || accountId;
           if (acctNo && openDate) {
-            setSearchParams({
+            if (openDate !== stmtDate) {
+              setStmtDate(openDate);
+              setDateDraft(openDate);
+            }
+            autoResumedRef.current = false;
+            const period = workingPeriodFromContext({
+              searchParams,
+              entityId,
+              accountNumber: acctNo,
+              statementDate: openDate,
+            });
+            const nextParams = {
               account: String(acctNo),
               date: openDate,
               go: '1',
-              year: String((openDate || '').slice(0, 4) || 2026),
-            }, { replace: true });
+              year: String(period?.year || openDate.slice(0, 4) || 2026),
+            };
+            if (period?.month) nextParams.month = String(period.month);
+            setSearchParams(nextParams, { replace: true });
           }
         }
       })
@@ -1632,6 +1640,7 @@ export default function QBDReconcile() {
 
     stmtAutoLoadKeyRef.current = null;
     stmtLoadedForRef.current = null;
+    autoResumedRef.current = false;
     setStatementPdfUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return null;
@@ -2028,7 +2037,6 @@ export default function QBDReconcile() {
   // Auto-resume a reconciliation carried in the URL — this is what makes browser
   // Back work: ?account=…&date=…&go=1 re-opens the same account/date and loads
   // the worksheet without another click. Guarded by a ref so it fires once.
-  const autoResumedRef = useRef(false);
   useEffect(() => {
     if (autoResumedRef.current || started) return;
     if (!autoOpenRequested || !accountId || !stmtDate) return;
