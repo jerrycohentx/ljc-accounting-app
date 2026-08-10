@@ -38,6 +38,10 @@ Do **not** treat the OneDrive “Cohen Entities Accounting” shortcut folder as
 
 ## How to work in this repo
 
+0. Read `CTO_HANDOFF.md` before starting. Jerry is never the message bus between
+   Codex, Cursor, or another engineering agent. Update and push the handoff file
+   with branch, commit, tests, deployment state, and remaining work before
+   stopping.
 1. Prefer smallest correct diffs; match existing Express / `lib/` / `routes/` patterns
 2. After meaningful changes: verify locally or on Render; deploy when production must reflect the fix
 3. Commit/push when shipping is part of finishing (production on `master`)
