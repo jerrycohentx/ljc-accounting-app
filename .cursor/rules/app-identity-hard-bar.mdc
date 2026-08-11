@@ -1,0 +1,50 @@
+---
+description: Hard rule preventing agents from confusing the new LJCOS product with the legacy LJC Accounting application
+alwaysApply: true
+---
+
+# Application Identity Hard Bar
+
+Jerry must never be directed into the wrong accounting product.
+
+## Canonical identities
+
+| Product | Canonical URL | Visual identity | Use |
+| --- | --- | --- | --- |
+| New LJCOS / Cohen Entity Accounting | `https://ljcos-web.onrender.com` | Green Chairman navigation | Jerry's current accounting application |
+| Legacy LJC Accounting App | `https://ljc-accounting-app.onrender.com` | Blue QuickBooks-style navigation | Legacy/reference application only |
+
+These are different products, not interchangeable staging and production URLs.
+
+## Non-negotiable rules
+
+1. Before giving navigation, refresh, login, deployment, or verification
+   directions, identify the product using the exact URL **and** visible product
+   shell. Never infer product identity from a build number, Git SHA, deployment
+   timestamp, branch name, or the word `production`/`staging` alone.
+2. Never compare Git SHAs across these two applications as though the larger,
+   newer, or production SHA identifies the correct app. A build is meaningful
+   only inside the product and service that produced it.
+3. Never direct Jerry from New LJCOS to the legacy app unless Jerry explicitly
+   asks to open the legacy app. If the requested feature is missing from New
+   LJCOS, report that it is missing; do not substitute the legacy product.
+4. Before saying "open this app" or "do not use that app," verify all of:
+   - requested product/workflow;
+   - exact browser URL;
+   - visible application identity;
+   - whether the cited build belongs to that same service.
+5. If any identity signal conflicts or cannot be verified, stop and ask one
+   concise clarification question. Do not guess.
+6. Directions must be task-completing steps for the verified product. Do not
+   send Jerry through an environment switch merely to inspect a newer SHA.
+7. Any agent that discovers an incorrect cross-app instruction must correct it
+   immediately, state the correct canonical URL, and update this rule if a new
+   ambiguity was found.
+
+## Required preflight statement
+
+Before an agent gives cross-environment directions, its internal preflight must
+be able to state: `Product = <name>; URL = <exact URL>; visual shell = <identity>;
+build belongs to this service = yes.` If it cannot, it must not give the
+directions.
+

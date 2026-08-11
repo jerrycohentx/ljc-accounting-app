@@ -38,6 +38,13 @@ Do **not** treat the OneDrive “Cohen Entities Accounting” shortcut folder as
 
 ## How to work in this repo
 
+0. **Application identity hard bar:** read
+   `.cursor/rules/app-identity-hard-bar.mdc` before giving any URL, login,
+   refresh, deployment, or build-verification directions. New LJCOS
+   (`ljcos-web.onrender.com`, green Chairman shell) and the legacy LJC
+   Accounting App (`ljc-accounting-app.onrender.com`, blue QuickBooks shell)
+   are different products. Never switch Jerry between them based on Git SHA,
+   build time, or environment labels.
 1. Prefer smallest correct diffs; match existing Express / `lib/` / `routes/` patterns
 2. After meaningful changes: verify locally or on Render; deploy when production must reflect the fix
 3. Commit/push when shipping is part of finishing (production on `master`)
