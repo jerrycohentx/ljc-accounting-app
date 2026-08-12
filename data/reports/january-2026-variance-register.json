@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-12T20:07:31.828Z",
+  "generatedAt": "2026-08-12T20:18:53.010Z",
   "scope": "January 2026 / ent-ljc / read-only Option A A1-A2",
-  "authorization": "A0-A2 only; no A3-A5 mutations",
+  "authorization": "A0-A2 lineage only; A3 blocked; 4010 rejected; 5801 not approved",
   "counts": {
     "nsfFamilyRows": 9,
     "chargebackMisclassProposed": 5,
@@ -27,7 +27,8 @@
     "checkpointId": "bak-20260812-200229",
     "format": "checkpoint-v1",
     "fullEncryptedLedgerDump": false,
-    "postgresDurable": true
+    "postgresDurable": true,
+    "a3BlockedUntilFullSnapshot": true
   },
   "register": [
     {
@@ -107,96 +108,18 @@
         }
       ],
       "proposedDebitCredit": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739660882-99c3234d: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739660882-99c3234d"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK CHARGEBACK",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 2787.5,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 2787.5,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
       },
       "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
       "supportingSourceDocument": "Bank FITID 20260106--2787-600-118-135 / Simmons or Lone Star Jan statement",
-      "evidenceMatchStatus": "MISMATCH — chargeback posted against Portfolio Loan Interest Income (4010)",
-      "confidence": "medium",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
       "ruleOrCodePath": "Learned: CHARGEBACK CHARGEBACK",
-      "periodOrReconMustReopen": true,
+      "periodOrReconMustReopen": false,
       "proposedReverseAndRepost": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739660882-99c3234d: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739660882-99c3234d"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK CHARGEBACK",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 2787.5,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 2787.5,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none until original payment JE and servicing split are in evidence"
       },
-      "needsReviewReason": "Exact borrower/loan split and proper NSF/chargeback COA mapping need Chairman confirmation; QBO used NSF payments bucket (−$19,888.16) which this app lacks as a dedicated account",
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
       "jeNumber": "IMP-1783739660882-99c3234d",
       "jeId": "je-c4f54ab1-c63e-4cda-be95-fdc98ea5ff7e",
       "alreadyReversed": false,
@@ -314,96 +237,18 @@
         }
       ],
       "proposedDebitCredit": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739660560-9d4a26fb: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739660560-9d4a26fb"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK CHARGEBACK",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 8834.17,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 8834.17,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
       },
       "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
       "supportingSourceDocument": "Bank FITID 20260105--8834-600-108-135 / Simmons or Lone Star Jan statement",
-      "evidenceMatchStatus": "MISMATCH — chargeback posted against Portfolio Loan Interest Income (4010)",
-      "confidence": "medium",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
       "ruleOrCodePath": "Learned: CHARGEBACK CHARGEBACK",
-      "periodOrReconMustReopen": true,
+      "periodOrReconMustReopen": false,
       "proposedReverseAndRepost": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739660560-9d4a26fb: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739660560-9d4a26fb"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK CHARGEBACK",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 8834.17,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 8834.17,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none until original payment JE and servicing split are in evidence"
       },
-      "needsReviewReason": "Exact borrower/loan split and proper NSF/chargeback COA mapping need Chairman confirmation; QBO used NSF payments bucket (−$19,888.16) which this app lacks as a dedicated account",
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
       "jeNumber": "IMP-1783739660560-9d4a26fb",
       "jeId": "je-f477785a-d0af-41e3-839f-fd07430540f6",
       "alreadyReversed": false,
@@ -433,96 +278,18 @@
         }
       ],
       "proposedDebitCredit": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739660391-acbc8332: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739660391-acbc8332"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK CHARGEBACK",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 7241.67,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 7241.67,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
       },
       "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
       "supportingSourceDocument": "Bank FITID 20260105--7241-600-109-135 / Simmons or Lone Star Jan statement",
-      "evidenceMatchStatus": "MISMATCH — chargeback posted against Portfolio Loan Interest Income (4010)",
-      "confidence": "medium",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
       "ruleOrCodePath": "Learned: CHARGEBACK CHARGEBACK",
-      "periodOrReconMustReopen": true,
+      "periodOrReconMustReopen": false,
       "proposedReverseAndRepost": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739660391-acbc8332: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739660391-acbc8332"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK CHARGEBACK",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 7241.67,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 7241.67,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none until original payment JE and servicing split are in evidence"
       },
-      "needsReviewReason": "Exact borrower/loan split and proper NSF/chargeback COA mapping need Chairman confirmation; QBO used NSF payments bucket (−$19,888.16) which this app lacks as a dedicated account",
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
       "jeNumber": "IMP-1783739660391-acbc8332",
       "jeId": "je-a23c2da1-ad3e-49e7-90cc-f44099408e42",
       "alreadyReversed": false,
@@ -640,96 +407,18 @@
         }
       ],
       "proposedDebitCredit": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739660051-bc88e4b7: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739660051-bc88e4b7"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK ON WELLINGTON CHARGEBACK ",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 781.02,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 781.02,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
       },
       "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
       "supportingSourceDocument": "Bank FITID 20260102--781-501-242-135 / Simmons or Lone Star Jan statement",
-      "evidenceMatchStatus": "MISMATCH — chargeback posted against Portfolio Loan Interest Income (4010)",
-      "confidence": "medium",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
       "ruleOrCodePath": "Learned: CHARGEBACK",
-      "periodOrReconMustReopen": true,
+      "periodOrReconMustReopen": false,
       "proposedReverseAndRepost": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739660051-bc88e4b7: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739660051-bc88e4b7"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK ON WELLINGTON CHARGEBACK ",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 781.02,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 781.02,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none until original payment JE and servicing split are in evidence"
       },
-      "needsReviewReason": "Exact borrower/loan split and proper NSF/chargeback COA mapping need Chairman confirmation; QBO used NSF payments bucket (−$19,888.16) which this app lacks as a dedicated account",
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
       "jeNumber": "IMP-1783739660051-bc88e4b7",
       "jeId": "je-5729110f-8314-4794-a6aa-edd4c6ab4907",
       "alreadyReversed": false,
@@ -759,96 +448,18 @@
         }
       ],
       "proposedDebitCredit": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739659804-40487289: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739659804-40487289"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK ON WELLINGTON CHARGEBACK ",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 243.8,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 243.8,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
       },
       "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
       "supportingSourceDocument": "Bank FITID 20260102--243-501-241-135 / Simmons or Lone Star Jan statement",
-      "evidenceMatchStatus": "MISMATCH — chargeback posted against Portfolio Loan Interest Income (4010)",
-      "confidence": "medium",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
       "ruleOrCodePath": "Learned: CHARGEBACK",
-      "periodOrReconMustReopen": true,
+      "periodOrReconMustReopen": false,
       "proposedReverseAndRepost": {
-        "action": "reverse-and-repost",
-        "requiresChairmanApproval": true,
-        "reopenReconciliation": false,
-        "reopenPeriod": true,
-        "entries": [
-          {
-            "type": "REV",
-            "description": "Reverse misclass IMP-1783739659804-40487289: restore 4010 / cash as originally posted",
-            "mirrorsJe": "IMP-1783739659804-40487289"
-          },
-          {
-            "type": "REPOST",
-            "description": "Repost chargeback OFX Import: CHARGEBACK ON WELLINGTON CHARGEBACK ",
-            "proposedLines": [
-              {
-                "accountNumber": "1000",
-                "debit": 0,
-                "credit": 243.8,
-                "role": "cash-unchanged"
-              },
-              {
-                "accountNumber": "5801",
-                "accountName": "Chargebacks & Reversals",
-                "debit": 243.8,
-                "credit": 0,
-                "role": "proposed-offset-PENDING-APPROVAL"
-              }
-            ],
-            "alternativeOffsets": [
-              {
-                "accountNumber": "1300",
-                "note": "If chargeback is principal return on note receivable"
-              },
-              {
-                "accountNumber": "1220",
-                "note": "If ACH collections clearing"
-              }
-            ]
-          }
-        ]
+        "action": "none until original payment JE and servicing split are in evidence"
       },
-      "needsReviewReason": "Exact borrower/loan split and proper NSF/chargeback COA mapping need Chairman confirmation; QBO used NSF payments bucket (−$19,888.16) which this app lacks as a dedicated account",
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
       "jeNumber": "IMP-1783739659804-40487289",
       "jeId": "je-61a66f3b-5d0a-4f40-a0cb-191ff4232207",
       "alreadyReversed": false,
@@ -908,153 +519,37 @@
       "candidateJeNumbers": []
     }
   ],
-  "proposedCorrectionsForApproval": [
-    {
-      "id": "VR-NSF-002",
-      "jeNumber": "IMP-1783739660882-99c3234d",
-      "date": "2026-01-06",
-      "amount": 2787.5,
-      "bankDescription": "OFX Import: CHARGEBACK CHARGEBACK",
-      "currentOffset": "4010 Portfolio Loan Interest Income (debit)",
-      "proposedOffset": "5801 Chargebacks & Reversals (debit) — PENDING Chairman COA confirmation",
-      "alternatives": [
-        {
-          "accountNumber": "1300",
-          "note": "If chargeback is principal return on note receivable"
-        },
-        {
-          "accountNumber": "1220",
-          "note": "If ACH collections clearing"
-        }
-      ],
-      "reopenPeriod": true,
-      "reopenRecon": false,
-      "evidence": "Sum of five Jan chargebacks = $19888.16 equals QBO NSF payments $19888.16"
-    },
-    {
-      "id": "VR-NSF-005",
-      "jeNumber": "IMP-1783739660560-9d4a26fb",
-      "date": "2026-01-05",
-      "amount": 8834.17,
-      "bankDescription": "OFX Import: CHARGEBACK CHARGEBACK",
-      "currentOffset": "4010 Portfolio Loan Interest Income (debit)",
-      "proposedOffset": "5801 Chargebacks & Reversals (debit) — PENDING Chairman COA confirmation",
-      "alternatives": [
-        {
-          "accountNumber": "1300",
-          "note": "If chargeback is principal return on note receivable"
-        },
-        {
-          "accountNumber": "1220",
-          "note": "If ACH collections clearing"
-        }
-      ],
-      "reopenPeriod": true,
-      "reopenRecon": false,
-      "evidence": "Sum of five Jan chargebacks = $19888.16 equals QBO NSF payments $19888.16"
-    },
-    {
-      "id": "VR-NSF-006",
-      "jeNumber": "IMP-1783739660391-acbc8332",
-      "date": "2026-01-05",
-      "amount": 7241.67,
-      "bankDescription": "OFX Import: CHARGEBACK CHARGEBACK",
-      "currentOffset": "4010 Portfolio Loan Interest Income (debit)",
-      "proposedOffset": "5801 Chargebacks & Reversals (debit) — PENDING Chairman COA confirmation",
-      "alternatives": [
-        {
-          "accountNumber": "1300",
-          "note": "If chargeback is principal return on note receivable"
-        },
-        {
-          "accountNumber": "1220",
-          "note": "If ACH collections clearing"
-        }
-      ],
-      "reopenPeriod": true,
-      "reopenRecon": false,
-      "evidence": "Sum of five Jan chargebacks = $19888.16 equals QBO NSF payments $19888.16"
-    },
-    {
-      "id": "VR-NSF-009",
-      "jeNumber": "IMP-1783739660051-bc88e4b7",
-      "date": "2026-01-02",
-      "amount": 781.02,
-      "bankDescription": "OFX Import: CHARGEBACK ON WELLINGTON CHARGEBACK ",
-      "currentOffset": "4010 Portfolio Loan Interest Income (debit)",
-      "proposedOffset": "5801 Chargebacks & Reversals (debit) — PENDING Chairman COA confirmation",
-      "alternatives": [
-        {
-          "accountNumber": "1300",
-          "note": "If chargeback is principal return on note receivable"
-        },
-        {
-          "accountNumber": "1220",
-          "note": "If ACH collections clearing"
-        }
-      ],
-      "reopenPeriod": true,
-      "reopenRecon": false,
-      "evidence": "Sum of five Jan chargebacks = $19888.16 equals QBO NSF payments $19888.16"
-    },
-    {
-      "id": "VR-NSF-010",
-      "jeNumber": "IMP-1783739659804-40487289",
-      "date": "2026-01-02",
-      "amount": 243.8,
-      "bankDescription": "OFX Import: CHARGEBACK ON WELLINGTON CHARGEBACK ",
-      "currentOffset": "4010 Portfolio Loan Interest Income (debit)",
-      "proposedOffset": "5801 Chargebacks & Reversals (debit) — PENDING Chairman COA confirmation",
-      "alternatives": [
-        {
-          "accountNumber": "1300",
-          "note": "If chargeback is principal return on note receivable"
-        },
-        {
-          "accountNumber": "1220",
-          "note": "If ACH collections clearing"
-        }
-      ],
-      "reopenPeriod": true,
-      "reopenRecon": false,
-      "evidence": "Sum of five Jan chargebacks = $19888.16 equals QBO NSF payments $19888.16"
-    }
-  ],
+  "proposedCorrectionsForApproval": [],
   "chairmanApprovalQueue": [
     {
-      "item": "VR-NSF-002",
-      "decisionRequired": "APPROVE / REJECT / MODIFY offset account",
-      "status": "PENDING"
+      "item": "CB lineage",
+      "decisionRequired": "Provide Dec 2025 Simmons activity and/or servicing NSF records naming borrower, loan, original payment JE, and P/I/fee split",
+      "status": "BLOCKED — evidence incomplete"
     },
     {
-      "item": "VR-NSF-005",
-      "decisionRequired": "APPROVE / REJECT / MODIFY offset account",
-      "status": "PENDING"
-    },
-    {
-      "item": "VR-NSF-006",
-      "decisionRequired": "APPROVE / REJECT / MODIFY offset account",
-      "status": "PENDING"
-    },
-    {
-      "item": "VR-NSF-009",
-      "decisionRequired": "APPROVE / REJECT / MODIFY offset account",
-      "status": "PENDING"
-    },
-    {
-      "item": "VR-NSF-010",
-      "decisionRequired": "APPROVE / REJECT / MODIFY offset account",
-      "status": "PENDING"
+      "item": "Full restorable DB snapshot",
+      "decisionRequired": "Enable/produce BACKUP_FULL_LEDGER snapshot before any A3",
+      "status": "FAIL"
     },
     {
       "item": "VR-UNEX-1000",
-      "decisionRequired": "Identify which $1,000 txn is in scope (or dismiss)",
-      "status": "PENDING — cannot invent"
+      "decisionRequired": "none — remain unresolved",
+      "status": "NO JE"
     },
     {
       "item": "VR-UNEX-532.42",
-      "decisionRequired": "Provide source document or dismiss (no Jan JE = $532.42)",
-      "status": "PENDING — cannot invent"
+      "decisionRequired": "none — remain unresolved",
+      "status": "NO JE"
     }
-  ]
+  ],
+  "chairmanDecision": {
+    "a3Authorized": false,
+    "offset4010": "REJECTED for all five",
+    "offset5801": "NOT APPROVED",
+    "overdraft35": "leave in 5200",
+    "unexplained1000": "unresolved, no JE",
+    "unexplained53242": "unresolved, no JE",
+    "fullRestorableSnapshot": "REQUIRED before A3 — currently FAIL (checkpoint-v1 only)"
+  },
+  "lineageReport": "data/reports/JANUARY-2026-CHARGEBACK-LINEAGE.md"
 }

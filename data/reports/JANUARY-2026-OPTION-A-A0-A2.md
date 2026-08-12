@@ -39,19 +39,12 @@ Machine-readable register: `data/reports/january-2026-variance-register.json`
 | VR-UNEX-1000 | 1,000.00 | NEEDS REVIEW — multiple Jan $1,000 transfers exist; Chairman must identify which one |
 | VR-UNEX-532.42 | 532.42 | NEEDS REVIEW — **no** January JE totals $532.42 in live books |
 
-## A2 — Proposed corrections for item-by-item approval
+## A2 — Proposed corrections
 
-**Do not post until Chairman approves each row.**
+**Withdrawn.** Chairman rejected 4010 and did not approve 5801. Lineage of the original borrower payments is **incomplete** (see `JANUARY-2026-CHARGEBACK-LINEAGE.md`). **No reverse-and-repost is proposed. A3 is not authorized.**
 
-1. **VR-NSF-002** — Reverse `IMP-1783739660882-99c3234d`; repost chargeback $2,787.50 with offset **5801** (or Chairman-named alternate). Period reopen: YES. Recon reopen: NO if cash line unchanged.
-2. **VR-NSF-005** — Reverse `IMP-1783739660560-9d4a26fb`; repost $8,834.17 → **5801** (or alternate).
-3. **VR-NSF-006** — Reverse `IMP-1783739660391-acbc8332`; repost $7,241.67 → **5801** (or alternate).
-4. **VR-NSF-009** — Reverse `IMP-1783739660051-bc88e4b7`; repost $781.02 → **5801** (or alternate).
-5. **VR-NSF-010** — Reverse `IMP-1783739659804-40487289`; repost $243.80 → **5801** (or alternate).
-6. **VR-UNEX-1000** — Await Chairman identification (no proposed JE).
-7. **VR-UNEX-532.42** — Await source evidence or dismiss (no proposed JE).
-
-Overdraft fees (VR-NSF-003/007): **no correction proposed**.
+Overdraft fees (VR-NSF-003/007): remain in 5200.  
+Unexplained $1,000 and $532.42: unresolved, **no JE**.
 
 ## Manageability / Option B
 
