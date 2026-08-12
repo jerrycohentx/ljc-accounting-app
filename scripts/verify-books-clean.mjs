@@ -7,6 +7,9 @@
  *   node scripts/verify-books-clean.mjs --entity ent-ljc --asOf 2026-01-31 --requireClosed
  *
  * Exit 0 only when every gate passes.
+ *
+ * Cash-flow gate: compare CF netCashFlow to BS Δ across ALL 100x cash accounts
+ * (never Simmons 1000 alone — that phantom $9.02 Jan 2026 miss).
  */
 const BASE = process.env.LJC_API_BASE || 'https://ljc-accounting-app.onrender.com';
 
@@ -27,8 +30,21 @@ function round2(n) {
   return Math.round(Number(n) * 100) / 100;
 }
 
+function dayBefore(isoDate) {
+  const d = new Date(`${String(isoDate).slice(0, 10)}T12:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function pick(bs, section, n) {
   return bs[section]?.find((a) => a.accountNumber === n)?.amount ?? 0;
+}
+
+function cash100xBalances(bs) {
+  const rows = (bs.assets || []).filter((a) => String(a.accountNumber || '').startsWith('100'));
+  const byAccount = Object.fromEntries(rows.map((a) => [a.accountNumber, round2(a.amount)]));
+  const total = round2(rows.reduce((s, a) => s + Number(a.amount || 0), 0));
+  return { byAccount, total };
 }
 
 async function main() {
@@ -40,17 +56,25 @@ async function main() {
   if (!login.token) throw new Error(`login failed: ${JSON.stringify(login)}`);
   const h = { Authorization: `Bearer ${login.token}` };
 
-  const [bs, pnl, tb, integrity] = await Promise.all([
+  const beginningAsOf = dayBefore(yearStart);
+  const [bs, bsBeg, pnl, tb, integrity, cf] = await Promise.all([
     fetch(`${BASE}/api/entities/${entityId}/reports/balance-sheet?asOfDate=${asOf}`, { headers: h }).then((r) => r.json()),
+    fetch(`${BASE}/api/entities/${entityId}/reports/balance-sheet?asOfDate=${beginningAsOf}`, { headers: h }).then((r) =>
+      r.json()
+    ),
     fetch(
       `${BASE}/api/entities/${entityId}/reports/income-statement?startDate=${yearStart}&endDate=${asOf}`,
       { headers: h }
     ).then((r) => r.json()),
-    fetch(`${BASE}/api/entities/${entityId}/ledger/reports/trial-balance?asOfDate=${asOf}`, { headers: h }).then((r) =>
+    fetch(`${BASE}/api/entities/${entityId}/reports/trial-balance?asOfDate=${asOf}`, { headers: h }).then((r) =>
       r.json()
     ),
     fetch(
       `${BASE}/api/entities/${entityId}/accounting/periods/integrity?year=${year}&month=${month}`,
+      { headers: h }
+    ).then((r) => r.json()),
+    fetch(
+      `${BASE}/api/entities/${entityId}/reports/cash-flow?startDate=${yearStart}&endDate=${asOf}`,
       { headers: h }
     ).then((r) => r.json()),
   ]);
@@ -66,6 +90,21 @@ async function main() {
     plugs.map((n) => [n, round2(all.find((a) => a.accountNumber === n)?.amount ?? 0)])
   );
   const plugsClean = Object.values(plugBalances).every((v) => Math.abs(v) < 0.005);
+
+  // CF control — all 100x cash (API may already expose tieoutOk after deploy).
+  const endCash = cash100xBalances(bs);
+  const begCash = cash100xBalances(bsBeg);
+  const bsCashDelta = round2(endCash.total - begCash.total);
+  const netCashFlow = round2(cf.netCashFlow ?? 0);
+  const cfVariance =
+    cf.tieoutOk != null && cf.variance != null
+      ? round2(cf.variance)
+      : round2(netCashFlow - bsCashDelta);
+  const cfTieoutOk = cf.tieoutOk != null ? cf.tieoutOk === true : Math.abs(cfVariance) < 0.005;
+  const perAccountDelta = {};
+  for (const n of new Set([...Object.keys(begCash.byAccount), ...Object.keys(endCash.byAccount)])) {
+    perAccountDelta[n] = round2((endCash.byAccount[n] || 0) - (begCash.byAccount[n] || 0));
+  }
 
   const gates = [
     { id: 'tb_balanced', pass: tb.isBalanced === true, detail: `debit=${tb.totals?.debit} credit=${tb.totals?.credit}` },
@@ -96,6 +135,11 @@ async function main() {
           .join(',') || 'ok',
     },
     {
+      id: 'cash_flow_tieout',
+      pass: cfTieoutOk,
+      detail: `scope=all_100x netCashFlow=${netCashFlow} bsCashDelta=${bsCashDelta} variance=${cfVariance} perAccount=${JSON.stringify(perAccountDelta)}`,
+    },
+    {
       id: 'integrity',
       pass: requireClosed ? integrity.isClosed === true : integrity.canClose !== false,
       detail: `isClosed=${integrity.isClosed} canClose=${integrity.canClose} blockers=${JSON.stringify(integrity.blockers || [])}`,
@@ -107,6 +151,7 @@ async function main() {
     entityId,
     asOf,
     yearStart,
+    beginningAsOf,
     requireClosed,
     gates,
     pass: failed.length === 0,
@@ -115,6 +160,14 @@ async function main() {
       1000: pick(bs, 'assets', '1000'),
       1001: pick(bs, 'assets', '1001'),
       1002: pick(bs, 'assets', '1002'),
+    },
+    cashFlow: {
+      comparisonScope: cf.comparisonScope || 'all_100x_cash_accounts',
+      netCashFlow,
+      bsCashDelta,
+      variance: cfVariance,
+      tieoutOk: cfTieoutOk,
+      perAccountDelta,
     },
   };
 
