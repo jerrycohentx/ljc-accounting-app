@@ -33,8 +33,9 @@ Claude Cowork / chat agents are **helpers for building and investigating**, not 
 | Production | https://ljc-accounting-app.onrender.com (branch `master`) |
 | Hard close / status truth | `GET /api/entities/:entityId/accounting/periods/integrity` |
 | Standing rules | `TEN_COMMANDMENTS.md`, `.cursor/rules/*.mdc` |
+| Claude → Cursor recon inbox | `05_Application_Code/ops/state/external_reconciliation_inbox/` **in this git repo** |
 
-Do **not** treat the OneDrive “Cohen Entities Accounting” shortcut folder as the codebase — it is only a link.
+Do **not** treat the OneDrive “Cohen Entities Accounting” / “Cohen Entity Accounting v2” folder as the codebase or as the Claude→Cursor handoff — Cursor Cloud Agents never see those files. Claude must commit packages to `claude/` in this repo; Cursor writes only to `cursor/`. Verify with `node scripts/verify-external-reconciliation-inbox.mjs --package <id> --capture-ljcos` (missing/mismatch = STOP).
 
 ## How to work in this repo
 

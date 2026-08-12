@@ -1,0 +1,43 @@
+{
+  "ok": false,
+  "stop": true,
+  "claudeConclusions": "UNVERIFIED",
+  "errors": [
+    "STOP: lone_star_7367_2026_01/claude/MANIFEST.sha256 is missing.",
+    "Cursor cannot checksum Claude originals. Do not analyze proposed corrections."
+  ],
+  "packageRoot": "05_Application_Code/ops/state/external_reconciliation_inbox/lone_star_7367_2026_01",
+  "claudeDir": "05_Application_Code/ops/state/external_reconciliation_inbox/lone_star_7367_2026_01/claude",
+  "ljcosCaptured": true,
+  "ljcosCash": {
+    "statementEnding": 726.07,
+    "clearedBalance": 726.07,
+    "difference": 0,
+    "balanced": true
+  },
+  "ljcosIntegrity": {
+    "isClosed": true,
+    "canClose": true,
+    "blockers": [],
+    "account1001": {
+      "accountId": "acc-e323c08d-bcf6-46f5-90a9-b43c900e1b3a",
+      "accountNumber": "1001",
+      "accountName": "Cash - Lone Star Bank",
+      "ok": true,
+      "session": {
+        "id": "brs-1cf10b2b-e2f2-421a-a80c-69557bb952a6",
+        "statementDate": "2026-01-31T00:00:00.000Z",
+        "status": "CLOSED",
+        "difference": 0,
+        "differenceCents": 0,
+        "endingBalance": 726.07,
+        "balanced": true,
+        "closedAt": "2026-07-24T21:50:34.310Z"
+      },
+      "issue": null
+    }
+  },
+  "verifiedAt": "2026-08-12T20:37:12.321Z",
+  "packageId": "lone_star_7367_2026_01",
+  "note": "Claude conclusions are UNVERIFIED until independently checked against current LJCOS. This file is Cursor-owned."
+}

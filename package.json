@@ -8,7 +8,9 @@
     "start": "node server.js",
     "build:frontend": "npm install --prefix frontend && npm run build --prefix frontend",
     "build": "npm run build:frontend",
-    "scan:ach-je": "node scripts/scan-ach-je-inbox.mjs"
+    "scan:ach-je": "node scripts/scan-ach-je-inbox.mjs",
+    "verify:recon-inbox": "node scripts/verify-external-reconciliation-inbox.mjs",
+    "test:recon-inbox": "node lib/external-reconciliation-intake.test.js"
   },
   "dependencies": {
     "bcryptjs": "2.4.3",

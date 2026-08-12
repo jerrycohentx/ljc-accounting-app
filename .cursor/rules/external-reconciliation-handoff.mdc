@@ -1,0 +1,28 @@
+---
+description: Claude → Cursor external reconciliation handoff (immutable inbox, checksum STOP).
+globs: 05_Application_Code/ops/state/external_reconciliation_inbox/**
+alwaysApply: false
+---
+
+# External reconciliation handoff
+
+Shared bytes = **this git repo** (`ljc-accounting-app`), folder:
+
+`05_Application_Code/ops/state/external_reconciliation_inbox/<packageId>/`
+
+OneDrive `Cohen Entity Accounting v2` is **not** the handoff. Cursor Cloud Agents cannot read it.
+
+## Layout
+
+- `claude/` — Claude originals only. Do not overwrite, recreate-as-original, or put Cursor files here.
+- `cursor/` — Cursor verification, `INTAKE_RESULT.json`, `LJCOS_SNAPSHOT.json`.
+
+## Before analyzing a package
+
+```bash
+node scripts/verify-external-reconciliation-inbox.mjs --package <id> --capture-ljcos
+```
+
+Missing `claude/MANIFEST.sha256`, hash mismatch, or a proposed reversal of an already-reversed journal = **hard STOP**. Do not invent Claude originals.
+
+Claude conclusions stay **UNVERIFIED** until independently checked against current LJCOS. Capture LJCOS recon/ledger before evaluating corrections. Do not post during intake.
