@@ -1,0 +1,16 @@
+{
+  "canonicalInbox": "05_Application_Code/ops/state/external_reconciliation_inbox",
+  "notAHandoff": [
+    "C:\\Users\\jerry\\OneDrive\\Cohen Entity Accounting v2\\05_Application_Code\\ops\\state\\external_reconciliation_inbox"
+  ],
+  "gitRepo": "github.com/jerrycohentx/ljc-accounting-app",
+  "claudeDir": "claude/",
+  "cursorDir": "cursor/",
+  "requiredClaudeFiles": ["MANIFEST.sha256", "source_manifest.csv"],
+  "cursorMustNotWriteClaude": true,
+  "claudeConclusionsDefault": "UNVERIFIED",
+  "hardStopOnMissingOrMismatch": true,
+  "captureLjcosBeforeEvaluatingCorrections": true,
+  "rejectAlreadyReversedJournals": true,
+  "noAccountingMutationDuringIntake": true
+}

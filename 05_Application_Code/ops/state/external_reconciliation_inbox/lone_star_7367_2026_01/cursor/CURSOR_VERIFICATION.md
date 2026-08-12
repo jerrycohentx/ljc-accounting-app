@@ -1,5 +1,7 @@
 # Cursor independent verification — Lone Star Bank 7367, January 2026
 
+**Handoff follow-up (2026-08-12):** Claude originals still missing. Intake now **STOP**s on `claude/MANIFEST.sha256` (see `HANDOFF_FAILURE.md`, `INTAKE_RESULT.json`). Cursor files live in this `cursor/` folder only. Cash recon unchanged: **$726.07 / $0.00**.
+
 **Read-only.** No journals posted, reversed, recategorized, reopened, or recertified.
 
 **Fetched:** 2026-08-12T20:25:46.010Z from `https://ljc-accounting-app.onrender.com`  
