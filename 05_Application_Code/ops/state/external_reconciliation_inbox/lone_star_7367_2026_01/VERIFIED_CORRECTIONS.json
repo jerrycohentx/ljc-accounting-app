@@ -1,0 +1,727 @@
+{
+  "title": "Cursor independent verification — Lone Star 7367 January 2026",
+  "readOnly": true,
+  "accountingMutation": "NONE",
+  "verifiedAt": "2026-08-12T20:25:46.010Z",
+  "productionBase": "https://ljc-accounting-app.onrender.com",
+  "entityId": "ent-ljc",
+  "account": {
+    "id": "acc-e323c08d-bcf6-46f5-90a9-b43c900e1b3a",
+    "accountNumber": "1001",
+    "accountName": "Cash - Lone Star Bank",
+    "last4": "7367"
+  },
+  "packageIntegrity": {
+    "status": "FAIL",
+    "stopOnClaudeSources": true,
+    "packagePath": "05_Application_Code/ops/state/external_reconciliation_inbox/lone_star_7367_2026_01/",
+    "claudeOriginalsFound": false,
+    "manifestSha256": null,
+    "sourceManifestCsv": null,
+    "mismatches": [
+      "MANIFEST.sha256 not found",
+      "source_manifest.csv not found",
+      "Claude original package files not found in repo, GitHub, or workspace"
+    ],
+    "independentSources": [
+      {
+        "path": "data/bank-imports/LJC/lonestar-2026-statements.json",
+        "sha256": "fd33e1e8b256243e24a5019b1c150e36861a084f7ad7d13a941c8e4b82e722be",
+        "bytes": 9643
+      }
+    ]
+  },
+  "claudeReported": {
+    "statementEnding": 726.07,
+    "bookEnding": 3607.59,
+    "difference": 2881.52
+  },
+  "claudeReportedVerdict": {
+    "statementEnding": "CONFIRMED",
+    "bookEnding": "REJECTED",
+    "difference": "REJECTED"
+  },
+  "independentReconciliation": {
+    "statementBeginning": 598.88,
+    "statementParsedCredits": 40500.87,
+    "statementParsedDebits": -40373.74,
+    "statementParsedNet": 127.13,
+    "statementHeaderNet": 127.19,
+    "statementLineVsHeaderGap": 0.06,
+    "statementEnding": 726.07,
+    "bookBeginning": 598.88,
+    "bookJanuaryActivity": 127.19,
+    "bookEnding": 726.07,
+    "difference": 0.0,
+    "worksheet": {
+      "periodSessionBalanced": true,
+      "periodSessionStatus": "CLOSED",
+      "liveTotalsDifference": 0,
+      "liveTotalsClearedBalance": 726.07,
+      "liveTotalsBalanced": true,
+      "clearedCount": 13,
+      "markedDeposits": 40500.93,
+      "markedPayments": 40373.74
+    },
+    "integrity": {
+      "isClosed": true,
+      "canClose": true,
+      "closedButCompromised": false,
+      "blockers": [],
+      "plugsOrRollupsOk": true,
+      "netIncomeTieoutOk": true,
+      "account1001": {
+        "ok": true,
+        "sessionStatus": "CLOSED",
+        "endingBalance": 726.07,
+        "difference": 0,
+        "issue": null,
+        "closedAt": "2026-07-24T21:50:34.310Z"
+      }
+    }
+  },
+  "claudeFourteenProposals": {
+    "identifiableFromPackage": false,
+    "reason": "Claude package missing; 14-item list not available",
+    "liveCanonicalDateAmountDuplicates": 0,
+    "historicalIngestTwinsAlreadyReversed": 12,
+    "mistakenRestoresAlreadyUndone": 3
+  },
+  "proposedCorrectionsSafeToPost": [],
+  "verifiedDuplicatesAlreadyReversed": [
+    {
+      "id": "D01",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "postingDate": "2026-01-02",
+      "amount": 35.0,
+      "duplicate": {
+        "jeNumber": "JE-1783740501830",
+        "journalId": "je-0d0bde08-d983-4397-9182-4485b54ca4aa",
+        "createdAt": "2026-07-11T03:28:21.829Z",
+        "postedDate": "2026-07-11T03:28:22.207Z",
+        "sourceEventId": null,
+        "importMechanism": "manual catch-up JE (Jan Lone Star Bank Service Charges)",
+        "memo": "Jan Lone Star (Bank Service Charges)",
+        "previouslyReversed": true,
+        "reversedByJournalId": "je-6c49975c-d62b-4672-9ab2-57101ccedc84",
+        "reversalJeNumber": "REV-JE-1783740501830-1784878847748",
+        "lines": [
+          { "accountNumber": "5200", "accountName": "Bank Service Charges", "debit": 35.0, "credit": 0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 35.0 }
+        ],
+        "netEffectOn1001": -35.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1784868434497-6fb2a399",
+        "journalId": "je-964c73fe-07ef-4ad3-828b-c015734d89a4",
+        "sourceEventId": "pdf-fcb3bcbded8da507994b3d98",
+        "importMechanism": "statement PDF import",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 35.0 },
+          { "accountNumber": "5200", "accountName": "Bank Service Charges", "debit": 35.0, "credit": 0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-02", "description": "OVERDRAFT FEE", "amount": -35.0, "fitid": "pdf-fcb3bcbded8da507994b3d98" },
+      "interbankOrIntercompanyOtherSide": false,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1001", "debit": 35.0, "credit": 0 },
+        { "accountNumber": "5200", "debit": 0, "credit": 35.0 }
+      ],
+      "netEffectOn1001IfPostedAgain": 35.0,
+      "evidence": "Same PDF overdraft line ingested twice: catch-up JE 2026-07-11 then statement IMP 2026-07-24 with FITID."
+    },
+    {
+      "id": "D02",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "postingDate": "2026-01-05",
+      "amount": 35.0,
+      "duplicate": {
+        "jeNumber": "JE-1783740502393",
+        "journalId": "je-0b809484-a7ad-4247-bcef-1ecd791ac379",
+        "createdAt": "2026-07-11T03:28:22.393Z",
+        "sourceEventId": null,
+        "importMechanism": "manual catch-up JE",
+        "memo": "Jan Lone Star (Bank Service Charges)",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-JE-1783740502393-1784878848060",
+        "lines": [
+          { "accountNumber": "5200", "accountName": "Bank Service Charges", "debit": 35.0, "credit": 0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 35.0 }
+        ],
+        "netEffectOn1001": -35.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1784868435190-76f8362e",
+        "journalId": "je-06fa2c45-07f9-4a9e-adaf-d518c0717c2d",
+        "sourceEventId": "pdf-adadc2178b3e222faca80372",
+        "importMechanism": "statement PDF import",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 35.0 },
+          { "accountNumber": "5200", "accountName": "Bank Service Charges", "debit": 35.0, "credit": 0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-05", "description": "OVERDRAFT FEE", "amount": -35.0, "fitid": "pdf-adadc2178b3e222faca80372" },
+      "interbankOrIntercompanyOtherSide": false,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1001", "debit": 35.0, "credit": 0 },
+        { "accountNumber": "5200", "debit": 0, "credit": 35.0 }
+      ],
+      "evidence": "Same PDF overdraft FITID posted as catch-up JE and as statement IMP."
+    },
+    {
+      "id": "D03",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "postingDate": "2026-01-05",
+      "amount": 2500.0,
+      "duplicate": {
+        "jeNumber": "JE-1783740503506",
+        "journalId": "je-2744e3aa-723b-43f6-8000-2081fb8da3f9",
+        "createdAt": "2026-07-11T03:28:23.512Z",
+        "sourceEventId": null,
+        "importMechanism": "manual catch-up JE",
+        "memo": "Jan Lone Star (Credit card payment)",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-JE-1783740503506-1784878848353",
+        "lines": [
+          { "accountNumber": "2011", "accountName": "Credit Card - Chase", "debit": 2500.0, "credit": 0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 2500.0 }
+        ],
+        "netEffectOn1001": -2500.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1784868434890-e275e77e",
+        "journalId": "je-fdee681e-f47f-40de-98d4-8153d3fa2c77",
+        "sourceEventId": "pdf-96d9d784f0f2ed90c9fa83da",
+        "importMechanism": "statement PDF import",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 2500.0 },
+          { "accountNumber": "1100", "accountName": "Undeposited Funds", "debit": 2500.0, "credit": 0 }
+        ],
+        "offsetNote": "Live offset is 1100 pending categorization; that is not a reason to reverse 1001 cash."
+      },
+      "bankStatementLine": { "date": "2026-01-05", "description": "EPAY       CHASE CREDIT CRD", "amount": -2500.0, "fitid": "pdf-96d9d784f0f2ed90c9fa83da" },
+      "interbankOrIntercompanyOtherSide": false,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1001", "debit": 2500.0, "credit": 0 },
+        { "accountNumber": "2011", "debit": 0, "credit": 2500.0 }
+      ],
+      "evidence": "Same PDF Chase EPAY FITID posted as catch-up JE (offset 2011) and statement IMP (offset 1100)."
+    },
+    {
+      "id": "D04",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "postingDate": "2026-01-06",
+      "amount": 3000.0,
+      "duplicate": {
+        "jeNumber": "JE-1783740504167",
+        "journalId": "je-f89b152c-3a74-421d-86d0-f54521aabf43",
+        "createdAt": "2026-07-11T03:28:24.169Z",
+        "sourceEventId": null,
+        "importMechanism": "manual catch-up JE",
+        "memo": "Jan Lone Star (Credit card payment)",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-JE-1783740504167-1784878849050",
+        "lines": [
+          { "accountNumber": "2011", "accountName": "Credit Card - Chase", "debit": 3000.0, "credit": 0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 3000.0 }
+        ],
+        "netEffectOn1001": -3000.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1784868435397-1195faea",
+        "journalId": "je-e1d86371-e05d-477e-8cb2-2b94277b6b6e",
+        "sourceEventId": "pdf-d15a8d23d1c9016c83f93013",
+        "importMechanism": "statement PDF import",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 3000.0 },
+          { "accountNumber": "1100", "accountName": "Undeposited Funds", "debit": 3000.0, "credit": 0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-06", "description": "EPAY       CHASE CREDIT CRD", "amount": -3000.0, "fitid": "pdf-d15a8d23d1c9016c83f93013" },
+      "interbankOrIntercompanyOtherSide": false,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1001", "debit": 3000.0, "credit": 0 },
+        { "accountNumber": "2011", "debit": 0, "credit": 3000.0 }
+      ],
+      "evidence": "Same PDF Chase EPAY FITID posted as catch-up JE and statement IMP."
+    },
+    {
+      "id": "D05",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "postingDate": "2026-01-05",
+      "amount": 2500.0,
+      "duplicate": {
+        "jeNumber": "IMP-1784868432890-1c5c6881",
+        "journalId": "je-2fb9ca55-bd8f-498d-8d16-4831150048fe",
+        "createdAt": "2026-07-24T04:47:12.896Z",
+        "sourceEventId": "pdf-23f4d76d3ac2677469b5a80c",
+        "importMechanism": "statement PDF import (rule: Lone Star LOC advance)",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-IMP-1784868432890-1c5c6881-1784878848152",
+        "restoreThenUndone": "RESTORE-IMP-1784868432890-1c5c6881-417635 then REV-RESTORE-…",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 2500.0, "credit": 0 },
+          { "accountNumber": "2120", "accountName": "LOC - Lone Star Bank", "debit": 0, "credit": 2500.0 }
+        ],
+        "netEffectOn1001": 2500.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1783739660429-10093376",
+        "journalId": "je-27471b6c-9c6a-42cb-b9de-81979accb53a",
+        "sourceEventId": "20260105--2500-804-2922-111",
+        "importMechanism": "Simmons OFX import (rule: Wire to Lone Star)",
+        "isInterbankOtherSide": true,
+        "lines": [
+          { "accountNumber": "1000", "accountName": "Cash & Bank Accounts - Simmons", "debit": 0, "credit": 2500.0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 2500.0, "credit": 0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-05", "description": "DDA Credit Memo", "amount": 2500.0, "fitid": "pdf-23f4d76d3ac2677469b5a80c" },
+      "interbankOrIntercompanyOtherSide": true,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1001", "debit": 0, "credit": 2500.0 },
+        { "accountNumber": "2120", "debit": 2500.0, "credit": 0 }
+      ],
+      "evidence": "Simmons OFX wire-to-Lone-Star and Lone Star PDF DDA Credit Memo are the same inbound $2,500.00. PDF posting was a second 1001 debit, not a second deposit."
+    },
+    {
+      "id": "D06",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "postingDate": "2026-01-06",
+      "amount": 3000.0,
+      "duplicate": {
+        "jeNumber": "IMP-1784868433191-d77f22a6",
+        "journalId": "je-c0b9533e-b4cc-4d56-abe3-a7896e2f636c",
+        "createdAt": "2026-07-24T04:47:13.197Z",
+        "sourceEventId": "pdf-ecf70c7329ed5a0b6db640ae",
+        "importMechanism": "statement PDF import (rule: Lone Star LOC advance)",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-IMP-1784868433191-d77f22a6-1784878848455",
+        "restoreThenUndone": "RESTORE-IMP-1784868433191-d77f22a6-417357 then REV-RESTORE-…",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 3000.0, "credit": 0 },
+          { "accountNumber": "2120", "accountName": "LOC - Lone Star Bank", "debit": 0, "credit": 3000.0 }
+        ],
+        "netEffectOn1001": 3000.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1783739661280-4219a6b3",
+        "journalId": "je-de37917e-bacc-4cb4-a03c-c2e8887b81b5",
+        "sourceEventId": "20260106--3000-804-2174-111",
+        "importMechanism": "Simmons OFX import (rule: Wire to Lone Star)",
+        "isInterbankOtherSide": true,
+        "lines": [
+          { "accountNumber": "1000", "accountName": "Cash & Bank Accounts - Simmons", "debit": 0, "credit": 3000.0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 3000.0, "credit": 0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-06", "description": "DDA Credit Memo", "amount": 3000.0, "fitid": "pdf-ecf70c7329ed5a0b6db640ae" },
+      "interbankOrIntercompanyOtherSide": true,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1001", "debit": 0, "credit": 3000.0 },
+        { "accountNumber": "2120", "debit": 3000.0, "credit": 0 }
+      ],
+      "evidence": "Simmons OFX wire-to-Lone-Star and Lone Star PDF DDA Credit Memo are the same inbound $3,000.00."
+    },
+    {
+      "id": "D07",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "postingDate": "2026-01-13",
+      "amount": 4700.0,
+      "duplicate": {
+        "jeNumber": "IMP-1784868433491-d07f9b69",
+        "journalId": "je-5e5ef128-e965-40f9-8096-1aa690486f3b",
+        "createdAt": "2026-07-24T04:47:13.498Z",
+        "sourceEventId": "pdf-36dcf0107f88557dff9dc8f4",
+        "importMechanism": "statement PDF import (rule: Lone Star LOC advance)",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-IMP-1784868433491-d07f9b69-1784878849249",
+        "restoreThenUndone": "RESTORE-IMP-1784868433491-d07f9b69-417440 then REV-RESTORE-…",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 4700.0, "credit": 0 },
+          { "accountNumber": "2120", "accountName": "LOC - Lone Star Bank", "debit": 0, "credit": 4700.0 }
+        ],
+        "netEffectOn1001": 4700.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1783739662220-8f1d75fe",
+        "journalId": "je-57701a04-4e9b-4c93-a7bc-83f2f2523ece",
+        "sourceEventId": "20260113--4700-804-1990-111",
+        "importMechanism": "Simmons OFX import (rule: Wire to Lone Star)",
+        "isInterbankOtherSide": true,
+        "lines": [
+          { "accountNumber": "1000", "accountName": "Cash & Bank Accounts - Simmons", "debit": 0, "credit": 4700.0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 4700.0, "credit": 0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-13", "description": "DDA Credit Memo", "amount": 4700.0, "fitid": "pdf-36dcf0107f88557dff9dc8f4" },
+      "interbankOrIntercompanyOtherSide": true,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1001", "debit": 0, "credit": 4700.0 },
+        { "accountNumber": "2120", "debit": 4700.0, "credit": 0 }
+      ],
+      "evidence": "Simmons OFX wire-to-Lone-Star and Lone Star PDF DDA Credit Memo are the same inbound $4,700.00."
+    },
+    {
+      "id": "D08",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "liveKeepSideOffset": "NEEDS REVIEW",
+      "postingDate": "2026-01-13",
+      "amount": 29575.0,
+      "duplicate": {
+        "jeNumber": "JE-1783740499398",
+        "journalId": "je-251d7b00-dd57-42f5-a6de-bf1f50716102",
+        "createdAt": "2026-07-11T03:28:19.397Z",
+        "sourceEventId": null,
+        "importMechanism": "manual catch-up JE",
+        "memo": "Jan Lone Star (Loan payoff / deposit (match loan))",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-JE-1783740499398-1784878849758",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 29575.0, "credit": 0 },
+          { "accountNumber": "1300", "accountName": "Notes Receivable", "debit": 0, "credit": 29575.0 }
+        ],
+        "netEffectOn1001": 29575.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1784868433796-38b01618",
+        "journalId": "je-81a372ed-e57a-4c98-9def-dd049905d66c",
+        "sourceEventId": "pdf-88497870f0a5f28a8f91b599",
+        "importMechanism": "statement PDF import (rule: Lone Star LOC advance)",
+        "doNotReverse": true,
+        "offsetUnresolved": true,
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 29575.0, "credit": 0 },
+          { "accountNumber": "2120", "accountName": "LOC - Lone Star Bank", "debit": 0, "credit": 29575.0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-13", "description": "DDA Credit Memo", "amount": 29575.0, "fitid": "pdf-88497870f0a5f28a8f91b599" },
+      "interbankOrIntercompanyOtherSide": false,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1001", "debit": 0, "credit": 29575.0 },
+        { "accountNumber": "1300", "debit": 29575.0, "credit": 0 }
+      ],
+      "evidence": "Same PDF DDA Credit Memo FITID posted as catch-up JE (1300) and statement IMP (2120). Cash duplicate only; memo treatment left unresolved."
+    },
+    {
+      "id": "D09",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "liveKeepSideOffset": "NEEDS REVIEW",
+      "postingDate": "2026-01-13",
+      "amount": 29575.0,
+      "duplicate": {
+        "jeNumber": "JE-1783740499998",
+        "journalId": "je-755a78f0-6e5e-4d94-8e9a-f85780ea0a21",
+        "createdAt": "2026-07-11T03:28:19.998Z",
+        "sourceEventId": null,
+        "importMechanism": "manual catch-up JE",
+        "memo": "Jan Lone Star (Loan funding / disbursement (match loan))",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-JE-1783740499998-1784878849777",
+        "lines": [
+          { "accountNumber": "1300", "accountName": "Notes Receivable", "debit": 29575.0, "credit": 0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 29575.0 }
+        ],
+        "netEffectOn1001": -29575.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1784868435888-b4354af2",
+        "journalId": "je-3203214c-c1d6-4d2b-925b-42115bf3a39c",
+        "sourceEventId": "pdf-5452b17568954abc4523c4c3",
+        "importMechanism": "statement PDF import (rule: Lone Star LOC paydown/transfer)",
+        "doNotReverse": true,
+        "offsetUnresolved": true,
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 29575.0 },
+          { "accountNumber": "2120", "accountName": "LOC - Lone Star Bank", "debit": 29575.0, "credit": 0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-13", "description": "DDA DEBIT MEMO", "amount": -29575.0, "fitid": "pdf-5452b17568954abc4523c4c3" },
+      "interbankOrIntercompanyOtherSide": false,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1300", "debit": 0, "credit": 29575.0 },
+        { "accountNumber": "1001", "debit": 29575.0, "credit": 0 }
+      ],
+      "evidence": "Same PDF DDA Debit Memo FITID posted as catch-up JE (1300) and statement IMP (2120). Pair nets $0.00 cash with D08. Treatment left unresolved."
+    },
+    {
+      "id": "D10",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "liveKeepSideOffset": "NEEDS REVIEW",
+      "postingDate": "2026-01-15",
+      "amount": 2019.74,
+      "duplicate": {
+        "jeNumber": "JE-1783740500603",
+        "journalId": "je-73ecb881-d9f6-4293-9e68-ce8c4e0bd128",
+        "createdAt": "2026-07-11T03:28:20.602Z",
+        "sourceEventId": null,
+        "importMechanism": "manual catch-up JE",
+        "memo": "Jan Lone Star (Lending deposits / collections)",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-JE-1783740500603-1784878849848",
+        "lines": [
+          { "accountNumber": "1300", "accountName": "Notes Receivable", "debit": 2019.74, "credit": 0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 2019.74 }
+        ],
+        "netEffectOn1001": -2019.74
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1784868436888-f53d43b4",
+        "journalId": "je-8179d102-97c6-4521-8f22-86b8a495ee24",
+        "sourceEventId": "pdf-8df317a6c24fd902934e994f",
+        "importMechanism": "statement PDF import (rule: Lone Star WLOC payment)",
+        "doNotReverse": true,
+        "principalInterestAllocationUnresolved": true,
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 2019.74 },
+          { "accountNumber": "2130", "accountName": "WLOC - Lone Star Bank", "debit": 2019.74, "credit": 0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-15", "description": "LOAN PAYMENT", "amount": -2019.74, "fitid": "pdf-8df317a6c24fd902934e994f" },
+      "interbankOrIntercompanyOtherSide": false,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1300", "debit": 0, "credit": 2019.74 },
+        { "accountNumber": "1001", "debit": 2019.74, "credit": 0 }
+      ],
+      "evidence": "Same PDF LOAN PAYMENT FITID posted as catch-up JE (all 1300) and statement IMP (all 2130). No independent principal/interest split. Allocation not inferred."
+    },
+    {
+      "id": "D11",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "liveKeepSideOffset": "NEEDS REVIEW",
+      "postingDate": "2026-01-16",
+      "amount": 3209.0,
+      "duplicate": {
+        "jeNumber": "JE-1783740501270",
+        "journalId": "je-e07fd5b1-2aeb-4813-9747-d610fb82879c",
+        "createdAt": "2026-07-11T03:28:21.269Z",
+        "sourceEventId": null,
+        "importMechanism": "manual catch-up JE",
+        "memo": "Jan Lone Star (Loan funding / disbursement (match loan))",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-JE-1783740501270-1784878850048",
+        "lines": [
+          { "accountNumber": "1300", "accountName": "Notes Receivable", "debit": 3209.0, "credit": 0 },
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 3209.0 }
+        ],
+        "netEffectOn1001": -3209.0
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1784868437189-2cb3a760",
+        "journalId": "je-67a73773-1b58-4b6c-8c44-ca9f2daa5e12",
+        "sourceEventId": "pdf-2dbbdc208ba65492ad1edbbc",
+        "importMechanism": "statement PDF import (rule: Lone Star LOC paydown/transfer)",
+        "doNotReverse": true,
+        "treatmentUnresolved": true,
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 0, "credit": 3209.0 },
+          { "accountNumber": "2120", "accountName": "LOC - Lone Star Bank", "debit": 3209.0, "credit": 0 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-16", "description": "DDA DEBIT MEMO", "amount": -3209.0, "fitid": "pdf-2dbbdc208ba65492ad1edbbc" },
+      "interbankOrIntercompanyOtherSide": false,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1300", "debit": 0, "credit": 3209.0 },
+        { "accountNumber": "1001", "debit": 3209.0, "credit": 0 }
+      ],
+      "evidence": "Same PDF DDA Debit Memo FITID posted as catch-up JE (1300) and statement IMP (2120). Memo nature not independently established."
+    },
+    {
+      "id": "D12",
+      "classification": "VERIFIED DUPLICATE",
+      "alreadyReversed": true,
+      "doNotReverseAgain": true,
+      "postingDate": "2026-01-23",
+      "amount": 725.87,
+      "duplicate": {
+        "jeNumber": "JE-1783740502964",
+        "journalId": "je-f1477e68-20e6-496e-919b-609eaa85dc9d",
+        "createdAt": "2026-07-11T03:28:22.963Z",
+        "sourceEventId": null,
+        "importMechanism": "manual catch-up JE",
+        "memo": "Jan Lone Star (Interest income)",
+        "previouslyReversed": true,
+        "reversalJeNumber": "REV-JE-1783740502964-1784878850348",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 725.87, "credit": 0 },
+          { "accountNumber": "4000", "accountName": "Interest Income - Banks", "debit": 0, "credit": 725.87 }
+        ],
+        "netEffectOn1001": 725.87
+      },
+      "validPosting": {
+        "jeNumber": "IMP-1784868434190-33d01b50",
+        "journalId": "je-0dcbb3f5-e7e8-45e1-9ec7-599bf7235229",
+        "sourceEventId": "pdf-55135681b280ae47bd4dd868",
+        "importMechanism": "statement PDF import (rule: CD interest income)",
+        "lines": [
+          { "accountNumber": "1001", "accountName": "Cash - Lone Star Bank", "debit": 725.87, "credit": 0 },
+          { "accountNumber": "4000", "accountName": "Interest Income - Banks", "debit": 0, "credit": 725.87 }
+        ]
+      },
+      "bankStatementLine": { "date": "2026-01-23", "description": "C.D. INTEREST", "amount": 725.87, "fitid": "pdf-55135681b280ae47bd4dd868" },
+      "interbankOrIntercompanyOtherSide": false,
+      "proposedReversalDebitCredit": [
+        { "accountNumber": "1001", "debit": 0, "credit": 725.87 },
+        { "accountNumber": "4000", "debit": 725.87, "credit": 0 }
+      ],
+      "evidence": "Same PDF C.D. INTEREST FITID posted as catch-up JE and statement IMP; both offset 4000."
+    }
+  ],
+  "notADuplicateLiveCanonical": [
+    {
+      "jeNumber": "IMP-1784868434497-6fb2a399",
+      "classification": "NOT A DUPLICATE",
+      "reason": "Sole live posting of 2026-01-02 overdraft; statement FITID pdf-fcb3bcbded8da507994b3d98"
+    },
+    {
+      "jeNumber": "IMP-1783739660429-10093376",
+      "classification": "NOT A DUPLICATE",
+      "reason": "Legitimate Simmons→Lone Star interbank other side for 2026-01-05 $2,500"
+    },
+    {
+      "jeNumber": "IMP-1784868434890-e275e77e",
+      "classification": "NOT A DUPLICATE",
+      "reason": "Sole live posting of 2026-01-05 Chase EPAY"
+    },
+    {
+      "jeNumber": "IMP-1784868435190-76f8362e",
+      "classification": "NOT A DUPLICATE",
+      "reason": "Sole live posting of 2026-01-05 overdraft"
+    },
+    {
+      "jeNumber": "IMP-1783739661280-4219a6b3",
+      "classification": "NOT A DUPLICATE",
+      "reason": "Legitimate Simmons→Lone Star interbank other side for 2026-01-06 $3,000"
+    },
+    {
+      "jeNumber": "IMP-1784868435397-1195faea",
+      "classification": "NOT A DUPLICATE",
+      "reason": "Sole live posting of 2026-01-06 Chase EPAY"
+    },
+    {
+      "jeNumber": "IMP-1783739662220-8f1d75fe",
+      "classification": "NOT A DUPLICATE",
+      "reason": "Legitimate Simmons→Lone Star interbank other side for 2026-01-13 $4,700"
+    },
+    {
+      "jeNumber": "IMP-1784868433796-38b01618",
+      "classification": "NOT A DUPLICATE",
+      "cash": true,
+      "offset": "NEEDS REVIEW",
+      "reason": "Sole live 1001 posting of 2026-01-13 $29,575 credit memo; offset 2120 not independently proven"
+    },
+    {
+      "jeNumber": "IMP-1784868435888-b4354af2",
+      "classification": "NOT A DUPLICATE",
+      "cash": true,
+      "offset": "NEEDS REVIEW",
+      "reason": "Sole live 1001 posting of 2026-01-13 $29,575 debit memo; offset 2120 not independently proven"
+    },
+    {
+      "jeNumber": "IMP-1784868436888-f53d43b4",
+      "classification": "NOT A DUPLICATE",
+      "cash": true,
+      "offset": "NEEDS REVIEW",
+      "reason": "Sole live 1001 posting of 2026-01-15 loan payment; principal/interest split not in source"
+    },
+    {
+      "jeNumber": "IMP-1784868437189-2cb3a760",
+      "classification": "NOT A DUPLICATE",
+      "cash": true,
+      "offset": "NEEDS REVIEW",
+      "reason": "Sole live 1001 posting of 2026-01-16 $3,209 debit memo; nature not independently proven"
+    },
+    {
+      "jeNumber": "IMP-1784868434190-33d01b50",
+      "classification": "NOT A DUPLICATE",
+      "reason": "Sole live posting of 2026-01-23 C.D. interest"
+    },
+    {
+      "jeNumber": "JE-1783784125862",
+      "classification": "NOT A DUPLICATE",
+      "reason": "Sole live $0.06 2026-01-31 checking interest matching statement header-vs-line gap; not a duplicate"
+    }
+  ],
+  "unresolvedMatters": [
+    {
+      "item": "January 15 loan payment principal/interest allocation",
+      "amount": 2019.74,
+      "journalId": "je-8179d102-97c6-4521-8f22-86b8a495ee24",
+      "status": "UNRESOLVED",
+      "action": "No estimate. No JE."
+    },
+    {
+      "item": "January 16 $3,209 debit memo treatment",
+      "amount": 3209.0,
+      "journalId": "je-67a73773-1b58-4b6c-8c44-ca9f2daa5e12",
+      "status": "UNRESOLVED",
+      "action": "No estimate. No JE."
+    },
+    {
+      "item": "January 13 $29,575 credit and debit memo treatment",
+      "amount": 29575.0,
+      "journalIds": [
+        "je-81a372ed-e57a-4c98-9def-dd049905d66c",
+        "je-3203214c-c1d6-4d2b-925b-42115bf3a39c"
+      ],
+      "netCashOn1001": 0.0,
+      "status": "UNRESOLVED",
+      "action": "No estimate. No JE."
+    }
+  ],
+  "recalculated": {
+    "asCurrentlyBooked": {
+      "statementEnding": 726.07,
+      "bookEnding": 726.07,
+      "difference": 0.0
+    },
+    "afterOnlyVerifiedDuplicateReversals": {
+      "note": "The 12 verified duplicate reversals are already posted. Current books already reflect that state.",
+      "statementEnding": 726.07,
+      "bookEnding": 726.07,
+      "difference": 0.0,
+      "newReversalsToPost": 0
+    },
+    "excludingNeedsReviewFromProposedCorrection": {
+      "note": "NEEDS REVIEW items are offset/allocation questions, not extra 1001 cash.",
+      "statementEnding": 726.07,
+      "bookEnding": 726.07,
+      "difference": 0.0
+    },
+    "plugCreated": false
+  },
+  "chairmanRecommendation": {
+    "approveFourteenProposedCorrections": false,
+    "safeForChairmanApproval": false,
+    "reason": [
+      "Claude package hashes cannot be verified (files missing).",
+      "Claude book ending $3,607.59 and difference $2,881.52 are rejected against live 1001.",
+      "Live Lone Star 7367 January is already reconciled at $726.07 / $0.00 (periodSession.balanced true, liveTotals.difference 0, integrity 1001 ok true, isClosed true).",
+      "Twelve ingest twins are already reversed. No 14th live cash duplicate was found.",
+      "Approving 14 new reversals would mutate a closed $0 recon."
+    ],
+    "stopBeforeAccountingMutation": true
+  }
+}
