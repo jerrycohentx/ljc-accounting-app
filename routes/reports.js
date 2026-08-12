@@ -5,6 +5,7 @@ import { entityAccessMiddleware } from '../middleware/auth.js';
 
 import { POSTED_GL_SUBQUERY, calculateAccountBalance } from '../lib/posted-gl.js';
 import { computePeriodNetIncome, calendarYearStart } from '../lib/net-income-tieout.js';
+import { computeCashFlowTieout } from '../lib/cash-flow-tieout.js';
 import reportAnalyticsRoutes from './report-analytics.js';
 import { buildBalanceSheet, buildProfitLoss, mergeStatements } from '../lib/financial-statement.js';
 import { buildProfitLossFromQboTb, shouldPreferQboProfitLoss } from '../lib/qbo-profit-loss.js';
@@ -382,6 +383,8 @@ router.get('/account-balances', entityAccessMiddleware, async (req, res) => {
 });
 
 // GET /api/entities/:entityId/reports/cash-flow
+// Scope is ALL 100x cash accounts (not Simmons 1000 alone). tieoutOk compares
+// period netCashFlow to BS cash Δ for the same 100x set — never 1000-only.
 router.get('/cash-flow', entityAccessMiddleware, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -391,26 +394,8 @@ router.get('/cash-flow', entityAccessMiddleware, async (req, res) => {
     }
 
     const db = await getDatabase();
-
-    // Get cash account balance change
-    const cashAccounts = await db.all(
-      `SELECT 
-        COALESCE(SUM(gl.debit), 0) - COALESCE(SUM(gl.credit), 0) as net_change
-       FROM accounts a
-       LEFT JOIN (${POSTED_GL}) gl ON a.id = gl.account_id AND gl.entity_id = ?
-       WHERE a.entity_id = ? AND a.account_type = 'ASSET'
-       AND a.account_number LIKE '100%'
-       AND gl.posting_date >= ? AND gl.posting_date <= ?`,
-      [req.entityId, req.entityId, startDate, endDate]
-    );
-
-    res.json({
-      period: { startDate, endDate },
-      operatingActivities: 0,
-      investingActivities: 0,
-      financingActivities: 0,
-      netCashFlow: (cashAccounts[0]?.net_change || 0)
-    });
+    const tieout = await computeCashFlowTieout(db, req.entityId, startDate, endDate);
+    res.json(tieout);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
