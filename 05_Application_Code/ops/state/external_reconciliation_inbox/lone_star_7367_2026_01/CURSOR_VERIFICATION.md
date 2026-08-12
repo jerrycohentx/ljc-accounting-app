@@ -388,7 +388,7 @@ Book ending after verified-duplicate reversals (current state)  $726.07
 Difference                                                      $  0.00
 ```
 
-Hypothetical: if the 12 keep-side live journals were reversed instead, 1001 January cash would no longer match the statement and Difference would leave $0.00. That path is rejected.
+Hypothetical: if the 12 keep-side live journals were reversed instead, 1001 January cash would no longer match the statement and Difference would no longer be $0.00. That path is rejected.
 
 ### 4.3 Excluding all NEEDS REVIEW items from proposed correction
 
