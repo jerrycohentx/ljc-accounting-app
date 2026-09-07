@@ -1,0 +1,555 @@
+{
+  "generatedAt": "2026-08-12T20:18:53.010Z",
+  "scope": "January 2026 / ent-ljc / read-only Option A A1-A2",
+  "authorization": "A0-A2 lineage only; A3 blocked; 4010 rejected; 5801 not approved",
+  "counts": {
+    "nsfFamilyRows": 9,
+    "chargebackMisclassProposed": 5,
+    "overdraftOk": 2,
+    "alreadyReversedOrReversal": 2,
+    "unexplainedPlaceholders": 2,
+    "totalRegisterRows": 12,
+    "falsePositivesCorrected": 1
+  },
+  "manageability": {
+    "verdict": "BORDERLINE — NSF/chargeback family is manageable as a discrete set; full January categorization rebuild of all bank lines would be structurally large",
+    "recommendOptionBIf": "Chairman expands scope beyond NSF-family + named unexplained amounts to a full January reclass of every bank/card line",
+    "note": "Chargeback→4010 pattern is systematic (learned rule). Dedicated NSF COA missing vs QBO NSF payments bucket."
+  },
+  "qboReference": {
+    "nsfPayments": -19888.16,
+    "bankNsfFeesCharged": 180,
+    "note": "QBO Jan P&L reference only — not used to invent plug entries",
+    "chargebackSumInRegister": 19888.16,
+    "tiesToQboNsfPayments": true
+  },
+  "a0Backup": {
+    "checkpointId": "bak-20260812-200229",
+    "format": "checkpoint-v1",
+    "fullEncryptedLedgerDump": false,
+    "postgresDurable": true,
+    "a3BlockedUntilFullSnapshot": true
+  },
+  "register": [
+    {
+      "id": "VR-NSF-001",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": null,
+      "bankOrCardAccountName": null,
+      "transactionDate": "2026-01-31",
+      "amount": 4454.25,
+      "bankDescription": "Remove OMC loan interest wrongly recorded as LJC income — January",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "4011",
+          "accountName": "Default Interest Income",
+          "debit": 2250,
+          "credit": 0
+        },
+        {
+          "accountNumber": "4010",
+          "accountName": "Portfolio Loan Interest Income",
+          "debit": 2204.25,
+          "credit": 0
+        },
+        {
+          "accountNumber": "2902",
+          "accountName": "Due To - OMC",
+          "debit": 0,
+          "credit": 2250
+        },
+        {
+          "accountNumber": "5801",
+          "accountName": "Chargebacks & Reversals",
+          "debit": 0,
+          "credit": 2204.25
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none",
+        "entries": []
+      },
+      "businessPurpose": "Remove OMC-owned loan interest from LJC P&L",
+      "supportingSourceDocument": "Bank statement / OFX import memo",
+      "evidenceMatchStatus": "NO ACTION — not an NSF/chargeback bank posting; OMC interest ownership correction",
+      "confidence": "high",
+      "ruleOrCodePath": "unknown",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none"
+      },
+      "needsReviewReason": null,
+      "jeNumber": "JE-1783919006815",
+      "jeId": "je-f65c806b-1bf2-4200-8ae7-85db3d916f9c",
+      "alreadyReversed": false,
+      "isReversal": false,
+      "nsfFamily": "NOT_NSF — false positive (OMC interest reclass uses account 5801)"
+    },
+    {
+      "id": "VR-NSF-002",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": "1000",
+      "bankOrCardAccountName": "Cash & Bank Accounts - Simmons",
+      "transactionDate": "2026-01-06",
+      "amount": 2787.5,
+      "bankDescription": "OFX Import: CHARGEBACK CHARGEBACK",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "1000",
+          "accountName": "Cash & Bank Accounts - Simmons",
+          "debit": 0,
+          "credit": 2787.5
+        },
+        {
+          "accountNumber": "4010",
+          "accountName": "Portfolio Loan Interest Income",
+          "debit": 2787.5,
+          "credit": 0
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
+      },
+      "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
+      "supportingSourceDocument": "Bank FITID 20260106--2787-600-118-135 / Simmons or Lone Star Jan statement",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
+      "ruleOrCodePath": "Learned: CHARGEBACK CHARGEBACK",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none until original payment JE and servicing split are in evidence"
+      },
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
+      "jeNumber": "IMP-1783739660882-99c3234d",
+      "jeId": "je-c4f54ab1-c63e-4cda-be95-fdc98ea5ff7e",
+      "alreadyReversed": false,
+      "isReversal": false,
+      "nsfFamily": "CHARGEBACK"
+    },
+    {
+      "id": "VR-NSF-003",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": "1001",
+      "bankOrCardAccountName": "Cash - Lone Star Bank",
+      "transactionDate": "2026-01-05",
+      "amount": 35,
+      "bankDescription": "Lone Star stmt 2026-01-01: OVERDRAFT FEE",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "1001",
+          "accountName": "Cash - Lone Star Bank",
+          "debit": 0,
+          "credit": 35
+        },
+        {
+          "accountNumber": "5200",
+          "accountName": "Bank Service Charges",
+          "debit": 35,
+          "credit": 0
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none",
+        "entries": [],
+        "note": "Current classification acceptable"
+      },
+      "businessPurpose": "Bank overdraft fee expense",
+      "supportingSourceDocument": "Bank FITID pdf-adadc2178b3e222faca80372 / Simmons or Lone Star Jan statement",
+      "evidenceMatchStatus": "MATCH — bank overdraft fee to 5200",
+      "confidence": "high",
+      "ruleOrCodePath": "Bank overdraft fee",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none",
+        "entries": [],
+        "note": "Current classification acceptable"
+      },
+      "needsReviewReason": null,
+      "jeNumber": "IMP-1784868435190-76f8362e",
+      "jeId": "je-06fa2c45-07f9-4a9e-adaf-d518c0717c2d",
+      "alreadyReversed": false,
+      "isReversal": false,
+      "nsfFamily": "OVERDRAFT"
+    },
+    {
+      "id": "VR-NSF-004",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": "1001",
+      "bankOrCardAccountName": "Cash - Lone Star Bank",
+      "transactionDate": "2026-01-05",
+      "amount": 35,
+      "bankDescription": "LoneStar: OVERDRAFT FEE",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "5200",
+          "accountName": "Bank Service Charges",
+          "debit": 35,
+          "credit": 0
+        },
+        {
+          "accountNumber": "1001",
+          "accountName": "Cash - Lone Star Bank",
+          "debit": 0,
+          "credit": 35
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none",
+        "entries": []
+      },
+      "businessPurpose": "Audit trail only; net effect zeroed by reverse link",
+      "supportingSourceDocument": "Bank statement / OFX import memo",
+      "evidenceMatchStatus": "NO ACTION — already reversed / is reversal",
+      "confidence": "high",
+      "ruleOrCodePath": "unknown",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none",
+        "entries": []
+      },
+      "needsReviewReason": null,
+      "jeNumber": "JE-1783740502393",
+      "jeId": "je-0b809484-a7ad-4247-bcef-1ecd791ac379",
+      "alreadyReversed": true,
+      "isReversal": false,
+      "nsfFamily": "OVERDRAFT"
+    },
+    {
+      "id": "VR-NSF-005",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": "1000",
+      "bankOrCardAccountName": "Cash & Bank Accounts - Simmons",
+      "transactionDate": "2026-01-05",
+      "amount": 8834.17,
+      "bankDescription": "OFX Import: CHARGEBACK CHARGEBACK",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "1000",
+          "accountName": "Cash & Bank Accounts - Simmons",
+          "debit": 0,
+          "credit": 8834.17
+        },
+        {
+          "accountNumber": "4010",
+          "accountName": "Portfolio Loan Interest Income",
+          "debit": 8834.17,
+          "credit": 0
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
+      },
+      "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
+      "supportingSourceDocument": "Bank FITID 20260105--8834-600-108-135 / Simmons or Lone Star Jan statement",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
+      "ruleOrCodePath": "Learned: CHARGEBACK CHARGEBACK",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none until original payment JE and servicing split are in evidence"
+      },
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
+      "jeNumber": "IMP-1783739660560-9d4a26fb",
+      "jeId": "je-f477785a-d0af-41e3-839f-fd07430540f6",
+      "alreadyReversed": false,
+      "isReversal": false,
+      "nsfFamily": "CHARGEBACK"
+    },
+    {
+      "id": "VR-NSF-006",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": "1000",
+      "bankOrCardAccountName": "Cash & Bank Accounts - Simmons",
+      "transactionDate": "2026-01-05",
+      "amount": 7241.67,
+      "bankDescription": "OFX Import: CHARGEBACK CHARGEBACK",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "1000",
+          "accountName": "Cash & Bank Accounts - Simmons",
+          "debit": 0,
+          "credit": 7241.67
+        },
+        {
+          "accountNumber": "4010",
+          "accountName": "Portfolio Loan Interest Income",
+          "debit": 7241.67,
+          "credit": 0
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
+      },
+      "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
+      "supportingSourceDocument": "Bank FITID 20260105--7241-600-109-135 / Simmons or Lone Star Jan statement",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
+      "ruleOrCodePath": "Learned: CHARGEBACK CHARGEBACK",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none until original payment JE and servicing split are in evidence"
+      },
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
+      "jeNumber": "IMP-1783739660391-acbc8332",
+      "jeId": "je-a23c2da1-ad3e-49e7-90cc-f44099408e42",
+      "alreadyReversed": false,
+      "isReversal": false,
+      "nsfFamily": "CHARGEBACK"
+    },
+    {
+      "id": "VR-NSF-007",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": "1001",
+      "bankOrCardAccountName": "Cash - Lone Star Bank",
+      "transactionDate": "2026-01-02",
+      "amount": 35,
+      "bankDescription": "Lone Star stmt 2026-01-01: OVERDRAFT FEE",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "1001",
+          "accountName": "Cash - Lone Star Bank",
+          "debit": 0,
+          "credit": 35
+        },
+        {
+          "accountNumber": "5200",
+          "accountName": "Bank Service Charges",
+          "debit": 35,
+          "credit": 0
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none",
+        "entries": [],
+        "note": "Current classification acceptable"
+      },
+      "businessPurpose": "Bank overdraft fee expense",
+      "supportingSourceDocument": "Bank FITID pdf-fcb3bcbded8da507994b3d98 / Simmons or Lone Star Jan statement",
+      "evidenceMatchStatus": "MATCH — bank overdraft fee to 5200",
+      "confidence": "high",
+      "ruleOrCodePath": "Bank overdraft fee",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none",
+        "entries": [],
+        "note": "Current classification acceptable"
+      },
+      "needsReviewReason": null,
+      "jeNumber": "IMP-1784868434497-6fb2a399",
+      "jeId": "je-964c73fe-07ef-4ad3-828b-c015734d89a4",
+      "alreadyReversed": false,
+      "isReversal": false,
+      "nsfFamily": "OVERDRAFT"
+    },
+    {
+      "id": "VR-NSF-008",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": "1001",
+      "bankOrCardAccountName": "Cash - Lone Star Bank",
+      "transactionDate": "2026-01-02",
+      "amount": 35,
+      "bankDescription": "LoneStar: OVERDRAFT FEE",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "5200",
+          "accountName": "Bank Service Charges",
+          "debit": 35,
+          "credit": 0
+        },
+        {
+          "accountNumber": "1001",
+          "accountName": "Cash - Lone Star Bank",
+          "debit": 0,
+          "credit": 35
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none",
+        "entries": []
+      },
+      "businessPurpose": "Audit trail only; net effect zeroed by reverse link",
+      "supportingSourceDocument": "Bank statement / OFX import memo",
+      "evidenceMatchStatus": "NO ACTION — already reversed / is reversal",
+      "confidence": "high",
+      "ruleOrCodePath": "unknown",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none",
+        "entries": []
+      },
+      "needsReviewReason": null,
+      "jeNumber": "JE-1783740501830",
+      "jeId": "je-0d0bde08-d983-4397-9182-4485b54ca4aa",
+      "alreadyReversed": true,
+      "isReversal": false,
+      "nsfFamily": "OVERDRAFT"
+    },
+    {
+      "id": "VR-NSF-009",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": "1000",
+      "bankOrCardAccountName": "Cash & Bank Accounts - Simmons",
+      "transactionDate": "2026-01-02",
+      "amount": 781.02,
+      "bankDescription": "OFX Import: CHARGEBACK ON WELLINGTON CHARGEBACK ",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "1000",
+          "accountName": "Cash & Bank Accounts - Simmons",
+          "debit": 0,
+          "credit": 781.02
+        },
+        {
+          "accountNumber": "4010",
+          "accountName": "Portfolio Loan Interest Income",
+          "debit": 781.02,
+          "credit": 0
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
+      },
+      "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
+      "supportingSourceDocument": "Bank FITID 20260102--781-501-242-135 / Simmons or Lone Star Jan statement",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
+      "ruleOrCodePath": "Learned: CHARGEBACK",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none until original payment JE and servicing split are in evidence"
+      },
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
+      "jeNumber": "IMP-1783739660051-bc88e4b7",
+      "jeId": "je-5729110f-8314-4794-a6aa-edd4c6ab4907",
+      "alreadyReversed": false,
+      "isReversal": false,
+      "nsfFamily": "CHARGEBACK"
+    },
+    {
+      "id": "VR-NSF-010",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": "1000",
+      "bankOrCardAccountName": "Cash & Bank Accounts - Simmons",
+      "transactionDate": "2026-01-02",
+      "amount": 243.8,
+      "bankDescription": "OFX Import: CHARGEBACK ON WELLINGTON CHARGEBACK ",
+      "currentDebitCredit": [
+        {
+          "accountNumber": "1000",
+          "accountName": "Cash & Bank Accounts - Simmons",
+          "debit": 0,
+          "credit": 243.8
+        },
+        {
+          "accountNumber": "4010",
+          "accountName": "Portfolio Loan Interest Income",
+          "debit": 243.8,
+          "credit": 0
+        }
+      ],
+      "proposedDebitCredit": {
+        "action": "none — lineage incomplete; 5801 not approved; 4010 rejected"
+      },
+      "businessPurpose": "Borrower ACH/payment chargeback / NSF return (loan servicing), not interest income reduction",
+      "supportingSourceDocument": "Bank FITID 20260102--243-501-241-135 / Simmons or Lone Star Jan statement",
+      "evidenceMatchStatus": "INCOMPLETE — original borrower payment not located",
+      "confidence": "none",
+      "ruleOrCodePath": "Learned: CHARGEBACK",
+      "periodOrReconMustReopen": false,
+      "proposedReverseAndRepost": {
+        "action": "none until original payment JE and servicing split are in evidence"
+      },
+      "needsReviewReason": "No original cash-receipt JE, borrower, loan, or servicing allocation found. Cannot specify the exact undo of a never-cleared payment.",
+      "jeNumber": "IMP-1783739659804-40487289",
+      "jeId": "je-61a66f3b-5d0a-4f40-a0cb-191ff4232207",
+      "alreadyReversed": false,
+      "isReversal": false,
+      "nsfFamily": "CHARGEBACK"
+    },
+    {
+      "id": "VR-UNEX-1000",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": null,
+      "transactionDate": null,
+      "amount": 1000,
+      "bankDescription": null,
+      "currentDebitCredit": null,
+      "proposedDebitCredit": null,
+      "businessPurpose": null,
+      "supportingSourceDocument": null,
+      "evidenceMatchStatus": "NEEDS REVIEW — unexplained amount referenced by CTO; no unique January source txn identified",
+      "confidence": "none",
+      "ruleOrCodePath": null,
+      "periodOrReconMustReopen": null,
+      "proposedReverseAndRepost": {
+        "action": "none — do not invent"
+      },
+      "needsReviewReason": "Multiple January $1,000.00 transfers exist (0260→4177 and related). CTO unexplained $1,000 cannot be mapped to a single item without inventing. Chairman must identify which $1,000 is in scope.",
+      "candidateJeNumbers": [
+        "RCLS-1785514388691-a42d8d",
+        "IMP-1783739663969-83323002",
+        "IMP-1783739663511-2e82f0da",
+        "IMP-1783739662859-0a87a805",
+        "IMP-1783739662462-105e8da3",
+        "RCLS-1785470801683-5a791e",
+        "IMP-1783739661961-913db734",
+        "RCLS-1785470757286-4a31d6",
+        "IMP-1783739661675-c617d4f5"
+      ]
+    },
+    {
+      "id": "VR-UNEX-532.42",
+      "entity": "ent-ljc",
+      "bankOrCardAccount": null,
+      "transactionDate": null,
+      "amount": 532.42,
+      "bankDescription": null,
+      "currentDebitCredit": null,
+      "proposedDebitCredit": null,
+      "businessPurpose": null,
+      "supportingSourceDocument": null,
+      "evidenceMatchStatus": "NEEDS REVIEW — unexplained amount referenced by CTO; no January journal totaling $532.42 found in live books",
+      "confidence": "none",
+      "ruleOrCodePath": null,
+      "periodOrReconMustReopen": null,
+      "proposedReverseAndRepost": {
+        "action": "none — do not invent"
+      },
+      "needsReviewReason": "Live search of January 2026 posted journals found zero entries with total_debit/credit = 532.42. Cannot propose correction without source evidence.",
+      "candidateJeNumbers": []
+    }
+  ],
+  "proposedCorrectionsForApproval": [],
+  "chairmanApprovalQueue": [
+    {
+      "item": "CB lineage",
+      "decisionRequired": "Provide Dec 2025 Simmons activity and/or servicing NSF records naming borrower, loan, original payment JE, and P/I/fee split",
+      "status": "BLOCKED — evidence incomplete"
+    },
+    {
+      "item": "Full restorable DB snapshot",
+      "decisionRequired": "Enable/produce BACKUP_FULL_LEDGER snapshot before any A3",
+      "status": "FAIL"
+    },
+    {
+      "item": "VR-UNEX-1000",
+      "decisionRequired": "none — remain unresolved",
+      "status": "NO JE"
+    },
+    {
+      "item": "VR-UNEX-532.42",
+      "decisionRequired": "none — remain unresolved",
+      "status": "NO JE"
+    }
+  ],
+  "chairmanDecision": {
+    "a3Authorized": false,
+    "offset4010": "REJECTED for all five",
+    "offset5801": "NOT APPROVED",
+    "overdraft35": "leave in 5200",
+    "unexplained1000": "unresolved, no JE",
+    "unexplained53242": "unresolved, no JE",
+    "fullRestorableSnapshot": "REQUIRED before A3 — currently FAIL (checkpoint-v1 only)"
+  },
+  "lineageReport": "data/reports/JANUARY-2026-CHARGEBACK-LINEAGE.md"
+}
