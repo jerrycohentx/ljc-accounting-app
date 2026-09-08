@@ -25,3 +25,6 @@ LJC Financial: 6810 Heath + 1311 Jefferson + 5229 Wilmington, TXR-2201 dated 11/
 
 ## Mistakes and their causes
 Errors Claude made, what caused them, and what prevents a repeat.
+
+### 2026-09-08 · App flagged Westside deposits "overdue" on weekends and bank holidays
+computeExpectedDepositDate used a bare 7th. Fixed: rolls forward to the next US business day (Fed holiday calendar in lib/property-registry.js) and the API recomputes on read, so old rows self-correct. Any future "late" flag on a management deposit — check the calendar before calling it late.

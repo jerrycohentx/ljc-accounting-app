@@ -106,7 +106,10 @@ function serialize(row) {
     fileMime: row.file_mime,
     hasFile: !!row.file_data,
     journalEntryId: row.journal_entry_id,
-    expectedDepositDate: toDateOnly(row.expected_deposit_date),
+    // Recompute from the schedule when known so rows stored before the
+    // weekend/bank-holiday roll-forward rule show the corrected date; fall back
+    // to the stored value for anything the schedule can't derive.
+    expectedDepositDate: computeExpectedDepositDate(row.management_company, row.period_end) || toDateOnly(row.expected_deposit_date),
     cashReceivedDate: toDateOnly(row.cash_received_date),
     cashReceivedCents: row.cash_received_cents,
     cashVarianceCents: row.cash_variance_cents,
